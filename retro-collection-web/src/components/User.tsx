@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react'
-import { type FirebaseApp } from 'firebase/app'
 import {
-  getAuth,
   signInWithPopup,
   signOut,
   GoogleAuthProvider,
@@ -10,20 +8,12 @@ import {
   onAuthStateChanged,
   type User,
 } from 'firebase/auth'
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore'
+import { doc, setDoc, getDoc } from 'firebase/firestore'
+import { auth, db, ADMIN_EMAIL } from '../lib/firebase'
 
-interface UserProps {
-  app: FirebaseApp
-}
-
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'talex.tnt@gmail.com'
-
-function User({ app }: UserProps) {
+function AuthPanel() {
   const [user, setUser] = useState<User | null>(null)
   const [error, setError] = useState<string>('')
-
-  const auth = getAuth(app)
-  const db = getFirestore(app)
   const provider = new GoogleAuthProvider()
 
   useEffect(() => {
@@ -31,13 +21,10 @@ function User({ app }: UserProps) {
       setUser(currentUser)
     })
     return unsubscribe
-  }, [auth])
+  }, [])
 
-  const isAdminEmail = (email?: string) => email === ADMIN_EMAIL
-
-  // Check if user email is authorized
   const isUserAuthorized = async (email: string): Promise<boolean> => {
-    if (isAdminEmail(email)) {
+    if (email === ADMIN_EMAIL) {
       return true
     }
 
@@ -58,7 +45,6 @@ function User({ app }: UserProps) {
       const user = result.user
       const email = user.email || ''
 
-      // Check if user is authorized
       const authorized = await isUserAuthorized(email)
 
       if (!authorized) {
@@ -97,22 +83,29 @@ function User({ app }: UserProps) {
   }
 
   return (
-    <div>
-      <h1>Authentication</h1>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {user ? (
-        <div>
-          <p>Logged in as:</p>
-          <p><strong>{user.displayName || user.email}</strong></p>
-          <p>Email: {user.email}</p>
-          <p>UID: {user.uid}</p>
-          <button onClick={logout}>Logout</button>
-        </div>
-      ) : (
-        <button onClick={login}>Login with Google</button>
-      )}
+    <div className="card bg-base-100 shadow-xl">
+      <div className="card-body">
+        <h2 className="card-title">Authentication</h2>
+        {error && <div className="alert alert-error shadow-lg">{error}</div>}
+
+        {user ? (
+          <div className="space-y-2">
+            <p className="text-sm text-base-content/70">Logged in as:</p>
+            <p className="text-lg font-semibold">{user.displayName || user.email}</p>
+            <p className="text-sm">Email: {user.email}</p>
+            <p className="text-sm">UID: {user.uid}</p>
+            <button className="btn btn-primary mt-3" onClick={logout}>
+              Logout
+            </button>
+          </div>
+        ) : (
+          <button className="btn btn-primary" onClick={login}>
+            Login with Google
+          </button>
+        )}
+      </div>
     </div>
   )
 }
 
-export default User
+export default AuthPanel

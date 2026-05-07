@@ -1,18 +1,9 @@
 import { useState, useEffect } from 'react'
-import { type FirebaseApp } from 'firebase/app'
-import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
-import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore'
+import { onAuthStateChanged, type User } from 'firebase/auth'
+import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore'
+import { auth, db, ADMIN_EMAIL } from '../lib/firebase'
 
-interface AdminProps {
-  app: FirebaseApp
-}
-
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'talex.tnt@gmail.com'
-
-function Admin({ app }: AdminProps) {
-  const auth = getAuth(app)
-  const db = getFirestore(app)
-
+function Admin() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [authorizedUsers, setAuthorizedUsers] = useState<string[]>([])
   const [newEmail, setNewEmail] = useState('')
@@ -27,7 +18,7 @@ function Admin({ app }: AdminProps) {
       }
     })
     return unsubscribe
-  }, [auth])
+  }, [])
 
   const fetchAuthorizedUsers = async () => {
     try {
@@ -72,47 +63,57 @@ function Admin({ app }: AdminProps) {
     }
   }
 
-  // Only show admin panel if user matches the env-based admin email
   if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
     return null
   }
 
   return (
-    <div style={{ border: '2px solid blue', padding: '20px', marginBottom: '20px' }}>
-      <h2>Admin Panel</h2>
-      <p>Manage authorized users</p>
-      <p>Admin email: <strong>{ADMIN_EMAIL}</strong></p>
+    <div className="card bg-base-100 shadow-xl">
+      <div className="card-body">
+        <h2 className="card-title">Admin Panel</h2>
+        <p>Manage authorized users</p>
+        <p className="text-sm text-base-content/70">
+          Admin email: <strong>{ADMIN_EMAIL}</strong>
+        </p>
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {success && <p style={{ color: 'green' }}>{success}</p>}
+        {error && <div className="alert alert-error shadow-lg">{error}</div>}
+        {success && <div className="alert alert-success shadow-lg">{success}</div>}
 
-      <div>
-        <h3>Add New User</h3>
-        <input
-          type="email"
-          value={newEmail}
-          onChange={(e) => setNewEmail(e.target.value)}
-          placeholder="Enter email"
-        />
-        <button onClick={addAuthorizedUser}>Add User</button>
-      </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Add New User</h3>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <input
+                type="email"
+                className="input input-bordered w-full"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="Enter email"
+              />
+              <button className="btn btn-secondary" onClick={addAuthorizedUser}>
+                Add User
+              </button>
+            </div>
+          </div>
 
-      <div>
-        <h3>Authorized Users ({authorizedUsers.length})</h3>
-        {authorizedUsers.length === 0 ? (
-          <p>No authorized users yet</p>
-        ) : (
-          <ul>
-            {authorizedUsers.map((email) => (
-              <li key={email}>
-                {email}
-                <button onClick={() => removeAuthorizedUser(email)} style={{ marginLeft: '10px' }}>
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Authorized Users ({authorizedUsers.length})</h3>
+            {authorizedUsers.length === 0 ? (
+              <div className="alert alert-info">No authorized users yet</div>
+            ) : (
+              <div className="space-y-2">
+                {authorizedUsers.map((email) => (
+                  <div key={email} className="flex flex-col gap-2 rounded-lg border border-base-300 bg-base-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <span>{email}</span>
+                    <button className="btn btn-error btn-sm" onClick={() => removeAuthorizedUser(email)}>
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )

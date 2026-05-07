@@ -17,9 +17,8 @@ function Items({ app }: ItemsProps) {
   const [name, setName] = useState('')
   const [items, setItems] = useState<{ id: string; name: string; userId: string }[]>([])
 
-  const isAdmin = (email?: string) => email === ADMIN_EMAIL
+  const isAdmin = (email?: string | null) => email === ADMIN_EMAIL
 
-  // Track current authenticated user
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser)
@@ -32,7 +31,6 @@ function Items({ app }: ItemsProps) {
     return unsubscribe
   }, [auth])
 
-  // Add item to current user's collection
   const addItem = async () => {
     if (!user || !name.trim()) return
 
@@ -46,7 +44,6 @@ function Items({ app }: ItemsProps) {
     }
   }
 
-  // Fetch items for current user, or all items if admin
   const fetchItems = async (currentUser: User) => {
     try {
       const adminMode = isAdmin(currentUser.email)
@@ -66,7 +63,6 @@ function Items({ app }: ItemsProps) {
     }
   }
 
-  // Delete item
   const deleteItem = async (itemId: string, ownerId: string) => {
     if (!user) return
 
@@ -79,7 +75,6 @@ function Items({ app }: ItemsProps) {
     }
   }
 
-  // Edit item
   const editItem = async (itemId: string, ownerId: string, newName: string) => {
     if (!user || !newName.trim()) return
 
@@ -93,35 +88,69 @@ function Items({ app }: ItemsProps) {
   }
 
   if (!user) {
-    return <div><p>Please log in to manage items</p></div>
+    return (
+      <div className="card bg-base-100 shadow-xl">
+        <div className="card-body">
+          <h2 className="card-title">Items</h2>
+          <p>Please log in to manage items.</p>
+        </div>
+      </div>
+    )
   }
 
   const adminMode = isAdmin(user.email)
 
   return (
-    <div>
-      <h2>{adminMode ? 'All Items' : 'My Items'}</h2>
-      <input
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Enter item name"
-      />
-      <button onClick={addItem}>Add Item</button>
-      <ul>
-        {items.map((item) => (
-          <li key={item.id}>
-            {item.name} {adminMode && <small>(owner: {item.userId})</small>}
-            <button onClick={() => {
-              const newName = prompt('New name:', item.name)
-              if (newName) editItem(item.id, item.userId, newName)
-            }}>
-              Edit
+    <div className="card bg-base-100 shadow-xl">
+      <div className="card-body space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="card-title">{adminMode ? 'All Items' : 'My Items'}</h2>
+            {adminMode && <p className="text-sm text-base-content/70">Admin mode: showing all users</p>}
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input
+              type="text"
+              className="input input-bordered w-full"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter item name"
+            />
+            <button className="btn btn-primary" onClick={addItem}>
+              Add Item
             </button>
-            <button onClick={() => deleteItem(item.id, item.userId)}>Delete</button>
-          </li>
-        ))}
-      </ul>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {items.length === 0 ? (
+            <div className="alert alert-info">No items found.</div>
+          ) : (
+            items.map((item) => (
+              <div key={item.id} className="flex flex-col gap-3 rounded-lg border border-base-300 bg-base-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-medium">{item.name}</p>
+                  {adminMode && <span className="text-sm text-base-content/70">Owner: {item.userId}</span>}
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    className="btn btn-sm btn-outline"
+                    onClick={() => {
+                      const newName = prompt('New name:', item.name)
+                      if (newName) editItem(item.id, item.userId, newName)
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button className="btn btn-sm btn-error" onClick={() => deleteItem(item.id, item.userId)}>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   )
 }
