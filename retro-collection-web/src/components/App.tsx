@@ -1,5 +1,6 @@
-import FirebaseExample from './FirebaseExample'
+import Items from './Items'
 import User from './User'
+import Admin from './Admin'
 import { initializeApp } from 'firebase/app'
 
 // Your web app's Firebase configuration
@@ -17,8 +18,9 @@ const app = initializeApp(firebaseConfig)
 function App() {
   return (
     <>
+      <Admin app={app} />
       <User app={app} />
-      <FirebaseExample app={app} />
+      <Items app={app} />
     </>
   )
 }
