@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "login": "firebase login",
+    "init": "firebase init functions",
+    "deploy": "firebase deploy --only functions"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "firebase-admin": "^13.8.0",
+    "firebase-tools": "^15.17.0"
+  }
+}
