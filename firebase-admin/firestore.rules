@@ -1,0 +1,115 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.admin == true;
+    }
+
+    function isOwner(ownerId) {
+      return isAuthenticated() && request.auth.uid == ownerId;
+    }
+
+    function validString(field, maxLength) {
+      return field is string && field.size() > 0 && field.size() <= maxLength;
+    }
+
+    function validOptionalString(field, maxLength) {
+      return !(field is string) || field.size() <= maxLength;
+    }
+
+    function validVisibility(field) {
+      return !(field is map) || (field.keys().hasOnly(['public']) && field.public is bool);
+    }
+
+    function validCollection(data, ownerId) {
+      return data.keys().hasAll(['name', 'userId', 'createdAt']) &&
+        validString(data.name, 100) &&
+        (!('description' in data) || validOptionalString(data.description, 500)) &&
+        data.userId == ownerId;
+    }
+
+    function validItem(data, ownerId) {
+      return data.keys().hasAll(['name', 'userId', 'collectionId', 'createdAt']) &&
+        validString(data.name, 100) &&
+        (!('description' in data) || validOptionalString(data.description, 1000)) &&
+        data.userId == ownerId &&
+        data.collectionId is string &&
+        data.collectionId.size() > 0 &&
+        (!('visibility' in data) || validVisibility(data.visibility));
+    }
+
+    function validCollectionUpdate(data, ownerId) {
+      return data.userId == ownerId &&
+        validString(data.name, 100) &&
+        (!('description' in data) || validOptionalString(data.description, 500)) &&
+        data.createdAt == resource.data.createdAt &&
+        (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
+    function validItemUpdate(data, ownerId) {
+      return data.userId == ownerId &&
+        validString(data.name, 100) &&
+        (!('description' in data) || validOptionalString(data.description, 1000)) &&
+        data.collectionId is string &&
+        data.collectionId.size() > 0 &&
+        data.createdAt == resource.data.createdAt &&
+        (!('visibility' in data) || validVisibility(data.visibility)) &&
+        (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
+    function isCollectionQueryForCurrentUser() {
+      return request.query.where.size() == 1 &&
+        request.query.where[0].field == 'userId' &&
+        request.query.where[0].value == request.auth.uid;
+    }
+
+    function isItemsQueryForOwnedCollection() {
+      return request.query.where.size() == 1 &&
+        request.query.where[0].field == 'collectionId' &&
+        get(/databases/$(database)/documents/collections/$(request.query.where[0].value)).data.userId == request.auth.uid;
+    }
+
+    match /authorized-users/{email} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /collections/{collectionId} {
+      allow get: if resource.data.userId == request.auth.uid || isAdmin();
+      allow list: if isAdmin() || (isAuthenticated() && isCollectionQueryForCurrentUser());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
+        request.resource.data.keys().hasAll(['name', 'userId', 'createdAt']) && validCollection(request.resource.data, request.auth.uid);
+      allow update: if (isOwner(resource.data.userId) && validCollectionUpdate(request.resource.data, request.auth.uid)) || isAdmin();
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    match /items/{itemId} {
+      allow get: if isAdmin() || resource.data.userId == request.auth.uid || (resource.data.visibility.public == true);
+      allow list: if isAdmin() || (isAuthenticated() && isItemsQueryForOwnedCollection());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
+        request.resource.data.keys().hasAll(['name', 'userId', 'collectionId', 'createdAt']) && validItem(request.resource.data, request.auth.uid) &&
+        exists(/databases/$(database)/documents/collections/$(request.resource.data.collectionId)) &&
+        get(/databases/$(database)/documents/collections/$(request.resource.data.collectionId)).data.userId == request.auth.uid;
+      allow update: if isOwner(resource.data.userId) && validItemUpdate(request.resource.data, request.auth.uid);
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

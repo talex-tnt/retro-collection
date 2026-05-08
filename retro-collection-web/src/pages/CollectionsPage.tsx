@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore'
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy, where } from 'firebase/firestore'
 import { onAuthStateChanged, type User } from 'firebase/auth'
 import { auth, db } from '../lib/firebase'
 
@@ -13,6 +13,7 @@ interface ItemRecord {
   id: string
   name: string
   createdAt?: string
+  isPublic?: boolean
 }
 
 function CollectionsPage() {
@@ -53,18 +54,20 @@ function CollectionsPage() {
   const fetchCollections = async () => {
     if (!user) return
     setLoadingCollections(true)
+
     try {
-      const snapshot = await getDocs(query(collection(db, 'users', user.uid, 'collections'), orderBy('createdAt', 'desc')))
+      const snapshot = await getDocs(query(collection(db, 'collections'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'), orderBy('__name__', 'asc')))
       const fetched = snapshot.docs.map((docSnap) => ({
         id: docSnap.id,
         name: docSnap.data().name as string,
         createdAt: docSnap.data().createdAt?.toDate?.()?.toISOString() ?? docSnap.data().createdAt?.toString() ?? '',
       }))
+
       setCollections(fetched)
       if (!selectedCollection && fetched.length > 0) {
         setSelectedCollection(fetched[0])
       } else if (selectedCollection) {
-        const match = fetched.find((collection) => collection.id === selectedCollection.id)
+        const match = fetched.find((collectionItem) => collectionItem.id === selectedCollection.id)
         setSelectedCollection(match || fetched[0] || null)
       }
     } catch (error) {
@@ -77,12 +80,14 @@ function CollectionsPage() {
   const fetchItems = async (collectionId: string) => {
     if (!user) return
     setLoadingItems(true)
+
     try {
-      const snapshot = await getDocs(collection(db, 'users', user.uid, 'collections', collectionId, 'items'))
+      const snapshot = await getDocs(query(collection(db, 'items'), where('collectionId', '==', collectionId), orderBy('createdAt', 'desc'), orderBy('__name__', 'asc')))
       setItems(
         snapshot.docs.map((docSnap) => ({
           id: docSnap.id,
           name: docSnap.data().name as string,
+          isPublic: !!docSnap.data().visibility?.public,
           createdAt: docSnap.data().createdAt?.toDate?.()?.toISOString() ?? docSnap.data().createdAt?.toString(),
         })),
       )
@@ -95,10 +100,13 @@ function CollectionsPage() {
 
   const addCollection = async () => {
     if (!user || !collectionName.trim()) return
+
     try {
-      await addDoc(collection(db, 'users', user.uid, 'collections'), {
+      await addDoc(collection(db, 'collections'), {
         name: collectionName,
+        userId: user.uid,
         createdAt: new Date(),
+        updatedAt: new Date(),
       })
       setCollectionName('')
       fetchCollections()
@@ -109,10 +117,15 @@ function CollectionsPage() {
 
   const addItem = async () => {
     if (!user || !selectedCollection || !itemName.trim()) return
+
     try {
-      await addDoc(collection(db, 'users', user.uid, 'collections', selectedCollection.id, 'items'), {
+      await addDoc(collection(db, 'items'), {
         name: itemName,
+        userId: user.uid,
+        collectionId: selectedCollection.id,
+        visibility: { public: false },
         createdAt: new Date(),
+        updatedAt: new Date(),
       })
       setItemName('')
       fetchItems(selectedCollection.id)
@@ -123,9 +136,11 @@ function CollectionsPage() {
 
   const editItem = async (itemId: string, newName: string) => {
     if (!user || !selectedCollection || !newName.trim()) return
+
     try {
-      await updateDoc(doc(db, 'users', user.uid, 'collections', selectedCollection.id, 'items', itemId), {
+      await updateDoc(doc(db, 'items', itemId), {
         name: newName,
+        updatedAt: new Date(),
       })
       fetchItems(selectedCollection.id)
     } catch (error) {
@@ -135,11 +150,26 @@ function CollectionsPage() {
 
   const deleteItem = async (itemId: string) => {
     if (!user || !selectedCollection) return
+
     try {
-      await deleteDoc(doc(db, 'users', user.uid, 'collections', selectedCollection.id, 'items', itemId))
+      await deleteDoc(doc(db, 'items', itemId))
       fetchItems(selectedCollection.id)
     } catch (error) {
       console.error('Error deleting item:', error)
+    }
+  }
+
+  const toggleItemVisibility = async (itemId: string, currentVisibility: boolean) => {
+    if (!user || !selectedCollection) return
+
+    try {
+      await updateDoc(doc(db, 'items', itemId), {
+        'visibility.public': !currentVisibility,
+        updatedAt: new Date(),
+      })
+      fetchItems(selectedCollection.id)
+    } catch (error) {
+      console.error('Error toggling visibility:', error)
     }
   }
 
@@ -195,9 +225,7 @@ function CollectionsPage() {
                   collections.map((collectionItem) => (
                     <button
                       key={collectionItem.id}
-                      className={
-                        'tab ' + (selectedCollection?.id === collectionItem.id ? 'tab-active' : '')
-                      }
+                      className={'tab ' + (selectedCollection?.id === collectionItem.id ? 'tab-active' : '')}
                       onClick={() => setSelectedCollection(collectionItem)}
                     >
                       {collectionItem.name}
@@ -246,7 +274,10 @@ function CollectionsPage() {
                 <div key={item.id} className="flex flex-col gap-3 rounded-lg border border-base-300 bg-base-200 p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="font-medium">{item.name}</p>
-                    {item.createdAt && <p className="text-sm text-base-content/70">Added {new Date(item.createdAt).toLocaleString()}</p>}
+                    <p className="text-sm text-base-content/70">
+                      {item.createdAt ? `Added ${new Date(item.createdAt).toLocaleString()}` : 'No timestamp'}
+                    </p>
+                    <p className="text-sm text-base-content/70">Visibility: {item.isPublic ? 'Public' : 'Private'}</p>
                   </div>
                   <div className="flex gap-2 flex-wrap">
                     <button
@@ -259,6 +290,12 @@ function CollectionsPage() {
                       }}
                     >
                       Edit
+                    </button>
+                    <button
+                      className="btn btn-sm btn-secondary"
+                      onClick={() => toggleItemVisibility(item.id, !!item.isPublic)}
+                    >
+                      {item.isPublic ? 'Make Private' : 'Make Public'}
                     </button>
                     <button className="btn btn-sm btn-error" onClick={() => deleteItem(item.id)}>
                       Delete

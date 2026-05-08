@@ -2,7 +2,11 @@
   "scripts": {
     "login": "firebase login",
     "init": "firebase init functions",
-    "deploy": "firebase deploy --only functions"
+    "deploy:functions": "firebase deploy --only functions",
+    "deploy:firestore": "firebase deploy --only firestore",
+    "deploy:indexes": "firebase deploy --only firestore:indexes",
+    "deploy": "firebase deploy"
+
   },
   "dependencies": {
     "dotenv": "^17.4.2",

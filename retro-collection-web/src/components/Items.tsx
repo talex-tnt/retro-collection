@@ -1,8 +1,9 @@
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, collectionGroup } from 'firebase/firestore'
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where } from 'firebase/firestore'
 import { useState, useEffect } from 'react'
 import { type FirebaseApp } from 'firebase/app'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
-import { getIsAdminSync } from '../lib/firebase'
+import { getIsAdmin } from '../lib/firebase'
+
 interface ItemsProps {
   app: FirebaseApp
 }
@@ -20,8 +21,10 @@ function Items({ app }: ItemsProps) {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser)
       if (currentUser) {
-        setIsAdmin(getIsAdminSync(currentUser.email))
-        fetchItems(currentUser)
+        getIsAdmin().then((admin) => {
+          setIsAdmin(admin)
+          fetchItems(currentUser, admin)
+        })
       } else {
         setItems([])
       }
@@ -29,32 +32,35 @@ function Items({ app }: ItemsProps) {
     return unsubscribe
   }, [auth])
 
-
   const addItem = async () => {
     if (!user || !name.trim()) return
 
     try {
-      const userItemsRef = collection(db, 'users', user.uid, 'items')
-      await addDoc(userItemsRef, { name, createdAt: new Date() })
+      await addDoc(collection(db, 'items'), {
+        name,
+        userId: user.uid,
+        collectionId: '',
+        visibility: { public: false },
+        createdAt: new Date(),
+      })
       setName('')
-      fetchItems(user)
+      if (user) fetchItems(user, isAdmin)
     } catch (error) {
       console.error('Error adding item:', error)
     }
   }
 
-  const fetchItems = async (currentUser: User) => {
+  const fetchItems = async (currentUser: User, adminMode = false) => {
     try {
-      const adminMode = isAdmin(currentUser.email)
       const itemsQuery = adminMode
-        ? collectionGroup(db, 'items')
-        : collection(db, 'users', currentUser.uid, 'items')
+        ? collection(db, 'items')
+        : query(collection(db, 'items'), where('userId', '==', currentUser.uid))
 
       const querySnapshot = await getDocs(itemsQuery)
       const fetchedItems = querySnapshot.docs.map((docSnap) => ({
         id: docSnap.id,
         name: docSnap.data().name as string,
-        userId: docSnap.ref.parent.parent?.id ?? currentUser.uid,
+        userId: docSnap.data().userId as string,
       }))
       setItems(fetchedItems)
     } catch (error) {
@@ -62,25 +68,25 @@ function Items({ app }: ItemsProps) {
     }
   }
 
-  const deleteItem = async (itemId: string, ownerId: string) => {
+  const deleteItem = async (itemId: string) => {
     if (!user) return
 
     try {
-      const itemRef = doc(db, 'users', ownerId, 'items', itemId)
+      const itemRef = doc(db, 'items', itemId)
       await deleteDoc(itemRef)
-      fetchItems(user)
+      if (user) fetchItems(user, isAdmin)
     } catch (error) {
       console.error('Error deleting item:', error)
     }
   }
 
-  const editItem = async (itemId: string, ownerId: string, newName: string) => {
+  const editItem = async (itemId: string, newName: string) => {
     if (!user || !newName.trim()) return
 
     try {
-      const itemRef = doc(db, 'users', ownerId, 'items', itemId)
+      const itemRef = doc(db, 'items', itemId)
       await updateDoc(itemRef, { name: newName })
-      fetchItems(user)
+      if (user) fetchItems(user, isAdmin)
     } catch (error) {
       console.error('Error updating item:', error)
     }
@@ -97,7 +103,7 @@ function Items({ app }: ItemsProps) {
     )
   }
 
-  const adminMode = isAdmin(user.email)
+  const adminMode = isAdmin
 
   return (
     <div className="card bg-base-100 shadow-xl">
@@ -136,12 +142,12 @@ function Items({ app }: ItemsProps) {
                     className="btn btn-sm btn-outline"
                     onClick={() => {
                       const newName = prompt('New name:', item.name)
-                      if (newName) editItem(item.id, item.userId, newName)
+                      if (newName) editItem(item.id, newName)
                     }}
                   >
                     Edit
                   </button>
-                  <button className="btn btn-sm btn-error" onClick={() => deleteItem(item.id, item.userId)}>
+                  <button className="btn btn-sm btn-error" onClick={() => deleteItem(item.id)}>
                     Delete
                   </button>
                 </div>
