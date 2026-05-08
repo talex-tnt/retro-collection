@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react'
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy, where } from 'firebase/firestore'
 import { onAuthStateChanged, type User } from 'firebase/auth'
-import { auth, db } from '../lib/firebase'
+import { auth } from '../lib/firebase'
+import {
+  useGetCollectionsQuery,
+  useCreateCollectionMutation,
+  useGetItemsQuery,
+  useCreateItemMutation,
+  useUpdateItemMutation,
+  useDeleteItemMutation,
+} from '../services/firestoreApi'
 
 interface CollectionRecord {
   id: string
@@ -9,22 +16,11 @@ interface CollectionRecord {
   createdAt: string
 }
 
-interface ItemRecord {
-  id: string
-  name: string
-  createdAt?: string
-  isPublic?: boolean
-}
-
 function CollectionsPage() {
   const [user, setUser] = useState<User | null>(null)
-  const [collections, setCollections] = useState<CollectionRecord[]>([])
   const [selectedCollection, setSelectedCollection] = useState<CollectionRecord | null>(null)
   const [collectionName, setCollectionName] = useState('')
   const [itemName, setItemName] = useState('')
-  const [items, setItems] = useState<ItemRecord[]>([])
-  const [loadingCollections, setLoadingCollections] = useState(false)
-  const [loadingItems, setLoadingItems] = useState(false)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -33,141 +29,89 @@ function CollectionsPage() {
     return unsubscribe
   }, [])
 
+  // RTK Query hooks
+  const { data: collections = [], isLoading: loadingCollections, error: collectionsError } = useGetCollectionsQuery(user?.uid || '', {
+    skip: !user?.uid,
+  })
+
+  const { data: items = [], isLoading: loadingItems, error: itemsError } = useGetItemsQuery(selectedCollection?.id || '', {
+    skip: !selectedCollection?.id,
+  })
+
+  const [createCollection, { isLoading: isCreatingCollection }] = useCreateCollectionMutation()
+  const [createItem, { isLoading: isCreatingItem }] = useCreateItemMutation()
+  const [updateItem] = useUpdateItemMutation()
+  const [deleteItem] = useDeleteItemMutation()
+
+  // Update selected collection when collections change
   useEffect(() => {
-    if (user) {
-      fetchCollections()
-    } else {
-      setCollections([])
+    if (collections.length > 0 && !selectedCollection) {
+      setSelectedCollection(collections[0])
+    } else if (selectedCollection) {
+      const match = collections.find((collectionItem) => collectionItem.id === selectedCollection.id)
+      setSelectedCollection(match || collections[0] || null)
+    } else if (collections.length === 0) {
       setSelectedCollection(null)
-      setItems([])
     }
-  }, [user])
+  }, [collections, selectedCollection])
 
-  useEffect(() => {
-    if (selectedCollection && user) {
-      fetchItems(selectedCollection.id)
-    } else {
-      setItems([])
-    }
-  }, [selectedCollection, user])
-
-  const fetchCollections = async () => {
-    if (!user) return
-    setLoadingCollections(true)
-
-    try {
-      const snapshot = await getDocs(query(collection(db, 'collections'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'), orderBy('__name__', 'asc')))
-      const fetched = snapshot.docs.map((docSnap) => ({
-        id: docSnap.id,
-        name: docSnap.data().name as string,
-        createdAt: docSnap.data().createdAt?.toDate?.()?.toISOString() ?? docSnap.data().createdAt?.toString() ?? '',
-      }))
-
-      setCollections(fetched)
-      if (!selectedCollection && fetched.length > 0) {
-        setSelectedCollection(fetched[0])
-      } else if (selectedCollection) {
-        const match = fetched.find((collectionItem) => collectionItem.id === selectedCollection.id)
-        setSelectedCollection(match || fetched[0] || null)
-      }
-    } catch (error) {
-      console.error('Error fetching collections:', error)
-    } finally {
-      setLoadingCollections(false)
-    }
-  }
-
-  const fetchItems = async (collectionId: string) => {
-    if (!user) return
-    setLoadingItems(true)
-
-    try {
-      const snapshot = await getDocs(query(collection(db, 'items'), where('collectionId', '==', collectionId), orderBy('createdAt', 'desc'), orderBy('__name__', 'asc')))
-      setItems(
-        snapshot.docs.map((docSnap) => ({
-          id: docSnap.id,
-          name: docSnap.data().name as string,
-          isPublic: !!docSnap.data().visibility?.public,
-          createdAt: docSnap.data().createdAt?.toDate?.()?.toISOString() ?? docSnap.data().createdAt?.toString(),
-        })),
-      )
-    } catch (error) {
-      console.error('Error fetching items:', error)
-    } finally {
-      setLoadingItems(false)
-    }
-  }
-
-  const addCollection = async () => {
+  const handleCreateCollection = async () => {
     if (!user || !collectionName.trim()) return
 
     try {
-      await addDoc(collection(db, 'collections'), {
-        name: collectionName,
+      await createCollection({
+        name: collectionName.trim(),
         userId: user.uid,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+      }).unwrap()
       setCollectionName('')
-      fetchCollections()
     } catch (error) {
       console.error('Error creating collection:', error)
     }
   }
 
-  const addItem = async () => {
+  const handleCreateItem = async () => {
     if (!user || !selectedCollection || !itemName.trim()) return
 
     try {
-      await addDoc(collection(db, 'items'), {
-        name: itemName,
+      await createItem({
+        name: itemName.trim(),
         userId: user.uid,
         collectionId: selectedCollection.id,
         visibility: { public: false },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+      }).unwrap()
       setItemName('')
-      fetchItems(selectedCollection.id)
     } catch (error) {
       console.error('Error adding item:', error)
     }
   }
 
-  const editItem = async (itemId: string, newName: string) => {
-    if (!user || !selectedCollection || !newName.trim()) return
+  const handleEditItem = async (itemId: string, newName: string) => {
+    if (!newName.trim()) return
 
     try {
-      await updateDoc(doc(db, 'items', itemId), {
-        name: newName,
-        updatedAt: new Date(),
-      })
-      fetchItems(selectedCollection.id)
+      await updateItem({
+        id: itemId,
+        updates: { name: newName.trim() },
+      }).unwrap()
     } catch (error) {
       console.error('Error updating item:', error)
     }
   }
 
-  const deleteItem = async (itemId: string) => {
-    if (!user || !selectedCollection) return
-
+  const handleDeleteItem = async (itemId: string) => {
     try {
-      await deleteDoc(doc(db, 'items', itemId))
-      fetchItems(selectedCollection.id)
+      await deleteItem(itemId).unwrap()
     } catch (error) {
       console.error('Error deleting item:', error)
     }
   }
 
-  const toggleItemVisibility = async (itemId: string, currentVisibility: boolean) => {
-    if (!user || !selectedCollection) return
-
+  const handleToggleItemVisibility = async (itemId: string, currentVisibility: boolean) => {
     try {
-      await updateDoc(doc(db, 'items', itemId), {
-        'visibility.public': !currentVisibility,
-        updatedAt: new Date(),
-      })
-      fetchItems(selectedCollection.id)
+      await updateItem({
+        id: itemId,
+        updates: { visibility: { public: !currentVisibility } },
+      }).unwrap()
     } catch (error) {
       console.error('Error toggling visibility:', error)
     }
@@ -180,6 +124,14 @@ function CollectionsPage() {
           <h2 className="card-title">Collections</h2>
           <p>Please log in to manage your collections and items.</p>
         </div>
+      </div>
+    )
+  }
+
+  if (collectionsError) {
+    return (
+      <div className="alert alert-error">
+        <span>Error loading collections: {(collectionsError as Error).message || 'Unknown error'}</span>
       </div>
     )
   }
@@ -205,9 +157,14 @@ function CollectionsPage() {
                   value={collectionName}
                   onChange={(e) => setCollectionName(e.target.value)}
                   placeholder="Collection name"
+                  disabled={isCreatingCollection}
                 />
-                <button className="btn btn-primary" onClick={addCollection}>
-                  Create
+                <button
+                  className="btn btn-primary"
+                  onClick={handleCreateCollection}
+                  disabled={isCreatingCollection || !collectionName.trim()}
+                >
+                  {isCreatingCollection ? 'Creating...' : 'Create'}
                 </button>
               </div>
             </div>
@@ -256,16 +213,24 @@ function CollectionsPage() {
                 value={itemName}
                 onChange={(e) => setItemName(e.target.value)}
                 placeholder="New item name"
-                disabled={!selectedCollection}
+                disabled={!selectedCollection || isCreatingItem}
               />
-              <button className="btn btn-primary" onClick={addItem} disabled={!selectedCollection}>
-                Add Item
+              <button
+                className="btn btn-primary"
+                onClick={handleCreateItem}
+                disabled={!selectedCollection || isCreatingItem || !itemName.trim()}
+              >
+                {isCreatingItem ? 'Adding...' : 'Add Item'}
               </button>
             </div>
           </div>
 
           <div className="space-y-3">
-            {loadingItems ? (
+            {itemsError ? (
+              <div className="alert alert-error">
+                <span>Error loading items: {(itemsError as Error).message || 'Unknown error'}</span>
+              </div>
+            ) : loadingItems ? (
               <div className="alert alert-info">Loading items...</div>
             ) : items.length === 0 ? (
               <div className="alert alert-info">No items in this collection yet.</div>
@@ -277,7 +242,7 @@ function CollectionsPage() {
                     <p className="text-sm text-base-content/70">
                       {item.createdAt ? `Added ${new Date(item.createdAt).toLocaleString()}` : 'No timestamp'}
                     </p>
-                    <p className="text-sm text-base-content/70">Visibility: {item.isPublic ? 'Public' : 'Private'}</p>
+                    <p className="text-sm text-base-content/70">Visibility: {item.visibility?.public ? 'Public' : 'Private'}</p>
                   </div>
                   <div className="flex gap-2 flex-wrap">
                     <button
@@ -285,7 +250,7 @@ function CollectionsPage() {
                       onClick={() => {
                         const newName = prompt('New item name:', item.name)
                         if (newName) {
-                          editItem(item.id, newName)
+                          handleEditItem(item.id, newName)
                         }
                       }}
                     >
@@ -293,11 +258,11 @@ function CollectionsPage() {
                     </button>
                     <button
                       className="btn btn-sm btn-secondary"
-                      onClick={() => toggleItemVisibility(item.id, !!item.isPublic)}
+                      onClick={() => handleToggleItemVisibility(item.id, !!item.visibility?.public)}
                     >
-                      {item.isPublic ? 'Make Private' : 'Make Public'}
+                      {item.visibility?.public ? 'Make Private' : 'Make Public'}
                     </button>
-                    <button className="btn btn-sm btn-error" onClick={() => deleteItem(item.id)}>
+                    <button className="btn btn-sm btn-error" onClick={() => handleDeleteItem(item.id)}>
                       Delete
                     </button>
                   </div>

@@ -1,92 +1,84 @@
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where } from 'firebase/firestore'
 import { useState, useEffect } from 'react'
-import { type FirebaseApp } from 'firebase/app'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { getIsAdmin } from '../lib/firebase'
+import {
+  useGetAllItemsQuery,
+  useGetUserItemsQuery,
+  useCreateItemMutation,
+  useUpdateItemMutation,
+  useDeleteItemMutation,
+} from '../services/firestoreApi'
 
 interface ItemsProps {
-  app: FirebaseApp
+  app: any // FirebaseApp type not needed since we're not using direct Firebase calls
 }
 
 function Items({ app }: ItemsProps) {
-  const db = getFirestore(app)
   const auth = getAuth(app)
 
   const [user, setUser] = useState<User | null>(null)
   const [name, setName] = useState('')
-  const [items, setItems] = useState<{ id: string; name: string; userId: string }[]>([])
   const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser)
       if (currentUser) {
-        getIsAdmin().then((admin) => {
-          setIsAdmin(admin)
-          fetchItems(currentUser, admin)
-        })
-      } else {
-        setItems([])
+        getIsAdmin().then(setIsAdmin)
       }
     })
     return unsubscribe
   }, [auth])
 
-  const addItem = async () => {
+  // RTK Query hooks
+  const { data: allItems = [], isLoading: loadingAllItems, error: allItemsError } = useGetAllItemsQuery(undefined, {
+    skip: !user || !isAdmin,
+  })
+
+  const { data: userItems = [], isLoading: loadingUserItems, error: userItemsError } = useGetUserItemsQuery(user?.uid || '', {
+    skip: !user || isAdmin,
+  })
+
+  const [createItem, { isLoading: isCreatingItem }] = useCreateItemMutation()
+  const [updateItem] = useUpdateItemMutation()
+  const [deleteItem] = useDeleteItemMutation()
+
+  const items = isAdmin ? allItems : userItems
+  const isLoading = isAdmin ? loadingAllItems : loadingUserItems
+  const error = isAdmin ? allItemsError : userItemsError
+
+  const handleAddItem = async () => {
     if (!user || !name.trim()) return
 
     try {
-      await addDoc(collection(db, 'items'), {
-        name,
+      await createItem({
+        name: name.trim(),
         userId: user.uid,
         collectionId: '',
         visibility: { public: false },
-        createdAt: new Date(),
-      })
+      }).unwrap()
       setName('')
-      if (user) fetchItems(user, isAdmin)
     } catch (error) {
       console.error('Error adding item:', error)
     }
   }
 
-  const fetchItems = async (currentUser: User, adminMode = false) => {
+  const handleDeleteItem = async (itemId: string) => {
     try {
-      const itemsQuery = adminMode
-        ? collection(db, 'items')
-        : query(collection(db, 'items'), where('userId', '==', currentUser.uid))
-
-      const querySnapshot = await getDocs(itemsQuery)
-      const fetchedItems = querySnapshot.docs.map((docSnap) => ({
-        id: docSnap.id,
-        name: docSnap.data().name as string,
-        userId: docSnap.data().userId as string,
-      }))
-      setItems(fetchedItems)
-    } catch (error) {
-      console.error('Error fetching items:', error)
-    }
-  }
-
-  const deleteItem = async (itemId: string) => {
-    if (!user) return
-
-    try {
-      const itemRef = doc(db, 'items', itemId)
-      await deleteDoc(itemRef)
-      if (user) fetchItems(user, isAdmin)
+      await deleteItem(itemId).unwrap()
     } catch (error) {
       console.error('Error deleting item:', error)
     }
   }
 
-  const editItem = async (itemId: string, newName: string) => {
-    if (!user || !newName.trim()) return
+  const handleEditItem = async (itemId: string, newName: string) => {
+    if (!newName.trim()) return
 
     try {
-      const itemRef = doc(db, 'items', itemId)
-      await updateDoc(itemRef, { name: newName })
-      if (user) fetchItems(user, isAdmin)
+      await updateItem({
+        id: itemId,
+        updates: { name: newName.trim() },
+      }).unwrap()
     } catch (error) {
       console.error('Error updating item:', error)
     }
@@ -120,15 +112,26 @@ function Items({ app }: ItemsProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter item name"
+              disabled={isCreatingItem}
             />
-            <button className="btn btn-primary" onClick={addItem}>
-              Add Item
+            <button
+              className="btn btn-primary"
+              onClick={handleAddItem}
+              disabled={isCreatingItem || !name.trim()}
+            >
+              {isCreatingItem ? 'Adding...' : 'Add Item'}
             </button>
           </div>
         </div>
 
         <div className="space-y-3">
-          {items.length === 0 ? (
+          {error ? (
+            <div className="alert alert-error">
+              <span>Error loading items: {(error as Error).message || 'Unknown error'}</span>
+            </div>
+          ) : isLoading ? (
+            <div className="alert alert-info">Loading items...</div>
+          ) : items.length === 0 ? (
             <div className="alert alert-info">No items found.</div>
           ) : (
             items.map((item) => (
@@ -142,12 +145,12 @@ function Items({ app }: ItemsProps) {
                     className="btn btn-sm btn-outline"
                     onClick={() => {
                       const newName = prompt('New name:', item.name)
-                      if (newName) editItem(item.id, newName)
+                      if (newName) handleEditItem(item.id, newName)
                     }}
                   >
                     Edit
                   </button>
-                  <button className="btn btn-sm btn-error" onClick={() => deleteItem(item.id)}>
+                  <button className="btn btn-sm btn-error" onClick={() => handleDeleteItem(item.id)}>
                     Delete
                   </button>
                 </div>
