@@ -1,21 +1,31 @@
-import { initializeApp } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyAsjk2rCYAaGCKiz7MlmaVKgWBv-Bv8mhc',
-  authDomain: 'retro-collection-495607.firebaseapp.com',
-  projectId: 'retro-collection-495607',
-  storageBucket: 'retro-collection-495607.firebasestorage.app',
-  messagingSenderId: '889686178738',
-  appId: '1:889686178738:web:29169f0addd82a3d9f42ab',
-}
+  apiKey: "AIzaSyAsjk2rCYAaGCKiz7MlmaVKgWBv-Bv8mhc",
+  authDomain: "retro-collection-495607.firebaseapp.com",
+  projectId: "retro-collection-495607",
+  storageBucket: "retro-collection-495607.firebasestorage.app",
+  messagingSenderId: "889686178738",
+  appId: "1:889686178738:web:29169f0addd82a3d9f42ab",
+};
 
-const app = initializeApp(firebaseConfig)
-const auth = getAuth(app)
-const db = getFirestore(app)
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL
+// Init Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-const isAdminEmail = (email?: string | null) => email === ADMIN_EMAIL
+/**
+ * Check admin via custom claims (REAL SOURCE OF TRUTH)
+ */
+const getIsAdmin = async () => {
+  const user = auth.currentUser;
+  if (!user) return false;
 
-export { app, auth, db, ADMIN_EMAIL, isAdminEmail }
+  const token = await user.getIdTokenResult(true);
+  return token.claims.admin === true;
+};
+
+
+export { app, auth, db, getIsAdmin };

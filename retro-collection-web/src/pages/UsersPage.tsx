@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { onAuthStateChanged, type User } from 'firebase/auth'
 import { collection, getDocs } from 'firebase/firestore'
-import { auth, db, ADMIN_EMAIL } from '../lib/firebase'
+import { auth, db, getIsAdmin } from '../lib/firebase'
 
 interface UserRecord {
   id: string
@@ -14,6 +14,7 @@ function UsersPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [users, setUsers] = useState<UserRecord[]>([])
   const [loading, setLoading] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -23,8 +24,13 @@ function UsersPage() {
   }, [])
 
   useEffect(() => {
-    if (currentUser?.email === ADMIN_EMAIL) {
-      fetchUsers()
+    if (currentUser) {
+      getIsAdmin().then((isAdmin) => {
+        setIsAdmin(isAdmin);
+        if (isAdmin) {
+          fetchUsers()
+        }
+      })
     }
   }, [currentUser])
 
@@ -58,7 +64,7 @@ function UsersPage() {
     )
   }
 
-  if (currentUser.email !== ADMIN_EMAIL) {
+  if (!isAdmin) {
     return (
       <div className="card bg-base-100 shadow-xl">
         <div className="card-body">

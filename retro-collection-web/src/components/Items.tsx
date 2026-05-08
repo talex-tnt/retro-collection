@@ -2,12 +2,10 @@ import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, c
 import { useState, useEffect } from 'react'
 import { type FirebaseApp } from 'firebase/app'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
-
+import { getIsAdminSync } from '../lib/firebase'
 interface ItemsProps {
   app: FirebaseApp
 }
-
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'talex.tnt@gmail.com'
 
 function Items({ app }: ItemsProps) {
   const db = getFirestore(app)
@@ -16,13 +14,13 @@ function Items({ app }: ItemsProps) {
   const [user, setUser] = useState<User | null>(null)
   const [name, setName] = useState('')
   const [items, setItems] = useState<{ id: string; name: string; userId: string }[]>([])
-
-  const isAdmin = (email?: string | null) => email === ADMIN_EMAIL
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser)
       if (currentUser) {
+        setIsAdmin(getIsAdminSync(currentUser.email))
         fetchItems(currentUser)
       } else {
         setItems([])
@@ -30,6 +28,7 @@ function Items({ app }: ItemsProps) {
     })
     return unsubscribe
   }, [auth])
+
 
   const addItem = async () => {
     if (!user || !name.trim()) return

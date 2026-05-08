@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react'
 import { onAuthStateChanged, type User } from 'firebase/auth'
 import Admin from '../components/Admin'
-import { auth, ADMIN_EMAIL } from '../lib/firebase'
+import { auth, getIsAdmin } from '../lib/firebase'
 
 function AdminPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user)
+      if (user) {
+        getIsAdmin().then((admin) => setIsAdmin(admin))
+      } else {
+        setIsAdmin(false)
+      }
     })
     return unsubscribe
   }, [])
@@ -24,7 +30,7 @@ function AdminPage() {
     )
   }
 
-  if (currentUser.email !== ADMIN_EMAIL) {
+  if (!isAdmin) {
     return (
       <div className="card bg-base-100 shadow-xl">
         <div className="card-body">

@@ -9,9 +9,14 @@ import {
   type User,
 } from 'firebase/auth'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
-import { auth, db, ADMIN_EMAIL } from '../lib/firebase'
+import { auth, db, getIsAdmin } from '../lib/firebase'
+
+// const token = await auth.currentUser.getIdTokenResult();
+
+// console.log(token.claims);
 
 function AuthPanel() {
+
   const [user, setUser] = useState<User | null>(null)
   const [error, setError] = useState<string>('')
   const provider = new GoogleAuthProvider()
@@ -24,7 +29,7 @@ function AuthPanel() {
   }, [])
 
   const isUserAuthorized = async (email: string): Promise<boolean> => {
-    if (email === ADMIN_EMAIL) {
+    if (await getIsAdmin()) {
       return true
     }
 
@@ -65,7 +70,11 @@ function AuthPanel() {
         { merge: true },
       )
 
-      console.log('Login successful:', user.displayName)
+      console.log('Login successful:', user)
+      const tokenResult = await user.getIdTokenResult();
+
+      console.log(tokenResult.claims);
+
     } catch (error) {
       console.error('Login error:', error)
       setError('Login failed. Please try again.')

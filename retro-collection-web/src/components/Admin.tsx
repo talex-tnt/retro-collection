@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { onAuthStateChanged, type User } from 'firebase/auth'
 import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore'
-import { auth, db, ADMIN_EMAIL } from '../lib/firebase'
+import { auth, db, getIsAdmin } from '../lib/firebase'
 
 function Admin() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
@@ -9,16 +9,27 @@ function Admin() {
   const [newEmail, setNewEmail] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user)
-      if (user?.email === ADMIN_EMAIL) {
-        fetchAuthorizedUsers()
+      if (user) {
+        getIsAdmin().then((isAdmin) => {
+          if (isAdmin) {
+            fetchAuthorizedUsers()
+          }
+        })
       }
     })
     return unsubscribe
   }, [])
+
+  useEffect(() => {
+    if (currentUser) {
+      getIsAdmin().then(setIsAdmin)
+    }
+  }, [currentUser])
 
   const fetchAuthorizedUsers = async () => {
     try {
@@ -62,8 +73,7 @@ function Admin() {
       setError('Failed to remove user')
     }
   }
-
-  if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
+  if (!currentUser || !isAdmin) {
     return null
   }
 
@@ -73,7 +83,7 @@ function Admin() {
         <h2 className="card-title">Admin Panel</h2>
         <p>Manage authorized users</p>
         <p className="text-sm text-base-content/70">
-          Admin email: <strong>{ADMIN_EMAIL}</strong>
+          Admin email: <strong>{currentUser?.email}</strong>
         </p>
 
         {error && <div className="alert alert-error shadow-lg">{error}</div>}

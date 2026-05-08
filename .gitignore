@@ -1,1 +1,4 @@
 retro-collection-web/.env
+firebase-admin/retro-collection-*.json
+firebase-admin/.agents/skills
+firebase-admin/serviceAccountKey.json
