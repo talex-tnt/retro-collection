@@ -1,0 +1,51 @@
+name: Build and Deploy Retro Collections
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+
+      - name: Define basename variable
+        run: echo "basename=retro-collections-develop" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        working-directory: retro-collections-web
+        run: npm ci
+
+      - name: Build project
+        working-directory: retro-collections-web
+        run: |
+          BASE_PATH="/${{ env.basename }}/" npm run build
+
+      - name: Clone GitHub Pages repo
+        run: |
+          git clone https://x-access-token:${{ secrets.GH_PAGES_TOKEN }}@github.com/talex-tnt/talex-tnt.github.io.git gh-pages-repo
+          cd gh-pages-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Copy build to GitHub Pages repo
+        run: |
+          rm -rf gh-pages-repo/${{ env.basename }}
+          mkdir -p gh-pages-repo/${{ env.basename }}
+          cp -r retro-collections-web/dist/* gh-pages-repo/${{ env.basename }}/
+
+      - name: Commit and push
+        run: |
+          cd gh-pages-repo
+          git add ${{ env.basename }}
+          git commit -m "Deploy ${{ env.basename }} from source [ci skip]" || echo "No changes to commit"
+          git push

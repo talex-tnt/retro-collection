@@ -8,7 +8,7 @@ import MyCollectionsPage from '../pages/MyCollectionsPage'
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <div className="min-h-screen bg-base-200 text-base-content">
         <div className="mx-auto max-w-6xl space-y-8 px-4 py-8">
           <div className="mx-auto max-w-3xl text-center">

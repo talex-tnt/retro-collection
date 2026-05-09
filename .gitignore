@@ -1,3 +1,4 @@
 firebase-admin/retro-collections-*.json
 firebase-admin/.agents/skills
 firebase-admin/serviceAccountKey.json
+.DS_Store
