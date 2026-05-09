@@ -40,6 +40,6 @@ jobs:
         run: |
           BASE_PATH="/${{ env.basename }}/" npm run build
 
-      - name: Deploy Firebase (FULL)
+      - name: Deploy Firebase
         run: |
-          npm run deploy:ci -- --token ${{ secrets.FIREBASE_TOKEN }}
+          cd firebase-admin && npm run deploy:ci -- --token ${{ secrets.FIREBASE_TOKEN }}
