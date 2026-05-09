@@ -5,12 +5,12 @@ import { getFirestore } from "firebase/firestore";
 const env = import.meta.env.VITE_ENV;
 
 const firebaseConfigProd = {
-  apiKey: "AIzaSyAsjk2rCYAaGCKiz7MlmaVKgWBv-Bv8mhc",
-  authDomain: "retro-collection-495607.firebaseapp.com",
-  projectId: "retro-collection-495607",
-  storageBucket: "retro-collection-495607.firebasestorage.app",
-  messagingSenderId: "889686178738",
-  appId: "1:889686178738:web:29169f0addd82a3d9f42ab",
+  apiKey: "AIzaSyCD8zIM4SOBkLIzzLpZuagq688BwXfohDg",
+  authDomain: "retro-collections-prod.firebaseapp.com",
+  projectId: "retro-collections-prod",
+  storageBucket: "retro-collections-prod.firebasestorage.app",
+  messagingSenderId: "509856353620",
+  appId: "1:509856353620:web:6bac6b42759eb94a4e0cc1"
 };
 const firebaseConfigDev = {
   apiKey: "AIzaSyB4YnIk0kbBTKDiHOgXpVOaYIxLdchItzQ",

@@ -3,7 +3,7 @@
     "login": "firebase login",
     "deploy:firestore": "dotenv -e .env -- sh -c 'firebase deploy --only firestore --project=$ENV'",
     "deploy:indexes": "dotenv -e .env -- sh -c 'firebase deploy --only firestore:indexes --project=$ENV'",
-    "deploy": "dotenv -e .env -- sh -c 'firebase deploy --project=$ENV'",
+    "deploy": "dotenv -e .env -- sh -c 'echo $ENV && firebase deploy --project=$ENV'",
     "set-admin": "node set-admin.mjs"
   },
   "dependencies": {
