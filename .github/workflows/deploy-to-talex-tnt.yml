@@ -31,7 +31,7 @@ jobs:
             echo "basename=retro-collections-develop" >> $GITHUB_ENV
           fi
 
-      - name: Install dependencies
+      - name: Install Frontend dependencies
         working-directory: retro-collections-web
         run: npm ci
 
@@ -40,6 +40,10 @@ jobs:
         run: |
           BASE_PATH="/${{ env.basename }}/" npm run build
 
+      - name: Install Firebase dependencies
+        working-directory: firebase-admin
+        run: npm ci
+
       - name: Deploy Firebase
-        run: |
-          cd firebase-admin && npm run deploy:ci -- --token ${{ secrets.FIREBASE_TOKEN }}
+        working-directory: firebase-admin
+        run: npm run deploy:ci -- --token ${{ secrets.FIREBASE_TOKEN }}
