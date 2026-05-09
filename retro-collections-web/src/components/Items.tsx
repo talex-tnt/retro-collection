@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { getIsAdmin } from '../lib/firebase'
+import type { FirebaseApp } from 'firebase/app'
+
 import {
   useGetAllItemsQuery,
   useGetUserItemsQuery,
@@ -10,7 +12,7 @@ import {
 } from '../services/firestoreApi'
 
 interface ItemsProps {
-  app: any // FirebaseApp type not needed since we're not using direct Firebase calls
+  app: FirebaseApp
 }
 
 function Items({ app }: ItemsProps) {

@@ -1,10 +1,10 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Navigation from './Navigation'
-import AuthPanel from './User'
+import Navigation from '../components/Navigation'
+import AuthPanel from '../components/User'
 import HomePage from '../pages/HomePage'
 import AdminPage from '../pages/AdminPage'
 import UsersPage from '../pages/UsersPage'
-import CollectionsPage from '../pages/CollectionsPage'
+import MyCollectionsPage from '../pages/MyCollectionsPage'
 
 function App() {
   return (
@@ -22,9 +22,9 @@ function App() {
             <div className="space-y-6">
               <Routes>
                 <Route path="/" element={<HomePage />} />
-                <Route path="/admin" element={<AdminPage />} />
+                <Route path="/my-collections" element={<MyCollectionsPage />} />
                 <Route path="/users" element={<UsersPage />} />
-                <Route path="/collections" element={<CollectionsPage />} />
+                <Route path="/admin" element={<AdminPage />} />
               </Routes>
             </div>
             <div>

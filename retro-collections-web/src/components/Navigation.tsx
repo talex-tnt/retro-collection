@@ -6,14 +6,14 @@ function Navigation() {
       <NavLink end to="/" className={({ isActive }) => (isActive ? 'tab tab-active' : 'tab')}>
         Home
       </NavLink>
-      <NavLink to="/admin" className={({ isActive }) => (isActive ? 'tab tab-active' : 'tab')}>
-        Admin
+       <NavLink to="/my-collections" className={({ isActive }) => (isActive ? 'tab tab-active' : 'tab')}>
+        My Collections
       </NavLink>
       <NavLink to="/users" className={({ isActive }) => (isActive ? 'tab tab-active' : 'tab')}>
         Users
       </NavLink>
-      <NavLink to="/collections" className={({ isActive }) => (isActive ? 'tab tab-active' : 'tab')}>
-        Collections
+      <NavLink to="/admin" className={({ isActive }) => (isActive ? 'tab tab-active' : 'tab')}>
+        Admin
       </NavLink>
     </nav>
   )

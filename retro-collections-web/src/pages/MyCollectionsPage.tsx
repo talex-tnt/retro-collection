@@ -16,7 +16,7 @@ interface CollectionRecord {
   createdAt: string
 }
 
-function CollectionsPage() {
+function MyCollectionsPage() {
   const [user, setUser] = useState<User | null>(null)
   const [selectedCollection, setSelectedCollection] = useState<CollectionRecord | null>(null)
   const [collectionName, setCollectionName] = useState('')
@@ -121,7 +121,7 @@ function CollectionsPage() {
     return (
       <div className="card bg-base-100 shadow-xl">
         <div className="card-body">
-          <h2 className="card-title">Collections</h2>
+          <h2 className="card-title">My Collections</h2>
           <p>Please log in to manage your collections and items.</p>
         </div>
       </div>
@@ -276,4 +276,4 @@ function CollectionsPage() {
   )
 }
 
-export default CollectionsPage
+export default MyCollectionsPage
