@@ -1,10 +1,29 @@
 const admin = require('firebase-admin');
 const fs = require('fs');
-if (!fs.existsSync('./serviceAccountKey.json')) {
-  console.error('no key');
+
+
+
+const env = process.env.ENV;
+
+let key = null;
+
+if (env === "dev") {
+  console.log("Using dev service account");
+
+  key = JSON.parse(
+    fs.readFileSync("./retro-collections-dev.json", "utf8")
+  );
+} else if (env === "prod") {
+  console.log("Using prod service account");
+
+  key = JSON.parse(
+    fs.readFileSync("./retro-collections-prod.json", "utf8")
+  );
+} else {
+  console.error("Invalid ENV value. Must be 'dev' or 'prod'.");
   process.exit(1);
 }
-const key = require('./serviceAccountKey.json');
+
 admin.initializeApp({ credential: admin.credential.cert(key) });
 const db = admin.firestore();
 (async () => {

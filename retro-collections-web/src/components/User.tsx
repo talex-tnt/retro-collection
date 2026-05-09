@@ -56,7 +56,7 @@ function AuthPanel() {
         await signOut(auth)
         setError(`Access denied. User ${email} is not authorized.`)
         setUser(null)
-        console.log('Login rejected: user not in whitelist')
+        console.log('Login rejected: user not in whitelist', user)
         return
       }
 

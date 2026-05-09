@@ -1,6 +1,29 @@
 const fs = require('fs');
 const crypto = require('crypto');
-const key = require('./serviceAccountKey.json');
+
+
+const env = process.env.ENV;
+
+let key = null;
+
+if (env === "dev") {
+  console.log("Using dev service account");
+
+  key = JSON.parse(
+    fs.readFileSync("./retro-collections-dev.json", "utf8")
+  );
+} else if (env === "prod") {
+  console.log("Using prod service account");
+
+  key = JSON.parse(
+    fs.readFileSync("./retro-collections-prod.json", "utf8")
+  );
+} else {
+  console.error("Invalid ENV value. Must be 'dev' or 'prod'.");
+  process.exit(1);
+}
+
+
 const header = { alg: 'RS256', typ: 'JWT' };
 const now = Math.floor(Date.now() / 1000);
 const claimSet = {
