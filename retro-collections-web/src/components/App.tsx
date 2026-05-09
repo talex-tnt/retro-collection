@@ -12,7 +12,7 @@ function App() {
       <div className="min-h-screen bg-base-200 text-base-content">
         <div className="mx-auto max-w-6xl space-y-8 px-4 py-8">
           <div className="mx-auto max-w-3xl text-center">
-            <h1 className="text-4xl font-bold">Retro Collection</h1>
+            <h1 className="text-4xl font-bold">Retro Collections</h1>
             <p className="mt-2 text-base-content/70">Manage admin, users, and collections with Firebase + DaisyUI.</p>
           </div>
 

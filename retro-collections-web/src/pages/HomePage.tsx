@@ -3,7 +3,7 @@ function HomePage() {
     <div className="space-y-6">
       <div className="card bg-base-100 shadow-xl">
         <div className="card-body">
-          <h2 className="card-title">Welcome to Retro Collection</h2>
+          <h2 className="card-title">Welcome to Retro Collections</h2>
           <p className="text-base-content/70">Use the navigation tabs to manage admin access, browse registered users, or organize your collections and items.</p>
         </div>
       </div>
