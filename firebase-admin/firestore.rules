@@ -63,19 +63,19 @@ service cloud.firestore {
         (!('updatedAt' in data) || data.updatedAt is timestamp);
     }
 
-    function isCollectionQueryForCurrentUser() {
-      return (request.query.where.size() == 1 &&
-        request.query.where[0].field == 'userId' &&
-        request.query.where[0].value == request.auth.uid) ||
-        request.query.where.size() == 0;
-    }
+    // function isCollectionQueryForCurrentUser() {
+    //   return (request.query.where.size() == 1 &&
+    //     request.query.where[0].field == 'userId' &&
+    //     request.query.where[0].value == request.auth.uid) ||
+    //     request.query.where.size() == 0;
+    // }
 
-    function isItemsQueryForOwnedCollection() {
-      return (request.query.where.size() == 1 &&
-        request.query.where[0].field == 'collectionId' &&
-        get(/databases/$(database)/documents/collections/$(request.query.where[0].value)).data.userId == request.auth.uid) ||
-        request.query.where.size() == 0;
-    }
+    // function isItemsQueryForOwnedCollection() {
+    //   return (request.query.where.size() == 1 &&
+    //     request.query.where[0].field == 'collectionId' &&
+    //     get(/databases/$(database)/documents/collections/$(request.query.where[0].value)).data.userId == request.auth.uid) ||
+    //     request.query.where.size() == 0;
+    // }
 
     match /authorized-users/{email} {
       allow read: if true;
@@ -92,7 +92,7 @@ service cloud.firestore {
 
     match /collections/{collectionId} {
       allow get: if resource.data.userId == request.auth.uid || isAdmin();
-      allow list: if isAdmin() || (isAuthenticated() && isCollectionQueryForCurrentUser());
+      allow list: if isAdmin() || isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
         request.resource.data.keys().hasAll(['name', 'userId', 'createdAt']) && validCollection(request.resource.data, request.auth.uid);
       allow update: if (isOwner(resource.data.userId) && validCollectionUpdate(request.resource.data, request.auth.uid)) || isAdmin();
@@ -101,7 +101,7 @@ service cloud.firestore {
 
     match /items/{itemId} {
       allow get: if isAdmin() || resource.data.userId == request.auth.uid || (resource.data.visibility.public == true);
-      allow list: if isAdmin() || (isAuthenticated() && isItemsQueryForOwnedCollection());
+      allow list: if isAdmin() || isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
         request.resource.data.keys().hasAll(['name', 'userId', 'collectionId', 'createdAt']) && validItem(request.resource.data, request.auth.uid) &&
         exists(/databases/$(database)/documents/collections/$(request.resource.data.collectionId)) &&
