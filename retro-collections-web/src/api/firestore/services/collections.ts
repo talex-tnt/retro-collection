@@ -8,6 +8,7 @@ import {
   query,
   where,
   orderBy,
+  serverTimestamp,
   Timestamp,
   type QueryDocumentSnapshot,
   type DocumentData,
@@ -44,16 +45,6 @@ type FirestoreBuilder = EndpointBuilder<
   'firestoreApi'
 >;
 
-const serializeFirestoreData = (
-  data: FirestoreCollectionDoc
-): Omit<Collection, 'id'> => ({
-  ...data,
-
-  createdAt: data.createdAt.toDate().toISOString(),
-
-  updatedAt: data.updatedAt?.toDate().toISOString(),
-});
-
 const mapCollectionDoc = (
   snapshot: QueryDocumentSnapshot<DocumentData>
 ): Collection => {
@@ -61,21 +52,24 @@ const mapCollectionDoc = (
 
   return {
     id: snapshot.id,
-    ...serializeFirestoreData(data),
+
+    name: data.name,
+    userId: data.userId,
+    description: data.description,
+
+    createdAt: data.createdAt?.toDate?.()?.toISOString(),
+    updatedAt: data.updatedAt?.toDate?.()?.toISOString(),
   };
 };
 
 const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
   getCollections: builder.query<Collection[], string>({
-    async queryFn(userId: string) {
+    async queryFn(userId) {
       try {
         const q = query(
           collection(db, 'collections'),
-
           where('userId', '==', userId),
-
           orderBy('createdAt', 'desc'),
-
           orderBy('__name__', 'asc')
         );
 
@@ -85,9 +79,7 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
           data: snapshot.docs.map(mapCollectionDoc),
         };
       } catch (error) {
-        return {
-          error,
-        };
+        return { error };
       }
     },
 
@@ -98,122 +90,73 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
               type: 'Collections' as const,
               id,
             })),
-
-            {
-              type: 'Collections' as const,
-              id: 'LIST',
-            },
+            { type: 'Collections' as const, id: 'LIST' },
           ]
-        : [
-            {
-              type: 'Collections' as const,
-              id: 'LIST',
-            },
-          ],
+        : [{ type: 'Collections' as const, id: 'LIST' }],
   }),
 
   createCollection: builder.mutation<Collection, CollectionInput>({
-    async queryFn(collectionData: CollectionInput) {
+    async queryFn(collectionData) {
       try {
-        const now = new Date();
-
         const docRef = await addDoc(collection(db, 'collections'), {
           ...collectionData,
-
-          createdAt: Timestamp.fromDate(now),
-
-          updatedAt: Timestamp.fromDate(now),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         });
 
         return {
           data: {
             id: docRef.id,
-
             ...collectionData,
-
-            createdAt: now.toISOString(),
-
-            updatedAt: now.toISOString(),
+            createdAt: '',
+            updatedAt: '',
           },
         };
       } catch (error) {
-        return {
-          error,
-        };
+        return { error };
       }
     },
 
-    invalidatesTags: [
-      {
-        type: 'Collections' as const,
-        id: 'LIST',
-      },
-    ],
+    invalidatesTags: [{ type: 'Collections' as const, id: 'LIST' }],
   }),
 
   updateCollection: builder.mutation<
     void,
-    {
-      id: string;
-      updates: CollectionUpdate;
-    }
+    { id: string; updates: CollectionUpdate }
   >({
     async queryFn({ id, updates }) {
       try {
         await updateDoc(doc(db, 'collections', id), {
           ...updates,
-
-          updatedAt: Timestamp.now(),
+          updatedAt: serverTimestamp(),
         });
 
-        return {
-          data: undefined,
-        };
+        return { data: undefined };
       } catch (error) {
-        return {
-          error,
-        };
+        return { error };
       }
     },
 
-    invalidatesTags: (_result, _error, { id }) => [
-      {
-        type: 'Collections' as const,
-        id,
-      },
-
-      {
-        type: 'Collections' as const,
-        id: 'LIST',
-      },
+    invalidatesTags: (_r, _e, { id }) => [
+      { type: 'Collections' as const, id },
+      { type: 'Collections' as const, id: 'LIST' },
     ],
   }),
 
   deleteCollection: builder.mutation<void, string>({
-    async queryFn(id: string) {
+    async queryFn(id) {
       try {
         await deleteDoc(doc(db, 'collections', id));
 
-        return {
-          data: undefined,
-        };
+        return { data: undefined };
       } catch (error) {
-        return {
-          error,
-        };
+        return { error };
       }
     },
 
-    invalidatesTags: (_result, _error, id) => [
-      {
-        type: 'Collections' as const,
-        id,
-      },
-
-      {
-        type: 'Collections' as const,
-        id: 'LIST',
-      },
+    invalidatesTags: (_r, _e, id) => [
+      { type: 'Collections' as const, id },
+      { type: 'Collections' as const, id: 'LIST' },
     ],
   }),
 });

@@ -9,12 +9,6 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
-        ignoredActionPaths: [
-          'payload.createdAt',
-          'payload.updatedAt',
-          'meta.baseQueryMeta.request',
-          'meta.baseQueryMeta.response',
-        ],
         ignoredPaths: ['firestoreApi.queries'],
       },
     }).concat(firestoreApi.middleware),
