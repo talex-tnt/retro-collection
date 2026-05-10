@@ -11,7 +11,7 @@ import {
   orderBy,
   type DocumentData
 } from 'firebase/firestore'
-import { db } from '../lib/firebase'
+import { db } from '../../lib/firebase'
 
 // Helper function to convert Firestore data to serializable format
 const serializeFirestoreData = (data: DocumentData): any => {

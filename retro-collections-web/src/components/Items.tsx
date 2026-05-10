@@ -9,7 +9,7 @@ import {
   useCreateItemMutation,
   useUpdateItemMutation,
   useDeleteItemMutation,
-} from '../services/firestoreApi'
+} from '../services/firestore/firestoreApi'
 
 interface ItemsProps {
   app: FirebaseApp

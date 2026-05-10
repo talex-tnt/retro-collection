@@ -1,5 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit'
-import { firestoreApi } from '../services/firestoreApi'
+import { firestoreApi } from '../services/firestore/firestoreApi'
 
 export const store = configureStore({
   reducer: {
