@@ -11,112 +11,89 @@ import {
   Timestamp,
   type QueryDocumentSnapshot,
   type DocumentData,
-} from 'firebase/firestore'
+} from 'firebase/firestore';
 
-import type {
-  BaseQueryFn,
-  EndpointBuilder,
-} from '@reduxjs/toolkit/query'
+import type { BaseQueryFn, EndpointBuilder } from '@reduxjs/toolkit/query';
 
-import { db } from '../../../lib/firebase'
+import { db } from '../../../lib/firebase';
 
 export interface Item {
-  id: string
-  name: string
-  userId: string
-  collectionId: string
-  createdAt: string
-  updatedAt?: string
-  description?: string
+  id: string;
+  name: string;
+  userId: string;
+  collectionId: string;
+  createdAt: string;
+  updatedAt?: string;
+  description?: string;
 
   visibility?: {
-    public: boolean
-  }
+    public: boolean;
+  };
 }
 
-type ItemInput = Omit<
-  Item,
-  'id' | 'createdAt' | 'updatedAt'
->
+type ItemInput = Omit<Item, 'id' | 'createdAt' | 'updatedAt'>;
 
-type ItemUpdate = Partial<
-  Omit<Item, 'id' | 'createdAt'>
->
+type ItemUpdate = Partial<Omit<Item, 'id' | 'createdAt'>>;
 
 interface FirestoreItemDoc {
-  name: string
-  userId: string
-  collectionId: string
-  createdAt: Timestamp
-  updatedAt?: Timestamp
-  description?: string
+  name: string;
+  userId: string;
+  collectionId: string;
+  createdAt: Timestamp;
+  updatedAt?: Timestamp;
+  description?: string;
 
   visibility?: {
-    public: boolean
-  }
+    public: boolean;
+  };
 }
 
 type FirestoreBuilder = EndpointBuilder<
   BaseQueryFn,
   'Collections' | 'Items',
   'firestoreApi'
->
+>;
 
-const serializeFirestoreData = (
-  data: FirestoreItemDoc
-): Omit<Item, 'id'> => ({
+const serializeFirestoreData = (data: FirestoreItemDoc): Omit<Item, 'id'> => ({
   ...data,
 
-  createdAt: data.createdAt
-    .toDate()
-    .toISOString(),
+  createdAt: data.createdAt.toDate().toISOString(),
 
-  updatedAt: data.updatedAt
-    ?.toDate()
-    .toISOString(),
-})
+  updatedAt: data.updatedAt?.toDate().toISOString(),
+});
 
-const mapItemDoc = (
-  snapshot: QueryDocumentSnapshot<DocumentData>
-): Item => {
-  const data =
-    snapshot.data() as FirestoreItemDoc
+const mapItemDoc = (snapshot: QueryDocumentSnapshot<DocumentData>): Item => {
+  const data = snapshot.data() as FirestoreItemDoc;
 
   return {
     id: snapshot.id,
     ...serializeFirestoreData(data),
-  }
-}
+  };
+};
 
-const getItemsEndpoints = (
-  builder: FirestoreBuilder
-) => ({
+const getItemsEndpoints = (builder: FirestoreBuilder) => ({
   getItems: builder.query<Item[], string>({
     async queryFn(collectionId: string) {
       try {
         const q = query(
           collection(db, 'items'),
 
-          where(
-            'collectionId',
-            '==',
-            collectionId
-          ),
+          where('collectionId', '==', collectionId),
 
           orderBy('createdAt', 'desc'),
 
           orderBy('__name__', 'asc')
-        )
+        );
 
-        const snapshot = await getDocs(q)
+        const snapshot = await getDocs(q);
 
         return {
           data: snapshot.docs.map(mapItemDoc),
-        }
+        };
       } catch (error) {
         return {
           error,
-        }
+        };
       }
     },
 
@@ -150,17 +127,17 @@ const getItemsEndpoints = (
           orderBy('createdAt', 'desc'),
 
           orderBy('__name__', 'asc')
-        )
+        );
 
-        const snapshot = await getDocs(q)
+        const snapshot = await getDocs(q);
 
         return {
           data: snapshot.docs.map(mapItemDoc),
-        }
+        };
       } catch (error) {
         return {
           error,
-        }
+        };
       }
     },
 
@@ -172,10 +149,7 @@ const getItemsEndpoints = (
     ],
   }),
 
-  getUserItems: builder.query<
-    Item[],
-    string
-  >({
+  getUserItems: builder.query<Item[], string>({
     async queryFn(userId: string) {
       try {
         const q = query(
@@ -186,17 +160,17 @@ const getItemsEndpoints = (
           orderBy('createdAt', 'desc'),
 
           orderBy('__name__', 'asc')
-        )
+        );
 
-        const snapshot = await getDocs(q)
+        const snapshot = await getDocs(q);
 
         return {
           data: snapshot.docs.map(mapItemDoc),
-        }
+        };
       } catch (error) {
         return {
           error,
-        }
+        };
       }
     },
 
@@ -221,26 +195,18 @@ const getItemsEndpoints = (
           ],
   }),
 
-  createItem: builder.mutation<
-    Item,
-    ItemInput
-  >({
+  createItem: builder.mutation<Item, ItemInput>({
     async queryFn(itemData: ItemInput) {
       try {
-        const now = new Date()
+        const now = new Date();
 
-        const docRef = await addDoc(
-          collection(db, 'items'),
-          {
-            ...itemData,
+        const docRef = await addDoc(collection(db, 'items'), {
+          ...itemData,
 
-            createdAt:
-              Timestamp.fromDate(now),
+          createdAt: Timestamp.fromDate(now),
 
-            updatedAt:
-              Timestamp.fromDate(now),
-          }
-        )
+          updatedAt: Timestamp.fromDate(now),
+        });
 
         return {
           data: {
@@ -252,11 +218,11 @@ const getItemsEndpoints = (
 
             updatedAt: now.toISOString(),
           },
-        }
+        };
       } catch (error) {
         return {
           error,
-        }
+        };
       }
     },
 
@@ -271,36 +237,29 @@ const getItemsEndpoints = (
   updateItem: builder.mutation<
     void,
     {
-      id: string
-      updates: ItemUpdate
+      id: string;
+      updates: ItemUpdate;
     }
   >({
     async queryFn({ id, updates }) {
       try {
-        await updateDoc(
-          doc(db, 'items', id),
-          {
-            ...updates,
+        await updateDoc(doc(db, 'items', id), {
+          ...updates,
 
-            updatedAt: Timestamp.now(),
-          }
-        )
+          updatedAt: Timestamp.now(),
+        });
 
         return {
           data: undefined,
-        }
+        };
       } catch (error) {
         return {
           error,
-        }
+        };
       }
     },
 
-    invalidatesTags: (
-      _result,
-      _error,
-      { id }
-    ) => [
+    invalidatesTags: (_result, _error, { id }) => [
       {
         type: 'Items' as const,
         id,
@@ -313,31 +272,22 @@ const getItemsEndpoints = (
     ],
   }),
 
-  deleteItem: builder.mutation<
-    void,
-    string
-  >({
+  deleteItem: builder.mutation<void, string>({
     async queryFn(id: string) {
       try {
-        await deleteDoc(
-          doc(db, 'items', id)
-        )
+        await deleteDoc(doc(db, 'items', id));
 
         return {
           data: undefined,
-        }
+        };
       } catch (error) {
         return {
           error,
-        }
+        };
       }
     },
 
-    invalidatesTags: (
-      _result,
-      _error,
-      id
-    ) => [
+    invalidatesTags: (_result, _error, id) => [
       {
         type: 'Items' as const,
         id,
@@ -349,6 +299,6 @@ const getItemsEndpoints = (
       },
     ],
   }),
-})
+});
 
-export default getItemsEndpoints
+export default getItemsEndpoints;

@@ -1,10 +1,7 @@
-import {
-  createApi,
-  fakeBaseQuery,
-} from '@reduxjs/toolkit/query/react'
+import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 
-import getCollectionsEndpoints from './services/collections'
-import getItemsEndpoints from './services/items'
+import getCollectionsEndpoints from './services/collections';
+import getItemsEndpoints from './services/items';
 
 export const firestoreApi = createApi({
   reducerPath: 'firestoreApi',
@@ -17,7 +14,7 @@ export const firestoreApi = createApi({
     ...getCollectionsEndpoints(builder),
     ...getItemsEndpoints(builder),
   }),
-})
+});
 
 export const {
   useGetCollectionsQuery,
@@ -31,4 +28,4 @@ export const {
   useCreateItemMutation,
   useUpdateItemMutation,
   useDeleteItemMutation,
-} = firestoreApi
+} = firestoreApi;

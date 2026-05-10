@@ -1,80 +1,88 @@
-import { useState, useEffect } from 'react'
-import { onAuthStateChanged, type User } from 'firebase/auth'
-import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore'
-import { auth, db, getIsAdmin } from '../lib/firebase'
+import { useState, useEffect } from 'react';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import {
+  collection,
+  getDocs,
+  doc,
+  setDoc,
+  deleteDoc,
+} from 'firebase/firestore';
+import { auth, db, getIsAdmin } from '../lib/firebase';
 
 function Admin() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [authorizedUsers, setAuthorizedUsers] = useState<string[]>([])
-  const [newEmail, setNewEmail] = useState('')
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authorizedUsers, setAuthorizedUsers] = useState<string[]>([]);
+  const [newEmail, setNewEmail] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user)
+      setCurrentUser(user);
       if (user) {
         getIsAdmin().then((isAdmin) => {
           if (isAdmin) {
-            fetchAuthorizedUsers()
+            fetchAuthorizedUsers();
           }
-        })
+        });
       }
-    })
-    return unsubscribe
-  }, [])
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     if (currentUser) {
-      getIsAdmin().then(setIsAdmin)
+      getIsAdmin().then(setIsAdmin);
     }
-  }, [currentUser])
+  }, [currentUser]);
 
   const fetchAuthorizedUsers = async () => {
     try {
-      const snapshot = await getDocs(collection(db, 'authorized-users'))
-      const emails = snapshot.docs.map((doc) => doc.id)
-      setAuthorizedUsers(emails)
+      const snapshot = await getDocs(collection(db, 'authorized-users'));
+      const emails = snapshot.docs.map((doc) => doc.id);
+      setAuthorizedUsers(emails);
     } catch (error) {
-      console.error('Error fetching authorized users:', error)
-      setError('Failed to load authorized users')
+      console.error('Error fetching authorized users:', error);
+      setError('Failed to load authorized users');
     }
-  }
+  };
 
   const addAuthorizedUser = async () => {
     if (!newEmail.trim()) {
-      setError('Please enter an email')
-      return
+      setError('Please enter an email');
+      return;
     }
 
     try {
-      setError('')
-      setSuccess('')
-      await setDoc(doc(db, 'authorized-users', newEmail), { addedAt: new Date() })
-      setNewEmail('')
-      setSuccess(`${newEmail} added successfully`)
-      fetchAuthorizedUsers()
+      setError('');
+      setSuccess('');
+      await setDoc(doc(db, 'authorized-users', newEmail), {
+        addedAt: new Date(),
+      });
+      setNewEmail('');
+      setSuccess(`${newEmail} added successfully`);
+      fetchAuthorizedUsers();
     } catch (error) {
-      console.error('Error adding user:', error)
-      setError('Failed to add user')
+      console.error('Error adding user:', error);
+      setError('Failed to add user');
     }
-  }
+  };
 
   const removeAuthorizedUser = async (email: string) => {
     try {
-      setError('')
-      setSuccess('')
-      await deleteDoc(doc(db, 'authorized-users', email))
-      setSuccess(`${email} removed successfully`)
-      fetchAuthorizedUsers()
+      setError('');
+      setSuccess('');
+      await deleteDoc(doc(db, 'authorized-users', email));
+      setSuccess(`${email} removed successfully`);
+      fetchAuthorizedUsers();
     } catch (error) {
-      console.error('Error removing user:', error)
-      setError('Failed to remove user')
+      console.error('Error removing user:', error);
+      setError('Failed to remove user');
     }
-  }
+  };
   if (!currentUser || !isAdmin) {
-    return null
+    return null;
   }
 
   return (
@@ -87,7 +95,9 @@ function Admin() {
         </p>
 
         {error && <div className="alert alert-error shadow-lg">{error}</div>}
-        {success && <div className="alert alert-success shadow-lg">{success}</div>}
+        {success && (
+          <div className="alert alert-success shadow-lg">{success}</div>
+        )}
 
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-4">
@@ -107,15 +117,23 @@ function Admin() {
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Authorized Users ({authorizedUsers.length})</h3>
+            <h3 className="text-lg font-semibold">
+              Authorized Users ({authorizedUsers.length})
+            </h3>
             {authorizedUsers.length === 0 ? (
               <div className="alert alert-info">No authorized users yet</div>
             ) : (
               <div className="space-y-2">
                 {authorizedUsers.map((email) => (
-                  <div key={email} className="flex flex-col gap-2 rounded-lg border border-base-300 bg-base-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div
+                    key={email}
+                    className="flex flex-col gap-2 rounded-lg border border-base-300 bg-base-200 p-4 sm:flex-row sm:items-center sm:justify-between"
+                  >
                     <span>{email}</span>
-                    <button className="btn btn-error btn-sm" onClick={() => removeAuthorizedUser(email)}>
+                    <button
+                      className="btn btn-error btn-sm"
+                      onClick={() => removeAuthorizedUser(email)}
+                    >
                       Remove
                     </button>
                   </div>
@@ -126,7 +144,7 @@ function Admin() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Admin
+export default Admin;

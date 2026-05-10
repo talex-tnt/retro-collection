@@ -1,10 +1,10 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Navigation from '../components/Navigation'
-import AuthPanel from '../components/User'
-import HomePage from '../pages/HomePage'
-import AdminPage from '../pages/AdminPage'
-import UsersPage from '../pages/UsersPage'
-import MyCollectionsPage from '../pages/MyCollectionsPage'
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Navigation from '../components/Navigation';
+import AuthPanel from '../components/User';
+import HomePage from '../pages/HomePage';
+import AdminPage from '../pages/AdminPage';
+import UsersPage from '../pages/UsersPage';
+import MyCollectionsPage from '../pages/MyCollectionsPage';
 
 function App() {
   return (
@@ -13,7 +13,9 @@ function App() {
         <div className="mx-auto max-w-6xl space-y-8 px-4 py-8">
           <div className="mx-auto max-w-3xl text-center">
             <h1 className="text-4xl font-bold">Retro Collections</h1>
-            <p className="mt-2 text-base-content/70">Manage admin, users, and collections with Firebase + DaisyUI.</p>
+            <p className="mt-2 text-base-content/70">
+              Manage admin, users, and collections with Firebase + DaisyUI.
+            </p>
           </div>
 
           <Navigation />
@@ -34,7 +36,7 @@ function App() {
         </div>
       </div>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

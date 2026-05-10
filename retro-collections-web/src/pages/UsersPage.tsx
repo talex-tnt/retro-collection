@@ -1,57 +1,59 @@
-import { useEffect, useState } from 'react'
-import { onAuthStateChanged, type User } from 'firebase/auth'
-import { collection, getDocs } from 'firebase/firestore'
-import { auth, db, getIsAdmin } from '../lib/firebase'
+import { useEffect, useState } from 'react';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import { collection, getDocs } from 'firebase/firestore';
+import { auth, db, getIsAdmin } from '../lib/firebase';
 
 interface UserRecord {
-  id: string
-  name?: string
-  email?: string
-  lastLogin?: string
+  id: string;
+  name?: string;
+  email?: string;
+  lastLogin?: string;
 }
 
 function UsersPage() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [users, setUsers] = useState<UserRecord[]>([])
-  const [loading, setLoading] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<UserRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user)
-    })
-    return unsubscribe
-  }, [])
+      setCurrentUser(user);
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     if (currentUser) {
       getIsAdmin().then((isAdmin) => {
         setIsAdmin(isAdmin);
         if (isAdmin) {
-          fetchUsers()
+          fetchUsers();
         }
-      })
+      });
     }
-  }, [currentUser])
+  }, [currentUser]);
 
   const fetchUsers = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const snapshot = await getDocs(collection(db, 'users'))
+      const snapshot = await getDocs(collection(db, 'users'));
       setUsers(
         snapshot.docs.map((docSnap) => ({
           id: docSnap.id,
           name: docSnap.data().name as string | undefined,
           email: docSnap.data().email as string | undefined,
-          lastLogin: docSnap.data().lastLogin?.toDate?.()?.toISOString() ?? docSnap.data().lastLogin?.toString(),
-        })),
-      )
+          lastLogin:
+            docSnap.data().lastLogin?.toDate?.()?.toISOString() ??
+            docSnap.data().lastLogin?.toString(),
+        }))
+      );
     } catch (error) {
-      console.error('Error fetching users:', error)
+      console.error('Error fetching users:', error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (!currentUser) {
     return (
@@ -61,7 +63,7 @@ function UsersPage() {
           <p>Log in as admin to view registered users.</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!isAdmin) {
@@ -69,10 +71,12 @@ function UsersPage() {
       <div className="card bg-base-100 shadow-xl">
         <div className="card-body">
           <h2 className="card-title">Users</h2>
-          <p className="text-base-content/70">Only admin can view the users list.</p>
+          <p className="text-base-content/70">
+            Only admin can view the users list.
+          </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -80,7 +84,9 @@ function UsersPage() {
       <div className="card bg-base-100 shadow-xl">
         <div className="card-body">
           <h2 className="card-title">Registered Users</h2>
-          <p className="text-base-content/70">All users collected from Firestore.</p>
+          <p className="text-base-content/70">
+            All users collected from Firestore.
+          </p>
         </div>
       </div>
 
@@ -105,7 +111,11 @@ function UsersPage() {
                     <tr key={user.id}>
                       <td>{user.email}</td>
                       <td>{user.name || '—'}</td>
-                      <td>{user.lastLogin ? new Date(user.lastLogin).toLocaleString() : '—'}</td>
+                      <td>
+                        {user.lastLogin
+                          ? new Date(user.lastLogin).toLocaleString()
+                          : '—'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -115,7 +125,7 @@ function UsersPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default UsersPage
+export default UsersPage;
