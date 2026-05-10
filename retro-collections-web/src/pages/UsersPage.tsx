@@ -1,59 +1,26 @@
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, getDocs } from 'firebase/firestore';
-import { auth, db, getIsAdmin } from '../lib/firebase';
+import { auth } from '../lib/firebase';
 
-interface UserRecord {
-  id: string;
-  name?: string;
-  email?: string;
-  lastLogin?: string;
-}
+import { useGetUsersQuery } from '../api/firestore/firestoreApi';
+import { useIsAdmin } from '../hooks';
 
 function UsersPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<UserRecord[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+
+  const isAdmin = useIsAdmin(currentUser);
+
+  const { data: users = [], isLoading } = useGetUsersQuery(undefined, {
+    skip: !currentUser || !isAdmin,
+  });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
     });
+
     return unsubscribe;
   }, []);
-
-  useEffect(() => {
-    if (currentUser) {
-      getIsAdmin().then((isAdmin) => {
-        setIsAdmin(isAdmin);
-        if (isAdmin) {
-          fetchUsers();
-        }
-      });
-    }
-  }, [currentUser]);
-
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const snapshot = await getDocs(collection(db, 'users'));
-      setUsers(
-        snapshot.docs.map((docSnap) => ({
-          id: docSnap.id,
-          name: docSnap.data().name as string | undefined,
-          email: docSnap.data().email as string | undefined,
-          lastLogin:
-            docSnap.data().lastLogin?.toDate?.()?.toISOString() ??
-            docSnap.data().lastLogin?.toString(),
-        }))
-      );
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (!currentUser) {
     return (
@@ -92,7 +59,7 @@ function UsersPage() {
 
       <div className="card bg-base-100 shadow-xl">
         <div className="card-body">
-          {loading ? (
+          {isLoading ? (
             <div className="alert alert-info">Loading users...</div>
           ) : users.length === 0 ? (
             <div className="alert alert-info">No users found.</div>
@@ -106,6 +73,7 @@ function UsersPage() {
                     <th>Last Login</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {users.map((user) => (
                     <tr key={user.id}>

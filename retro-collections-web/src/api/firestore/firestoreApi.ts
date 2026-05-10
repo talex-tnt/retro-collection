@@ -33,10 +33,11 @@ export const {
   useUpdateItemMutation,
   useDeleteItemMutation,
 
-  // 👇 NEW
   useGetUsersQuery,
   useGetUserByIdQuery,
 
   useIsUserAuthorizedQuery,
   useGetAuthorizedUsersQuery,
+  useAddAuthorizedUserMutation,
+  useRemoveAuthorizedUserMutation,
 } = firestoreApi;
