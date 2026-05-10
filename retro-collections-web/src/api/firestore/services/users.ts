@@ -1,11 +1,14 @@
 import {
   collection,
-  getDocs,
   doc,
+  setDoc,
   getDoc,
-  query,
+  getDocs,
   orderBy,
+  query,
+  serverTimestamp,
   Timestamp,
+  updateDoc,
   type QueryDocumentSnapshot,
   type DocumentData,
 } from 'firebase/firestore';
@@ -79,6 +82,81 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
         return { error };
       }
     },
+  }),
+  createOrUpdateUser: builder.mutation<
+    void,
+    {
+      id: string;
+      name: string;
+      email: string;
+      lastLogin: string;
+    }
+  >({
+    async queryFn({ id, ...data }) {
+      try {
+        await setDoc(
+          doc(db, 'users', id),
+          {
+            ...data,
+            lastLogin: serverTimestamp(),
+          },
+          { merge: true }
+        );
+
+        return {
+          data: undefined,
+        };
+      } catch (error) {
+        return { error };
+      }
+    },
+
+    invalidatesTags: (_result, _error, { id }) => [
+      {
+        type: 'Users' as const,
+        id,
+      },
+
+      {
+        type: 'Users' as const,
+        id: 'LIST',
+      },
+    ],
+  }),
+  updateUser: builder.mutation<
+    void,
+    {
+      id: string;
+      updates: Partial<UserRecord>;
+    }
+  >({
+    async queryFn({ id, updates }) {
+      try {
+        await updateDoc(doc(db, 'users', id), {
+          ...updates,
+
+          lastLogin: serverTimestamp(),
+        });
+
+        return {
+          data: undefined,
+        };
+      } catch (error) {
+        return { error };
+      }
+    },
+
+    invalidatesTags: (_result, _error, { id }) => [
+      {
+        type: 'Users' as const,
+        id,
+      },
+
+      {
+        type: 'Users' as const,
+        id: 'LIST',
+      },
+    ],
   }),
 });
 

@@ -35,6 +35,8 @@ export const {
 
   useGetUsersQuery,
   useGetUserByIdQuery,
+  useLazyIsUserAuthorizedQuery,
+  useCreateOrUpdateUserMutation,
 
   useIsUserAuthorizedQuery,
   useGetAuthorizedUsersQuery,
