@@ -64,15 +64,17 @@ service cloud.firestore {
     }
 
     function isCollectionQueryForCurrentUser() {
-      return request.query.where.size() == 1 &&
+      return (request.query.where.size() == 1 &&
         request.query.where[0].field == 'userId' &&
-        request.query.where[0].value == request.auth.uid;
+        request.query.where[0].value == request.auth.uid) ||
+        request.query.where.size() == 0;
     }
 
     function isItemsQueryForOwnedCollection() {
-      return request.query.where.size() == 1 &&
+      return (request.query.where.size() == 1 &&
         request.query.where[0].field == 'collectionId' &&
-        get(/databases/$(database)/documents/collections/$(request.query.where[0].value)).data.userId == request.auth.uid;
+        get(/databases/$(database)/documents/collections/$(request.query.where[0].value)).data.userId == request.auth.uid) ||
+        request.query.where.size() == 0;
     }
 
     match /authorized-users/{email} {

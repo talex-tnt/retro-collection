@@ -67,12 +67,13 @@ const mapItemDoc = (snapshot: QueryDocumentSnapshot<DocumentData>): Item => {
 };
 
 const getItemsEndpoints = (builder: FirestoreBuilder) => ({
-  getItems: builder.query<Item[], string>({
-    async queryFn(collectionId) {
+  getItems: builder.query<Item[], { collectionId: string; userId: string }>({
+    async queryFn({ collectionId, userId }) {
       try {
         const q = query(
           collection(db, 'items'),
           where('collectionId', '==', collectionId),
+          // where('userId', '==', userId),
           orderBy('createdAt', 'desc'),
           orderBy('__name__', 'asc')
         );

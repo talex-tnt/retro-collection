@@ -43,9 +43,12 @@ function MyCollectionsPage() {
     data: items = [],
     isLoading: loadingItems,
     error: itemsError,
-  } = useGetItemsQuery(selectedCollection?.id || '', {
-    skip: !selectedCollection?.id,
-  });
+  } = useGetItemsQuery(
+    { collectionId: selectedCollection?.id || '', userId: user?.uid || '' },
+    {
+      skip: !selectedCollection?.id,
+    }
+  );
 
   const [createCollection, { isLoading: isCreatingCollection }] =
     useCreateCollectionMutation();
