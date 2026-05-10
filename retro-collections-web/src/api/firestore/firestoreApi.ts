@@ -2,17 +2,21 @@ import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 
 import getCollectionsEndpoints from './services/collections';
 import getItemsEndpoints from './services/items';
+import getUsersEndpoints from './services/users';
+import getAuthorizedUsersEndpoints from './services/authorized-users';
 
 export const firestoreApi = createApi({
   reducerPath: 'firestoreApi',
 
   baseQuery: fakeBaseQuery(),
 
-  tagTypes: ['Collections', 'Items'],
+  tagTypes: ['Collections', 'Items', 'Users', 'AuthorizedUsers'],
 
   endpoints: (builder) => ({
     ...getCollectionsEndpoints(builder),
     ...getItemsEndpoints(builder),
+    ...getUsersEndpoints(builder),
+    ...getAuthorizedUsersEndpoints(builder),
   }),
 });
 
@@ -28,4 +32,11 @@ export const {
   useCreateItemMutation,
   useUpdateItemMutation,
   useDeleteItemMutation,
+
+  // 👇 NEW
+  useGetUsersQuery,
+  useGetUserByIdQuery,
+
+  useIsUserAuthorizedQuery,
+  useGetAuthorizedUsersQuery,
 } = firestoreApi;

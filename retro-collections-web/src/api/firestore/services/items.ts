@@ -13,8 +13,7 @@ import {
   type QueryDocumentSnapshot,
   type DocumentData,
 } from 'firebase/firestore';
-
-import type { BaseQueryFn, EndpointBuilder } from '@reduxjs/toolkit/query';
+import type { FirestoreBuilder } from '../types/firestoreBuilder';
 
 import { db } from '../../../lib/firebase';
 
@@ -48,12 +47,6 @@ interface FirestoreItemDoc {
     public: boolean;
   };
 }
-
-type FirestoreBuilder = EndpointBuilder<
-  BaseQueryFn,
-  'Collections' | 'Items',
-  'firestoreApi'
->;
 
 const mapItemDoc = (snapshot: QueryDocumentSnapshot<DocumentData>): Item => {
   const data = snapshot.data() as FirestoreItemDoc;
