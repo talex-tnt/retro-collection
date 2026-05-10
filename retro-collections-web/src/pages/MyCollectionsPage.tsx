@@ -8,7 +8,7 @@ import {
   useCreateItemMutation,
   useUpdateItemMutation,
   useDeleteItemMutation,
-} from '../services/firestore/firestoreApi'
+} from '../api/firestore/firestoreApi'
 
 interface CollectionRecord {
   id: string
