@@ -11,6 +11,7 @@ import {
   useUpdateItemMutation,
   useDeleteItemMutation,
 } from '../api/firestore/firestoreApi';
+import CollectionCounter from '../components/CollectionCounter';
 
 interface CollectionRecord {
   id: string;
@@ -91,7 +92,11 @@ function MyCollectionsPage() {
   };
 
   const handleDeleteCollection = async (collectionId: string) => {
-    if (!confirm('Are you sure you want to delete this collection? This action cannot be undone.')) {
+    if (
+      !confirm(
+        'Are you sure you want to delete this collection? This action cannot be undone.'
+      )
+    ) {
       return;
     }
 
@@ -134,7 +139,10 @@ function MyCollectionsPage() {
 
   const handleDeleteItem = async (itemId: string) => {
     try {
-      await deleteItem(itemId).unwrap();
+      await deleteItem({
+        id: itemId,
+        collectionId: selectedCollection?.id || '',
+      }).unwrap();
     } catch (error) {
       console.error('Error deleting item:', error);
     }
@@ -231,6 +239,10 @@ function MyCollectionsPage() {
                   >
                     {collectionItem.name}
                   </button>
+                  <CollectionCounter
+                    collectionId={collectionItem.id}
+                    userId={user.uid}
+                  />
                   <button
                     className="btn btn-ghost btn-xs text-error hover:text-error-content"
                     onClick={() => handleDeleteCollection(collectionItem.id)}
@@ -278,7 +290,10 @@ function MyCollectionsPage() {
               </div>
 
               {/* Create Item */}
-              <form onSubmit={handleCreateItem} className="flex flex-col gap-3 sm:flex-row">
+              <form
+                onSubmit={handleCreateItem}
+                className="flex flex-col gap-3 sm:flex-row"
+              >
                 <input
                   type="text"
                   className="input input-bordered flex-1"

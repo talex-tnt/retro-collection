@@ -27,8 +27,10 @@ export const {
   useDeleteCollectionMutation,
 
   useGetItemsQuery,
+  useGetItemsCountQuery,
   useGetAllItemsQuery,
   useGetUserItemsQuery,
+  useGetUserItemsCountQuery,
   useCreateItemMutation,
   useUpdateItemMutation,
   useDeleteItemMutation,

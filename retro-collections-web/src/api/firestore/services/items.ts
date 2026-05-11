@@ -12,6 +12,7 @@ import {
   Timestamp,
   type QueryDocumentSnapshot,
   type DocumentData,
+  getCountFromServer,
 } from 'firebase/firestore';
 import type { FirestoreBuilder } from '../types/firestoreBuilder';
 
@@ -88,16 +89,44 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
       }
     },
 
-    providesTags: (result) =>
+    providesTags: (result, _error, request) =>
       result
         ? [
             ...result.map(({ id }) => ({
               type: 'Items' as const,
               id,
             })),
-            { type: 'Items' as const, id: 'LIST' },
+            { type: 'Items' as const, id: `${request.collectionId}_LIST` },
           ]
-        : [{ type: 'Items' as const, id: 'LIST' }],
+        : [{ type: 'Items' as const, id: `${request.collectionId}_LIST` }],
+  }),
+  getItemsCount: builder.query<
+    number,
+    { collectionId: string; userId?: string }
+  >({
+    async queryFn({ collectionId, userId }) {
+      try {
+        const constraints = [where('collectionId', '==', collectionId)];
+
+        if (userId) {
+          constraints.push(where('userId', '==', userId));
+        }
+
+        const q = query(collection(db, 'items'), ...constraints);
+
+        const snapshot = await getCountFromServer(q);
+
+        return {
+          data: snapshot.data().count,
+        };
+      } catch (error) {
+        return { error };
+      }
+    },
+    providesTags: (result, _error, request) =>
+      result
+        ? [{ type: 'Items' as const, id: `${request.collectionId}_LIST` }]
+        : [],
   }),
 
   getAllItems: builder.query<Item[], void>({
@@ -142,16 +171,33 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
       }
     },
 
-    providesTags: (result) =>
+    providesTags: (result, _error, userId) =>
       result
         ? [
             ...result.map(({ id }) => ({
               type: 'Items' as const,
               id,
             })),
-            { type: 'Items' as const, id: 'LIST' },
+            { type: 'Items' as const, id: `${userId}_LIST` },
           ]
-        : [{ type: 'Items' as const, id: 'LIST' }],
+        : [{ type: 'Items' as const, id: `${userId}_LIST` }],
+  }),
+  getUserItemsCount: builder.query<number, string>({
+    async queryFn(userId) {
+      try {
+        const q = query(collection(db, 'items'), where('userId', '==', userId));
+
+        const snapshot = await getCountFromServer(q);
+
+        return {
+          data: snapshot.data().count,
+        };
+      } catch (error) {
+        return { error };
+      }
+    },
+    providesTags: (result, _error, userId) =>
+      result ? [{ type: 'Items' as const, id: `${userId}_LIST` }] : [],
   }),
 
   createItem: builder.mutation<Item, ItemInput>({
@@ -176,7 +222,9 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
       }
     },
 
-    invalidatesTags: [{ type: 'Items' as const, id: 'LIST' }],
+    invalidatesTags: (_r, _e, { collectionId }) => [
+      { type: 'Items' as const, id: `${collectionId}_LIST` },
+    ],
   }),
 
   updateItem: builder.mutation<void, { id: string; updates: ItemUpdate }>({
@@ -193,14 +241,11 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
       }
     },
 
-    invalidatesTags: (_r, _e, { id }) => [
-      { type: 'Items' as const, id },
-      { type: 'Items' as const, id: 'LIST' },
-    ],
+    invalidatesTags: (_r, _e, { id }) => [{ type: 'Items' as const, id }],
   }),
 
-  deleteItem: builder.mutation<void, string>({
-    async queryFn(id) {
+  deleteItem: builder.mutation<void, { id: string; collectionId: string }>({
+    async queryFn({ id }) {
       try {
         await deleteDoc(doc(db, 'items', id));
 
@@ -210,9 +255,9 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
       }
     },
 
-    invalidatesTags: (_r, _e, id) => [
+    invalidatesTags: (_r, _e, { id, collectionId }) => [
       { type: 'Items' as const, id },
-      { type: 'Items' as const, id: 'LIST' },
+      { type: 'Items' as const, id: `${collectionId}_LIST` },
     ],
   }),
 });
