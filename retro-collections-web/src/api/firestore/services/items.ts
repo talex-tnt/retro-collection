@@ -123,10 +123,8 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
         return { error };
       }
     },
-    providesTags: (result, _error, request) =>
-      result
-        ? [{ type: 'Items' as const, id: `${request.collectionId}_LIST` }]
-        : [],
+    providesTags: (_result, _error, request) =>
+      [{ type: 'Items' as const, id: `${request.collectionId}_LIST` }],
   }),
 
   getAllItems: builder.query<Item[], void>({
