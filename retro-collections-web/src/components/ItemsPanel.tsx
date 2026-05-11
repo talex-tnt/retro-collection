@@ -77,11 +77,12 @@ function ItemsPanel({
   };
 
   const handleEditItem = async (itemId: string, newName: string) => {
-    if (!newName.trim()) return;
+    if (!user || !newName.trim()) return;
 
     try {
       await updateItem({
         id: itemId,
+        userId: user.uid,
         updates: { name: newName.trim() },
       }).unwrap();
     } catch (error) {
@@ -90,11 +91,12 @@ function ItemsPanel({
   };
 
   const handleDeleteItem = async (itemId: string) => {
-    if (!selectedCollection) return;
+    if (!selectedCollection || !user) return;
     try {
       await deleteItem({
         id: itemId,
         collectionId: selectedCollection.id,
+        userId: user.uid,
       }).unwrap();
     } catch (error) {
       console.error('Error deleting item:', error);
@@ -105,9 +107,12 @@ function ItemsPanel({
     itemId: string,
     currentVisibility: boolean
   ) => {
+    if (!user) return;
+
     try {
       await updateItem({
         id: itemId,
+        userId: user.uid,
         updates: { visibility: { public: !currentVisibility } },
       }).unwrap();
     } catch (error) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import CollectionsPanel from '../components/CollectionsPanel';
@@ -34,11 +34,38 @@ function MyCollectionsPage() {
     skip: !user?.uid,
   });
 
-  // Compute orphaned items (items with collectionId that doesn't exist)
-  const collectionIds = new Set(collections.map((c) => c.id));
-  const orphanedItems = allUserItems.filter(
-    (item) => item.collectionId && !collectionIds.has(item.collectionId)
+  const collectionIds = useMemo(
+    () => new Set(collections.map((c) => c.id)),
+    [collections]
   );
+
+  const orphanedItems = useMemo(
+    () =>
+      allUserItems.filter(
+        (item) => item.collectionId && !collectionIds.has(item.collectionId)
+      ),
+    [allUserItems, collectionIds]
+  );
+
+  const resolvedSelectedCollection = useMemo(() => {
+    if (!selectedCollection) {
+      return null;
+    }
+
+    if (selectedCollection.id === 'orphaned') {
+      return orphanedItems.length > 0 ? selectedCollection : null;
+    }
+
+    if (collectionIds.has(selectedCollection.id)) {
+      return selectedCollection;
+    }
+
+    return orphanedItems.some(
+      (item) => item.collectionId === selectedCollection.id
+    )
+      ? { id: 'orphaned', name: 'Orphaned Items', createdAt: '' }
+      : null;
+  }, [collectionIds, orphanedItems, selectedCollection]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -63,7 +90,7 @@ function MyCollectionsPage() {
       {/* LEFT - Collections Panel */}
       <CollectionsPanel
         user={user}
-        selectedCollection={selectedCollection}
+        selectedCollection={resolvedSelectedCollection}
         onSelectCollection={setSelectedCollection}
         collectionName={collectionName}
         onCollectionNameChange={setCollectionName}
@@ -73,7 +100,7 @@ function MyCollectionsPage() {
       {/* CENTER - Items Panel */}
       <ItemsPanel
         user={user}
-        selectedCollection={selectedCollection}
+        selectedCollection={resolvedSelectedCollection}
         itemName={itemName}
         onItemNameChange={setItemName}
         itemFilter={itemFilter}

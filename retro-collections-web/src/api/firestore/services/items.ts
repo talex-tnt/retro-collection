@@ -227,12 +227,16 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
       }
     },
 
-    invalidatesTags: (_r, _e, { collectionId }) => [
+    invalidatesTags: (_r, _e, { collectionId, userId }) => [
       { type: 'Items' as const, id: `${collectionId}_LIST` },
+      { type: 'Items' as const, id: `${userId}_LIST` },
     ],
   }),
 
-  updateItem: builder.mutation<void, { id: string; updates: ItemUpdate }>({
+  updateItem: builder.mutation<
+    void,
+    { id: string; userId: string; updates: ItemUpdate }
+  >({
     async queryFn({ id, updates }) {
       try {
         await updateDoc(doc(db, 'items', id), {
@@ -246,10 +250,16 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
       }
     },
 
-    invalidatesTags: (_r, _e, { id }) => [{ type: 'Items' as const, id }],
+    invalidatesTags: (_r, _e, { id, userId }) => [
+      { type: 'Items' as const, id },
+      { type: 'Items' as const, id: `${userId}_LIST` },
+    ],
   }),
 
-  deleteItem: builder.mutation<void, { id: string; collectionId: string }>({
+  deleteItem: builder.mutation<
+    void,
+    { id: string; collectionId: string; userId: string }
+  >({
     async queryFn({ id }) {
       try {
         await deleteDoc(doc(db, 'items', id));
@@ -260,9 +270,10 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
       }
     },
 
-    invalidatesTags: (_r, _e, { id, collectionId }) => [
+    invalidatesTags: (_r, _e, { id, collectionId, userId }) => [
       { type: 'Items' as const, id },
       { type: 'Items' as const, id: `${collectionId}_LIST` },
+      { type: 'Items' as const, id: `${userId}_LIST` },
     ],
   }),
 });
