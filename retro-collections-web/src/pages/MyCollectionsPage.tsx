@@ -42,7 +42,7 @@ function MyCollectionsPage() {
   const orphanedItems = useMemo(
     () =>
       allUserItems.filter(
-        (item) => item.collectionId && !collectionIds.has(item.collectionId)
+        (item) => !item.collectionId || !collectionIds.has(item.collectionId)
       ),
     [allUserItems, collectionIds]
   );
@@ -101,6 +101,7 @@ function MyCollectionsPage() {
       <ItemsPanel
         user={user}
         selectedCollection={resolvedSelectedCollection}
+        collections={collections}
         itemName={itemName}
         onItemNameChange={setItemName}
         itemFilter={itemFilter}

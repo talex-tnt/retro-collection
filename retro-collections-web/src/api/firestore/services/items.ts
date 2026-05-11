@@ -235,7 +235,12 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
 
   updateItem: builder.mutation<
     void,
-    { id: string; userId: string; updates: ItemUpdate }
+    {
+      id: string;
+      userId: string;
+      updates: ItemUpdate;
+      previousCollectionId?: string;
+    }
   >({
     async queryFn({ id, updates }) {
       try {
@@ -250,10 +255,32 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
       }
     },
 
-    invalidatesTags: (_r, _e, { id, userId }) => [
-      { type: 'Items' as const, id },
-      { type: 'Items' as const, id: `${userId}_LIST` },
-    ],
+    invalidatesTags: (
+      _r,
+      _e,
+      { id, userId, previousCollectionId, updates }
+    ) => {
+      const tags = [
+        { type: 'Items' as const, id },
+        { type: 'Items' as const, id: `${userId}_LIST` },
+      ];
+
+      if (previousCollectionId) {
+        tags.push({
+          type: 'Items' as const,
+          id: `${previousCollectionId}_LIST`,
+        });
+      }
+
+      if (updates.collectionId) {
+        tags.push({
+          type: 'Items' as const,
+          id: `${updates.collectionId}_LIST`,
+        });
+      }
+
+      return tags;
+    },
   }),
 
   deleteItem: builder.mutation<

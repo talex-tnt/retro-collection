@@ -1,3 +1,4 @@
+import type { ChangeEvent } from 'react';
 import {
   useGetItemsQuery,
   useCreateItemMutation,
@@ -6,12 +7,6 @@ import {
 } from '../api/firestore/firestoreApi';
 import ItemActions from './ItemActions';
 
-interface CollectionRecord {
-  id: string;
-  name: string;
-  createdAt: string;
-}
-
 type SelectedCollection =
   | CollectionRecord
   | { id: 'orphaned'; name: 'Orphaned Items'; createdAt: '' };
@@ -19,15 +14,23 @@ type SelectedCollection =
 interface ItemData {
   id: string;
   name: string;
+  collectionId: string;
   createdAt: string;
   visibility?: {
     public: boolean;
   };
 }
 
+interface CollectionRecord {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
 interface ItemsPanelProps {
   user: { uid: string } | null;
   selectedCollection: SelectedCollection | null;
+  collections: CollectionRecord[];
   itemName: string;
   onItemNameChange: (name: string) => void;
   itemFilter: string;
@@ -38,6 +41,7 @@ interface ItemsPanelProps {
 function ItemsPanel({
   user,
   selectedCollection,
+  collections,
   itemName,
   onItemNameChange,
   itemFilter,
@@ -100,6 +104,32 @@ function ItemsPanel({
       }).unwrap();
     } catch (error) {
       console.error('Error deleting item:', error);
+    }
+  };
+
+  const handleCollectionChange = async (
+    itemId: string,
+    currentCollectionId: string,
+    event: ChangeEvent<HTMLSelectElement>
+  ) => {
+    if (!user) return;
+
+    const nextCollectionId = event.target.value;
+
+    if (nextCollectionId === currentCollectionId) {
+      return;
+    }
+
+    try {
+      await updateItem({
+        id: itemId,
+        userId: user.uid,
+        previousCollectionId: currentCollectionId,
+        updates: { collectionId: nextCollectionId },
+      }).unwrap();
+    } catch (error) {
+      event.target.value = currentCollectionId;
+      console.error('Error moving item:', error);
     }
   };
 
@@ -232,6 +262,35 @@ function ItemsPanel({
                   />
                 </div>
                 <div className="space-y-1">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="text-sm text-base-content/70">
+                      Collection
+                    </span>
+                    <select
+                      className="select select-bordered select-sm w-full sm:max-w-xs"
+                      value={
+                        collections.some(
+                          (collection) => collection.id === item.collectionId
+                        )
+                          ? item.collectionId
+                          : ''
+                      }
+                      onChange={(event) =>
+                        handleCollectionChange(
+                          item.id,
+                          item.collectionId,
+                          event
+                        )
+                      }
+                    >
+                      <option value="">No collection</option>
+                      {collections.map((collection) => (
+                        <option key={collection.id} value={collection.id}>
+                          {collection.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <p className="text-sm text-base-content/70">
                     {item.createdAt
                       ? `Added ${new Date(item.createdAt).toLocaleString()}`
