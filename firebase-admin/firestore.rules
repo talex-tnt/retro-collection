@@ -44,6 +44,15 @@ service cloud.firestore {
         (!('visibility' in data) || validVisibility(data.visibility));
     }
 
+    function hasValidItemCollection(data, ownerId) {
+      return data.collectionId is string && (
+        data.collectionId.size() == 0 || (
+          exists(/databases/$(database)/documents/collections/$(data.collectionId)) &&
+          get(/databases/$(database)/documents/collections/$(data.collectionId)).data.userId == ownerId
+        )
+      );
+    }
+
     function validCollectionUpdate(data, ownerId) {
       return data.userId == ownerId &&
         validString(data.name, 100) &&
@@ -56,8 +65,7 @@ service cloud.firestore {
       return data.userId == ownerId &&
         validString(data.name, 100) &&
         (!('description' in data) || validOptionalString(data.description, 1000)) &&
-        data.collectionId is string &&
-        data.collectionId.size() > 0 &&
+        hasValidItemCollection(data, ownerId) &&
         data.createdAt == resource.data.createdAt &&
         (!('visibility' in data) || validVisibility(data.visibility)) &&
         (!('updatedAt' in data) || data.updatedAt is timestamp);
