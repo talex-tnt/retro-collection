@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import ItemActions from '../components/ItemActions';
 import {
   useGetCollectionsQuery,
   useCreateCollectionMutation,
+  useDeleteCollectionMutation,
   useGetItemsQuery,
   useCreateItemMutation,
   useUpdateItemMutation,
@@ -22,6 +24,7 @@ function MyCollectionsPage() {
     useState<CollectionRecord | null>(null);
   const [collectionName, setCollectionName] = useState('');
   const [itemName, setItemName] = useState('');
+  const [itemFilter, setItemFilter] = useState('');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -52,6 +55,8 @@ function MyCollectionsPage() {
 
   const [createCollection, { isLoading: isCreatingCollection }] =
     useCreateCollectionMutation();
+  const [deleteCollection, { isLoading: isDeletingCollection }] =
+    useDeleteCollectionMutation();
   const [createItem, { isLoading: isCreatingItem }] = useCreateItemMutation();
   const [updateItem] = useUpdateItemMutation();
   const [deleteItem] = useDeleteItemMutation();
@@ -70,7 +75,8 @@ function MyCollectionsPage() {
     }
   }, [collections, selectedCollection]);
 
-  const handleCreateCollection = async () => {
+  const handleCreateCollection = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!user || !collectionName.trim()) return;
 
     try {
@@ -84,7 +90,20 @@ function MyCollectionsPage() {
     }
   };
 
-  const handleCreateItem = async () => {
+  const handleDeleteCollection = async (collectionId: string) => {
+    if (!confirm('Are you sure you want to delete this collection? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await deleteCollection(collectionId).unwrap();
+    } catch (error) {
+      console.error('Error deleting collection:', error);
+    }
+  };
+
+  const handleCreateItem = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!user || !selectedCollection || !itemName.trim()) return;
 
     try {
@@ -157,177 +176,177 @@ function MyCollectionsPage() {
     );
   }
 
+  // Filter items by name
+  const filteredItems = items.filter((item) =>
+    item.name.toLowerCase().includes(itemFilter.toLowerCase())
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="card bg-base-100 shadow-xl">
-        <div className="card-body space-y-4">
-          <div>
-            <h2 className="card-title">My Collections</h2>
-            <p className="text-base-content/70">
-              Create named collections and add items to each one.
-            </p>
-          </div>
+    <div className="grid gap-6 lg:grid-cols-[250px_1fr]">
+      {/* LEFT SIDEBAR - Collections Management */}
+      <div className="card bg-base-100 shadow-xl h-fit">
+        <div className="card-body space-y-4 p-4">
+          <h2 className="card-title text-lg">Collections</h2>
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="space-y-3">
-              <label className="label">
-                <span className="label-text">New collection</span>
-              </label>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <input
-                  type="text"
-                  className="input input-bordered w-full"
-                  value={collectionName}
-                  onChange={(e) => setCollectionName(e.target.value)}
-                  placeholder="Collection name"
-                  disabled={isCreatingCollection}
-                />
-                <button
-                  className="btn btn-primary"
-                  onClick={handleCreateCollection}
-                  disabled={isCreatingCollection || !collectionName.trim()}
+          {/* Create Collection */}
+          <form onSubmit={handleCreateCollection} className="space-y-2">
+            <input
+              type="text"
+              className="input input-bordered input-sm w-full"
+              value={collectionName}
+              onChange={(e) => setCollectionName(e.target.value)}
+              placeholder="Collection name"
+              disabled={isCreatingCollection}
+            />
+            <button
+              type="submit"
+              className="btn btn-primary btn-sm w-full"
+              disabled={isCreatingCollection || !collectionName.trim()}
+            >
+              {isCreatingCollection ? 'Creating...' : 'New Collection'}
+            </button>
+          </form>
+
+          <div className="divider my-2"></div>
+
+          {/* Collections List */}
+          <div className="space-y-2 max-h-[calc(100vh-400px)] overflow-y-auto">
+            {loadingCollections ? (
+              <p className="text-sm text-base-content/70">Loading...</p>
+            ) : collections.length === 0 ? (
+              <p className="text-sm text-base-content/70">No collections yet</p>
+            ) : (
+              collections.map((collectionItem) => (
+                <div
+                  key={collectionItem.id}
+                  className={`p-2 rounded cursor-pointer transition-colors flex items-center justify-between gap-2 ${
+                    selectedCollection?.id === collectionItem.id
+                      ? 'bg-primary text-primary-content'
+                      : 'bg-base-200 hover:bg-base-300'
+                  }`}
                 >
-                  {isCreatingCollection ? 'Creating...' : 'Create'}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="label">
-                <span className="label-text">Choose collection</span>
-              </label>
-              <div className="tabs tabs-boxed flex-wrap gap-2">
-                {loadingCollections ? (
-                  <span className="tab">Loading...</span>
-                ) : collections.length === 0 ? (
-                  <span className="tab">No collections yet</span>
-                ) : (
-                  collections.map((collectionItem) => (
-                    <button
-                      key={collectionItem.id}
-                      className={
-                        'tab ' +
-                        (selectedCollection?.id === collectionItem.id
-                          ? 'tab-active'
-                          : '')
-                      }
-                      onClick={() => setSelectedCollection(collectionItem)}
-                    >
-                      {collectionItem.name}
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
+                  <button
+                    className="flex-1 text-left text-sm font-medium truncate"
+                    onClick={() => setSelectedCollection(collectionItem)}
+                  >
+                    {collectionItem.name}
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-xs text-error hover:text-error-content"
+                    onClick={() => handleDeleteCollection(collectionItem.id)}
+                    disabled={isDeletingCollection}
+                    title="Delete collection"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
 
+      {/* CENTER - Collection Content */}
       <div className="card bg-base-100 shadow-xl">
         <div className="card-body space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="card-title">
-                {selectedCollection
-                  ? selectedCollection.name
-                  : 'No collection selected'}
-              </h2>
-              {selectedCollection && (
+          {!selectedCollection ? (
+            <div className="alert alert-info">
+              <span>Select a collection from the left to view items</span>
+            </div>
+          ) : (
+            <>
+              {/* Collection Header */}
+              <div>
+                <h2 className="card-title">{selectedCollection.name}</h2>
                 <p className="text-sm text-base-content/70">
                   Created{' '}
                   {selectedCollection.createdAt
                     ? new Date(selectedCollection.createdAt).toLocaleString()
                     : 'unknown'}
                 </p>
-              )}
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <input
-                type="text"
-                className="input input-bordered w-full"
-                value={itemName}
-                onChange={(e) => setItemName(e.target.value)}
-                placeholder="New item name"
-                disabled={!selectedCollection || isCreatingItem}
-              />
-              <button
-                className="btn btn-primary"
-                onClick={handleCreateItem}
-                disabled={
-                  !selectedCollection || isCreatingItem || !itemName.trim()
-                }
-              >
-                {isCreatingItem ? 'Adding...' : 'Add Item'}
-              </button>
-            </div>
-          </div>
+              </div>
 
-          <div className="space-y-3">
-            {itemsError ? (
-              <div className="alert alert-error">
-                <span>
-                  Error loading items:{' '}
-                  {(itemsError as Error).message || 'Unknown error'}
-                </span>
+              {/* Filter Input */}
+              <div>
+                <input
+                  type="text"
+                  className="input input-bordered w-full"
+                  value={itemFilter}
+                  onChange={(e) => setItemFilter(e.target.value)}
+                  placeholder="Filter items by name..."
+                />
               </div>
-            ) : loadingItems ? (
-              <div className="alert alert-info">Loading items...</div>
-            ) : items.length === 0 ? (
-              <div className="alert alert-info">
-                No items in this collection yet.
-              </div>
-            ) : (
-              items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex flex-col gap-3 rounded-lg border border-base-300 bg-base-200 p-4 sm:flex-row sm:items-center sm:justify-between"
+
+              {/* Create Item */}
+              <form onSubmit={handleCreateItem} className="flex flex-col gap-3 sm:flex-row">
+                <input
+                  type="text"
+                  className="input input-bordered flex-1"
+                  value={itemName}
+                  onChange={(e) => setItemName(e.target.value)}
+                  placeholder="New item name"
+                  disabled={isCreatingItem}
+                />
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={isCreatingItem || !itemName.trim()}
                 >
-                  <div>
-                    <p className="font-medium">{item.name}</p>
-                    <p className="text-sm text-base-content/70">
-                      {item.createdAt
-                        ? `Added ${new Date(item.createdAt).toLocaleString()}`
-                        : 'No timestamp'}
-                    </p>
-                    <p className="text-sm text-base-content/70">
-                      Visibility:{' '}
-                      {item.visibility?.public ? 'Public' : 'Private'}
-                    </p>
+                  {isCreatingItem ? 'Adding...' : 'Add Item'}
+                </button>
+              </form>
+
+              {/* Items List */}
+              <div className="space-y-3">
+                {itemsError ? (
+                  <div className="alert alert-error">
+                    <span>
+                      Error loading items:{' '}
+                      {(itemsError as Error).message || 'Unknown error'}
+                    </span>
                   </div>
-                  <div className="flex gap-2 flex-wrap">
-                    <button
-                      className="btn btn-sm btn-outline"
-                      onClick={() => {
-                        const newName = prompt('New item name:', item.name);
-                        if (newName) {
-                          handleEditItem(item.id, newName);
-                        }
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn btn-sm btn-secondary"
-                      onClick={() =>
-                        handleToggleItemVisibility(
-                          item.id,
-                          !!item.visibility?.public
-                        )
-                      }
-                    >
-                      {item.visibility?.public ? 'Make Private' : 'Make Public'}
-                    </button>
-                    <button
-                      className="btn btn-sm btn-error"
-                      onClick={() => handleDeleteItem(item.id)}
-                    >
-                      Delete
-                    </button>
+                ) : loadingItems ? (
+                  <div className="alert alert-info">Loading items...</div>
+                ) : filteredItems.length === 0 ? (
+                  <div className="alert alert-info">
+                    {itemFilter
+                      ? 'No items match your filter.'
+                      : 'No items in this collection yet.'}
                   </div>
-                </div>
-              ))
-            )}
-          </div>
+                ) : (
+                  filteredItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex flex-col gap-2 rounded-lg border border-base-300 bg-base-200 p-4"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-medium">{item.name}</p>
+                        <ItemActions
+                          itemId={item.id}
+                          itemName={item.name}
+                          isPublic={!!item.visibility?.public}
+                          onEdit={handleEditItem}
+                          onToggleVisibility={handleToggleItemVisibility}
+                          onDelete={handleDeleteItem}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm text-base-content/70">
+                          {item.createdAt
+                            ? `Added ${new Date(item.createdAt).toLocaleString()}`
+                            : 'No timestamp'}
+                        </p>
+                        <p className="text-sm text-base-content/70">
+                          Visibility:{' '}
+                          {item.visibility?.public ? 'Public' : 'Private'}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

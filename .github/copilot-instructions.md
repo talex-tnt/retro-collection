@@ -9,8 +9,14 @@ This file tracks implementation requirements and coding guidelines for the retro
 
 ## Implementation Tasks
 
+### Completed Tasks
+- [x] Add delete collection button to MyCollectionsPage with confirmation dialog
+- [x] Restructure MyCollectionsPage to 3-column layout (left: collections management, center: items content, right: auth panel)
+- [x] Convert collection and item creation to use forms with Enter key support
+- [x] Replace item action buttons with ItemActions component using icons
+
 ### Current Tasks
-- [ ] Add initial task tracking
+- None
 
 ## Coding Guidelines
 - TypeScript for all new code
