@@ -12,13 +12,27 @@ interface CollectionRecord {
   createdAt: string;
 }
 
+type SelectedCollection =
+  | CollectionRecord
+  | { id: 'orphaned'; name: 'Orphaned Items'; createdAt: '' };
+
+interface ItemData {
+  id: string;
+  name: string;
+  createdAt: string;
+  visibility?: {
+    public: boolean;
+  };
+}
+
 interface ItemsPanelProps {
   user: { uid: string } | null;
-  selectedCollection: CollectionRecord | null;
+  selectedCollection: SelectedCollection | null;
   itemName: string;
   onItemNameChange: (name: string) => void;
   itemFilter: string;
   onItemFilterChange: (filter: string) => void;
+  orphanedItems: ItemData[];
 }
 
 function ItemsPanel({
@@ -28,6 +42,7 @@ function ItemsPanel({
   onItemNameChange,
   itemFilter,
   onItemFilterChange,
+  orphanedItems,
 }: ItemsPanelProps) {
   const {
     data: items = [],
@@ -36,7 +51,7 @@ function ItemsPanel({
   } = useGetItemsQuery(
     { collectionId: selectedCollection?.id || '', userId: user?.uid || '' },
     {
-      skip: !selectedCollection?.id,
+      skip: !selectedCollection?.id || selectedCollection?.id === 'orphaned',
     }
   );
 
@@ -101,7 +116,9 @@ function ItemsPanel({
   };
 
   // Filter items by name
-  const filteredItems = items.filter((item) =>
+  const displayItems =
+    selectedCollection?.id === 'orphaned' ? orphanedItems : items;
+  const filteredItems = displayItems.filter((item) =>
     item.name.toLowerCase().includes(itemFilter.toLowerCase())
   );
 
@@ -123,12 +140,18 @@ function ItemsPanel({
         {/* Collection Header */}
         <div>
           <h2 className="card-title">{selectedCollection.name}</h2>
-          <p className="text-sm text-base-content/70">
-            Created{' '}
-            {selectedCollection.createdAt
-              ? new Date(selectedCollection.createdAt).toLocaleString()
-              : 'unknown'}
-          </p>
+          {selectedCollection.id !== 'orphaned' &&
+            selectedCollection.createdAt && (
+              <p className="text-sm text-base-content/70">
+                Created{' '}
+                {new Date(selectedCollection.createdAt).toLocaleString()}
+              </p>
+            )}
+          {selectedCollection.id === 'orphaned' && (
+            <p className="text-sm text-base-content/70">
+              Items with deleted or invalid collections
+            </p>
+          )}
         </div>
 
         {/* Filter Input */}
@@ -142,31 +165,36 @@ function ItemsPanel({
           />
         </div>
 
-        {/* Create Item */}
-        <form
-          onSubmit={handleCreateItem}
-          className="flex flex-col gap-3 sm:flex-row"
-        >
-          <input
-            type="text"
-            className="input input-bordered flex-1"
-            value={itemName}
-            onChange={(e) => onItemNameChange(e.target.value)}
-            placeholder="New item name"
-            disabled={isCreatingItem}
-          />
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={isCreatingItem || !itemName.trim()}
+        {/* Create Item - Only for regular collections */}
+        {selectedCollection?.id !== 'orphaned' && (
+          <form
+            onSubmit={handleCreateItem}
+            className="flex flex-col gap-3 sm:flex-row"
           >
-            {isCreatingItem ? 'Adding...' : 'Add Item'}
-          </button>
-        </form>
+            <input
+              type="text"
+              className="input input-bordered flex-1"
+              value={itemName}
+              onChange={(e) => onItemNameChange(e.target.value)}
+              placeholder="New item name"
+              disabled={isCreatingItem}
+            />
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isCreatingItem || !itemName.trim()}
+            >
+              {isCreatingItem ? 'Adding...' : 'Add Item'}
+            </button>
+          </form>
+        )}
 
         {/* Items List */}
         <div className="space-y-3">
-          {itemsError ? (
+          {selectedCollection?.id === 'orphaned' &&
+          orphanedItems.length === 0 ? (
+            <div className="alert alert-info">No orphaned items.</div>
+          ) : itemsError && selectedCollection?.id !== 'orphaned' ? (
             <div className="alert alert-error">
               <span>
                 Error loading items:{' '}

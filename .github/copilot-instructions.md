@@ -16,6 +16,7 @@ This file tracks implementation requirements and coding guidelines for the retro
 - [x] Replace item action buttons with ItemActions component using icons
 - [x] Add item counters next to collection names
 - [x] Refactor MyCollectionsPage into separate components (CollectionsPanel, ItemsPanel)
+- [x] Implement orphaned items feature: special non-deletable collection showing items with non-existent parent collectionId
 
 ### Current Tasks
 - None

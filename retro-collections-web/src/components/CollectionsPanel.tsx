@@ -11,12 +11,17 @@ interface CollectionRecord {
   createdAt: string;
 }
 
+type SelectedCollection =
+  | CollectionRecord
+  | { id: 'orphaned'; name: 'Orphaned Items'; createdAt: '' };
+
 interface CollectionsPanelProps {
   user: { uid: string } | null;
-  selectedCollection: CollectionRecord | null;
-  onSelectCollection: (collection: CollectionRecord) => void;
+  selectedCollection: SelectedCollection | null;
+  onSelectCollection: (collection: SelectedCollection) => void;
   collectionName: string;
   onCollectionNameChange: (name: string) => void;
+  orphanedCount: number;
 }
 
 function CollectionsPanel({
@@ -25,6 +30,7 @@ function CollectionsPanel({
   onSelectCollection,
   collectionName,
   onCollectionNameChange,
+  orphanedCount,
 }: CollectionsPanelProps) {
   const { data: collections = [], isLoading: loadingCollections } =
     useGetCollectionsQuery(user?.uid || '', {
@@ -131,6 +137,31 @@ function CollectionsPanel({
                 </button>
               </div>
             ))
+          )}
+          {orphanedCount > 0 && (
+            <div
+              className={`p-2 rounded cursor-pointer transition-colors flex items-center justify-between gap-2 ${
+                selectedCollection?.id === 'orphaned'
+                  ? 'bg-warning text-warning-content'
+                  : 'bg-base-200 hover:bg-base-300'
+              }`}
+            >
+              <button
+                className="flex-1 text-left text-sm font-medium truncate"
+                onClick={() =>
+                  onSelectCollection({
+                    id: 'orphaned',
+                    name: 'Orphaned Items',
+                    createdAt: '',
+                  })
+                }
+              >
+                Orphaned Items
+              </button>
+              <span className="text-xs badge badge-warning badge-sm">
+                {orphanedCount}
+              </span>
+            </div>
           )}
         </div>
       </div>

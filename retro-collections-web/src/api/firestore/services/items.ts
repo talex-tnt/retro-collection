@@ -67,6 +67,17 @@ const mapItemDoc = (snapshot: QueryDocumentSnapshot<DocumentData>): Item => {
   };
 };
 
+const sortItemsNewestFirst = (left: Item, right: Item) => {
+  const leftTime = left.createdAt ? Date.parse(left.createdAt) : 0;
+  const rightTime = right.createdAt ? Date.parse(right.createdAt) : 0;
+
+  if (leftTime !== rightTime) {
+    return rightTime - leftTime;
+  }
+
+  return left.id.localeCompare(right.id);
+};
+
 const getItemsEndpoints = (builder: FirestoreBuilder) => ({
   getItems: builder.query<Item[], { collectionId: string; userId: string }>({
     async queryFn({ collectionId /*, userId*/ }) {
@@ -123,8 +134,9 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
         return { error };
       }
     },
-    providesTags: (_result, _error, request) =>
-      [{ type: 'Items' as const, id: `${request.collectionId}_LIST` }],
+    providesTags: (_result, _error, request) => [
+      { type: 'Items' as const, id: `${request.collectionId}_LIST` },
+    ],
   }),
 
   getAllItems: builder.query<Item[], void>({
@@ -152,17 +164,12 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
   getUserItems: builder.query<Item[], string>({
     async queryFn(userId) {
       try {
-        const q = query(
-          collection(db, 'items'),
-          where('userId', '==', userId),
-          orderBy('createdAt', 'desc'),
-          orderBy('__name__', 'asc')
-        );
+        const q = query(collection(db, 'items'), where('userId', '==', userId));
 
         const snapshot = await getDocs(q);
 
         return {
-          data: snapshot.docs.map(mapItemDoc),
+          data: snapshot.docs.map(mapItemDoc).sort(sortItemsNewestFirst),
         };
       } catch (error) {
         return { error };
