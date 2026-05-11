@@ -14,6 +14,8 @@ This file tracks implementation requirements and coding guidelines for the retro
 - [x] Restructure MyCollectionsPage to 3-column layout (left: collections management, center: items content, right: auth panel)
 - [x] Convert collection and item creation to use forms with Enter key support
 - [x] Replace item action buttons with ItemActions component using icons
+- [x] Add item counters next to collection names
+- [x] Refactor MyCollectionsPage into separate components (CollectionsPanel, ItemsPanel)
 
 ### Current Tasks
 - None
