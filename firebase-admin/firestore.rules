@@ -76,8 +76,15 @@ service cloud.firestore {
 
     function validItemUpdate(data, ownerId) {
       return data.userId == ownerId &&
-        validString(data.name, 100) &&
-        (!('description' in data) || validOptionalString(data.description, 1000)) &&
+        (
+          data.name == resource.data.name ||
+          validString(data.name, 100)
+        ) &&
+        (
+          !('description' in data) ||
+          data.description == resource.data.description ||
+          validOptionalString(data.description, 1000)
+        ) &&
         (
           normalizedCollectionId(data) == normalizedCollectionId(resource.data) ||
           hasValidItemCollection(data, ownerId)
