@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import AuthPanel from '../components/User';
 import Footer from '../components/Footer';
@@ -9,7 +9,7 @@ import MyCollectionsPage from '../pages/MyCollectionsPage';
 
 function App() {
   return (
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
+    <HashRouter>
       <div className="flex flex-col min-h-screen bg-base-200 text-base-content">
         <div className="flex-1">
           <div className="mx-auto max-w-screen-2xl space-y-8 px-4 py-8">
@@ -26,7 +26,10 @@ function App() {
               <div className="space-y-6">
                 <Routes>
                   <Route path="/" element={<HomePage />} />
-                  <Route path="/my-collections" element={<MyCollectionsPage />} />
+                  <Route
+                    path="/my-collections"
+                    element={<MyCollectionsPage />}
+                  />
                   <Route path="/users" element={<UsersPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                 </Routes>
@@ -39,7 +42,7 @@ function App() {
         </div>
         <Footer />
       </div>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 

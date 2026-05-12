@@ -13,7 +13,8 @@ function Footer() {
   return (
     <footer className="border-t border-base-300 bg-base-100 py-4 text-center text-sm text-base-content/60">
       <p>
-        Build: {buildDate} | Commit: <code className="font-mono">{__GIT_HASH__}</code>
+        Build: {buildDate} | Commit:{' '}
+        <code className="font-mono">{__GIT_HASH__}</code>
       </p>
     </footer>
   );
