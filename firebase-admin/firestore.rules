@@ -75,22 +75,25 @@ service cloud.firestore {
     }
 
     function validItemUpdate(data, ownerId) {
-      return data.userId == ownerId &&
+      return data.userId == resource.data.userId &&
+        data.userId == ownerId &&
+        data.createdAt == resource.data.createdAt &&
         (
-          data.name == resource.data.name ||
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['name']) ||
           validString(data.name, 100)
         ) &&
         (
-          !('description' in data) ||
-          data.description == resource.data.description ||
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['description']) ||
           validOptionalString(data.description, 1000)
         ) &&
         (
-          normalizedCollectionId(data) == normalizedCollectionId(resource.data) ||
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['collectionId']) ||
           hasValidItemCollection(data, ownerId)
         ) &&
-        data.createdAt == resource.data.createdAt &&
-        (!('visibility' in data) || validVisibility(data.visibility)) &&
+        (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['visibility']) ||
+          validVisibility(data.visibility)
+        ) &&
         (!('updatedAt' in data) || validTimestamp(data.updatedAt));
     }
 
