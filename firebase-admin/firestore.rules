@@ -47,18 +47,22 @@ service cloud.firestore {
         validString(data.name, 100) &&
         (!('description' in data) || validOptionalString(data.description, 1000)) &&
         data.userId == ownerId &&
-        (!('collectionId' in data) || data.collectionId is string) &&
+        (!('collectionId' in data) || data.collectionId == null || data.collectionId is string) &&
         (!('visibility' in data) || validVisibility(data.visibility)) &&
         validTimestamp(data.createdAt);
     }
 
     function hasValidItemCollection(data, ownerId) {
-      return !('collectionId' in data) || (
+      return !('collectionId' in data) || data.collectionId == null || (
         data.collectionId is string && 
         data.collectionId.size() > 0 &&
         exists(/databases/$(database)/documents/collections/$(data.collectionId)) &&
         get(/databases/$(database)/documents/collections/$(data.collectionId)).data.userId == ownerId
       );
+    }
+
+    function normalizedCollectionId(data) {
+      return ('collectionId' in data && data.collectionId != null) ? data.collectionId : null;
     }
 
     function validCollectionUpdate(data, ownerId) {
@@ -74,7 +78,10 @@ service cloud.firestore {
       return data.userId == ownerId &&
         validString(data.name, 100) &&
         (!('description' in data) || validOptionalString(data.description, 1000)) &&
-        hasValidItemCollection(data, ownerId) &&
+        (
+          normalizedCollectionId(data) == normalizedCollectionId(resource.data) ||
+          hasValidItemCollection(data, ownerId)
+        ) &&
         data.createdAt == resource.data.createdAt &&
         (!('visibility' in data) || validVisibility(data.visibility)) &&
         (!('updatedAt' in data) || validTimestamp(data.updatedAt));
@@ -120,7 +127,7 @@ service cloud.firestore {
       allow get: if isAdmin() || resource.data.userId == request.auth.uid || ('visibility' in resource.data && resource.data.visibility.public == true);
       allow list: if isAdmin() || isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
-        request.resource.data.keys().hasAll(['name', 'userId', 'collectionId', 'createdAt']) &&
+        request.resource.data.keys().hasAll(['name', 'userId', 'createdAt']) &&
         validItem(request.resource.data, request.auth.uid) &&
         hasValidItemCollection(request.resource.data, request.auth.uid);
       allow update: if isOwner(resource.data.userId) && validItemUpdate(request.resource.data, request.auth.uid);
