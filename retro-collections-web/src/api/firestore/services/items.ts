@@ -22,7 +22,7 @@ export interface Item {
   id: string;
   name: string;
   userId: string;
-  collectionId: string;
+  collectionId?: string;
   createdAt: string;
   updatedAt?: string;
   description?: string;

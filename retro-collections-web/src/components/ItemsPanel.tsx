@@ -1,7 +1,6 @@
 import type { ChangeEvent } from 'react';
 import {
   useGetItemsQuery,
-  useCreateItemMutation,
   useUpdateItemMutation,
   useDeleteItemMutation,
 } from '../api/firestore/firestoreApi';
@@ -14,8 +13,9 @@ type SelectedCollection =
 interface ItemData {
   id: string;
   name: string;
-  collectionId: string;
+  collectionId?: string;
   createdAt: string;
+  description?: string;
   visibility?: {
     public: boolean;
   };
@@ -31,8 +31,6 @@ interface ItemsPanelProps {
   user: { uid: string } | null;
   selectedCollection: SelectedCollection | null;
   collections: CollectionRecord[];
-  itemName: string;
-  onItemNameChange: (name: string) => void;
   itemFilter: string;
   onItemFilterChange: (filter: string) => void;
   orphanedItems: ItemData[];
@@ -42,8 +40,6 @@ function ItemsPanel({
   user,
   selectedCollection,
   collections,
-  itemName,
-  onItemNameChange,
   itemFilter,
   onItemFilterChange,
   orphanedItems,
@@ -59,26 +55,8 @@ function ItemsPanel({
     }
   );
 
-  const [createItem, { isLoading: isCreatingItem }] = useCreateItemMutation();
   const [updateItem] = useUpdateItemMutation();
   const [deleteItem] = useDeleteItemMutation();
-
-  const handleCreateItem = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !selectedCollection || !itemName.trim()) return;
-
-    try {
-      await createItem({
-        name: itemName.trim(),
-        userId: user.uid,
-        collectionId: selectedCollection.id,
-        visibility: { public: false },
-      }).unwrap();
-      onItemNameChange('');
-    } catch (error) {
-      console.error('Error adding item:', error);
-    }
-  };
 
   const handleEditItem = async (itemId: string, newName: string) => {
     if (!user || !newName.trim()) return;
@@ -109,7 +87,7 @@ function ItemsPanel({
 
   const handleCollectionChange = async (
     itemId: string,
-    currentCollectionId: string,
+    currentCollectionId: string | undefined,
     event: ChangeEvent<HTMLSelectElement>
   ) => {
     if (!user) return;
@@ -125,10 +103,10 @@ function ItemsPanel({
         id: itemId,
         userId: user.uid,
         previousCollectionId: currentCollectionId,
-        updates: { collectionId: nextCollectionId },
+        updates: { collectionId: nextCollectionId || undefined },
       }).unwrap();
     } catch (error) {
-      event.target.value = currentCollectionId;
+      event.target.value = currentCollectionId || '';
       console.error('Error moving item:', error);
     }
   };
@@ -200,30 +178,6 @@ function ItemsPanel({
           />
         </div>
 
-        {/* Create Item - Only for regular collections */}
-        {selectedCollection?.id !== 'orphaned' && (
-          <form
-            onSubmit={handleCreateItem}
-            className="flex flex-col gap-3 sm:flex-row"
-          >
-            <input
-              type="text"
-              className="input input-bordered flex-1"
-              value={itemName}
-              onChange={(e) => onItemNameChange(e.target.value)}
-              placeholder="New item name"
-              disabled={isCreatingItem}
-            />
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={isCreatingItem || !itemName.trim()}
-            >
-              {isCreatingItem ? 'Adding...' : 'Add Item'}
-            </button>
-          </form>
-        )}
-
         {/* Items List */}
         <div className="space-y-3">
           {selectedCollection?.id === 'orphaned' &&
@@ -262,6 +216,11 @@ function ItemsPanel({
                   />
                 </div>
                 <div className="space-y-1">
+                  {item.description && (
+                    <p className="text-sm text-base-content/80 whitespace-pre-wrap">
+                      {item.description}
+                    </p>
+                  )}
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-sm text-base-content/70">
                       Collection
@@ -269,6 +228,7 @@ function ItemsPanel({
                     <select
                       className="select select-bordered select-sm w-full sm:max-w-xs"
                       value={
+                        item.collectionId &&
                         collections.some(
                           (collection) => collection.id === item.collectionId
                         )

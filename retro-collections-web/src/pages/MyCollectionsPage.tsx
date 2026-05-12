@@ -3,6 +3,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import CollectionsPanel from '../components/CollectionsPanel';
 import ItemsPanel from '../components/ItemsPanel';
+import NewItem from '../components/NewItem';
 import {
   useGetCollectionsQuery,
   useGetUserItemsQuery,
@@ -23,7 +24,6 @@ function MyCollectionsPage() {
   const [selectedCollection, setSelectedCollection] =
     useState<SelectedCollection | null>(null);
   const [collectionName, setCollectionName] = useState('');
-  const [itemName, setItemName] = useState('');
   const [itemFilter, setItemFilter] = useState('');
 
   const { data: collections = [] } = useGetCollectionsQuery(user?.uid || '', {
@@ -86,24 +86,28 @@ function MyCollectionsPage() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[250px_1fr]">
-      {/* LEFT - Collections Panel */}
-      <CollectionsPanel
-        user={user}
-        selectedCollection={resolvedSelectedCollection}
-        onSelectCollection={setSelectedCollection}
-        collectionName={collectionName}
-        onCollectionNameChange={setCollectionName}
-        orphanedCount={orphanedItems.length}
-      />
+    <div className="grid gap-6 lg:grid-cols-[minmax(300px,360px)_1fr]">
+      <div className="space-y-6">
+        <NewItem
+          userId={user.uid}
+          collections={collections}
+          selectedCollection={resolvedSelectedCollection}
+        />
 
-      {/* CENTER - Items Panel */}
+        <CollectionsPanel
+          user={user}
+          selectedCollection={resolvedSelectedCollection}
+          onSelectCollection={setSelectedCollection}
+          collectionName={collectionName}
+          onCollectionNameChange={setCollectionName}
+          orphanedCount={orphanedItems.length}
+        />
+      </div>
+
       <ItemsPanel
         user={user}
         selectedCollection={resolvedSelectedCollection}
         collections={collections}
-        itemName={itemName}
-        onItemNameChange={setItemName}
         itemFilter={itemFilter}
         onItemFilterChange={setItemFilter}
         orphanedItems={orphanedItems}

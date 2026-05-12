@@ -23,6 +23,12 @@ service cloud.firestore {
       return !(field is string) || field.size() <= maxLength;
     }
 
+    function validTimestamp(field) {
+      return field is timestamp && 
+        field.toMillis() > 0 &&
+        field.toMillis() < now.toMillis() + 60000; // Allow up to 60 seconds in the future for clock skew
+    }
+
     function validVisibility(field) {
       return !(field is map) || (field.keys().hasOnly(['public']) && field.public is bool);
     }
@@ -31,7 +37,8 @@ service cloud.firestore {
       return data.keys().hasAll(['name', 'userId', 'createdAt']) &&
         validString(data.name, 100) &&
         (!('description' in data) || validOptionalString(data.description, 500)) &&
-        data.userId == ownerId;
+        data.userId == ownerId &&
+        validTimestamp(data.createdAt);
     }
 
     function validItem(data, ownerId) {
@@ -40,7 +47,8 @@ service cloud.firestore {
         (!('description' in data) || validOptionalString(data.description, 1000)) &&
         data.userId == ownerId &&
         (!('collectionId' in data) || data.collectionId is string) &&
-        (!('visibility' in data) || validVisibility(data.visibility));
+        (!('visibility' in data) || validVisibility(data.visibility)) &&
+        validTimestamp(data.createdAt);
     }
 
     function hasValidItemCollection(data, ownerId) {
@@ -57,7 +65,7 @@ service cloud.firestore {
         validString(data.name, 100) &&
         (!('description' in data) || validOptionalString(data.description, 500)) &&
         data.createdAt == resource.data.createdAt &&
-        (!('updatedAt' in data) || data.updatedAt is timestamp);
+        (!('updatedAt' in data) || validTimestamp(data.updatedAt));
     }
 
     function validItemUpdate(data, ownerId) {
@@ -67,7 +75,7 @@ service cloud.firestore {
         hasValidItemCollection(data, ownerId) &&
         data.createdAt == resource.data.createdAt &&
         (!('visibility' in data) || validVisibility(data.visibility)) &&
-        (!('updatedAt' in data) || data.updatedAt is timestamp);
+        (!('updatedAt' in data) || validTimestamp(data.updatedAt));
     }
 
     // function isCollectionQueryForCurrentUser() {
