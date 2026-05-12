@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
+import { useNavigate, useParams } from 'react-router-dom';
 import { auth } from '../lib/firebase';
 import CollectionsPanel from '../components/CollectionsPanel';
 import ItemsPanel from '../components/ItemsPanel';
@@ -20,6 +21,8 @@ type SelectedCollection =
   | { id: 'orphaned'; name: 'Orphaned Items'; createdAt: '' };
 
 function MyCollectionsPage() {
+  const navigate = useNavigate();
+  const { collectionId } = useParams();
   const [user, setUser] = useState<User | null>(null);
   const [selectedCollection, setSelectedCollection] =
     useState<SelectedCollection | null>(null);
@@ -67,6 +70,29 @@ function MyCollectionsPage() {
       : null;
   }, [collectionIds, orphanedItems, selectedCollection]);
 
+  const routeSelectedCollection = useMemo(() => {
+    if (!collectionId) {
+      return null;
+    }
+
+    if (collectionId === 'orphaned') {
+      return orphanedItems.length > 0
+        ? { id: 'orphaned', name: 'Orphaned Items', createdAt: '' }
+        : null;
+    }
+
+    return collections.find((collection) => collection.id === collectionId) ?? null;
+  }, [collectionId, collections, orphanedItems.length]);
+
+  useEffect(() => {
+    setSelectedCollection(routeSelectedCollection);
+  }, [routeSelectedCollection]);
+
+  const handleSelectCollection = (collection: SelectedCollection) => {
+    setSelectedCollection(collection);
+    navigate(`/my-collections/${collection.id}`);
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -97,7 +123,7 @@ function MyCollectionsPage() {
         <CollectionsPanel
           user={user}
           selectedCollection={resolvedSelectedCollection}
-          onSelectCollection={setSelectedCollection}
+          onSelectCollection={handleSelectCollection}
           collectionName={collectionName}
           onCollectionNameChange={setCollectionName}
           orphanedCount={orphanedItems.length}

@@ -24,6 +24,9 @@ export interface Collection {
   createdAt: string;
   updatedAt?: string;
   description?: string;
+  visibility?: {
+    public: boolean;
+  };
 }
 
 type CollectionInput = Omit<Collection, 'id' | 'createdAt' | 'updatedAt'>;
@@ -36,6 +39,9 @@ interface FirestoreCollectionDoc {
   createdAt: Timestamp;
   updatedAt?: Timestamp;
   description?: string;
+  visibility?: {
+    public: boolean;
+  };
 }
 
 const mapCollectionDoc = (
@@ -49,6 +55,7 @@ const mapCollectionDoc = (
     name: data.name,
     userId: data.userId,
     description: data.description,
+    visibility: data.visibility,
 
     createdAt: data.createdAt?.toDate?.()?.toISOString(),
     updatedAt: data.updatedAt?.toDate?.()?.toISOString(),
@@ -93,6 +100,7 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
       try {
         const docRef = await addDoc(collection(db, 'collections'), {
           ...collectionData,
+          visibility: collectionData.visibility ?? { public: false },
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
@@ -101,6 +109,7 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
           data: {
             id: docRef.id,
             ...collectionData,
+            visibility: collectionData.visibility ?? { public: false },
             createdAt: '',
             updatedAt: '',
           },

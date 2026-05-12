@@ -17,7 +17,10 @@ function App() {
             <div className="space-y-6">
               <Routes>
                 <Route path="/" element={<HomePage />} />
-                <Route path="/my-collections" element={<MyCollectionsPage />} />
+                <Route
+                  path="/my-collections/:collectionId?"
+                  element={<MyCollectionsPage />}
+                />
                 <Route path="/users" element={<UsersPage />} />
                 <Route path="/admin" element={<AdminPage />} />
               </Routes>

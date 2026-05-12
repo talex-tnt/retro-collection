@@ -1,6 +1,7 @@
 import {
   useGetCollectionsQuery,
   useCreateCollectionMutation,
+  useUpdateCollectionMutation,
   useDeleteCollectionMutation,
 } from '../api/firestore/firestoreApi';
 import CollectionCounter from './CollectionCounter';
@@ -9,6 +10,9 @@ interface CollectionRecord {
   id: string;
   name: string;
   createdAt: string;
+  visibility?: {
+    public: boolean;
+  };
 }
 
 type SelectedCollection =
@@ -39,6 +43,7 @@ function CollectionsPanel({
 
   const [createCollection, { isLoading: isCreatingCollection }] =
     useCreateCollectionMutation();
+  const [updateCollection] = useUpdateCollectionMutation();
   const [deleteCollection, { isLoading: isDeletingCollection }] =
     useDeleteCollectionMutation();
 
@@ -50,10 +55,28 @@ function CollectionsPanel({
       await createCollection({
         name: collectionName.trim(),
         userId: user.uid,
+        visibility: { public: false },
       }).unwrap();
       onCollectionNameChange('');
     } catch (error) {
       console.error('Error creating collection:', error);
+    }
+  };
+
+  const handleToggleCollectionVisibility = async (
+    collectionItem: CollectionRecord
+  ) => {
+    if (!user) return;
+
+    try {
+      await updateCollection({
+        id: collectionItem.id,
+        updates: {
+          visibility: { public: !collectionItem.visibility?.public },
+        },
+      }).unwrap();
+    } catch (error) {
+      console.error('Error updating collection visibility:', error);
     }
   };
 
@@ -121,6 +144,15 @@ function CollectionsPanel({
                 >
                   {collectionItem.name}
                 </button>
+                <button
+                  type="button"
+                  className={`btn btn-xs ${collectionItem.visibility?.public ? 'btn-success' : 'btn-ghost'}`}
+                  onClick={() => handleToggleCollectionVisibility(collectionItem)}
+                  disabled={!user}
+                  title={collectionItem.visibility?.public ? 'Make private' : 'Make public'}
+                >
+                  {collectionItem.visibility?.public ? 'Public' : 'Private'}
+                </button>
                 {user && (
                   <CollectionCounter
                     collectionId={collectionItem.id}
@@ -128,6 +160,7 @@ function CollectionsPanel({
                   />
                 )}
                 <button
+                  type="button"
                   className="btn btn-ghost btn-xs text-error hover:text-error-content"
                   onClick={() => handleDeleteCollection(collectionItem.id)}
                   disabled={isDeletingCollection}
@@ -147,6 +180,7 @@ function CollectionsPanel({
               }`}
             >
               <button
+                type="button"
                 className="flex-1 text-left text-sm font-medium truncate"
                 onClick={() =>
                   onSelectCollection({
