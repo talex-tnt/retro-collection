@@ -25,8 +25,9 @@ import {
 
 const RULES_TARGET = process.env.RULES_TARGET ?? 'emulator';
 const ENV = process.env.ENV ?? 'dev';
-const TEST_DATA_TEST_PATH = 'data/test/rulesSmoke/adminOnlyWrite';
-const TEST_CONFIG_PATH = 'config/public';
+const TEST_ENV = 'test';
+const TEST_DATA_TEST_PATH = `${TEST_ENV}/data/rulesSmoke/adminOnlyWrite`;
+const TEST_CONFIG_PATH = `${TEST_ENV}/config/public/runtime`;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 
@@ -208,7 +209,7 @@ test(`admin can write into ${TEST_CONFIG_PATH} on ${RULES_TARGET}`, async () => 
   try {
     await assert.doesNotReject(
       setDoc(doc(context.db, TEST_CONFIG_PATH), {
-        dataFolder: 'main',
+        dataFolder: 'data',
       })
     );
   } finally {
@@ -225,7 +226,7 @@ test(`non-admin cannot write into ${TEST_CONFIG_PATH} on ${RULES_TARGET}`, async
   try {
     await expectPermissionDenied(
       setDoc(doc(context.db, TEST_CONFIG_PATH), {
-        dataFolder: 'main',
+        dataFolder: 'data',
       })
     );
   } finally {

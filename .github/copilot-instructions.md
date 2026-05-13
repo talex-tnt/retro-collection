@@ -21,8 +21,8 @@ This file tracks implementation requirements and coding guidelines for the retro
 
 ### Current Tasks
 - [ ] Implement admin-only access for config and test data paths
-- [ ] Enable and test collections rules with data/{env}/ prefix
-- [ ] Enable and test items rules with data/{env}/ prefix
+- [ ] Enable and test collections rules with {env}/data prefix
+- [ ] Enable and test items rules with {env}/data prefix
 
 ## Coding Guidelines
 - TypeScript for all new code

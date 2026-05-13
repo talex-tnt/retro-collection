@@ -124,11 +124,11 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    match /config/{document=**} {
+    match /{env}/config/{document=**} {
       allow read, write: if isAdmin();
     }
 
-    match /data/test/{document=**} {
+    match /test/data/{document=**} {
       allow read, write: if isAdmin();
     }
 
