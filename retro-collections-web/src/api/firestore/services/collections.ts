@@ -16,6 +16,7 @@ import {
 import type { FirestoreBuilder } from '../types/firestoreBuilder';
 import { createFirestoreApiError } from '../errorLogger';
 import { db } from '../../../lib/firebase';
+import { resolveDataCollectionPath } from '../runtimeConfig';
 
 export interface Collection {
   id: string;
@@ -65,8 +66,9 @@ const mapCollectionDoc = (
 const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
   getCollections: builder.query<Collection[], string>({
     async queryFn(userId) {
+      const path = await resolveDataCollectionPath('collections');
       const q = query(
-        collection(db, 'collections'),
+        collection(db, path),
         where('userId', '==', userId),
         orderBy('createdAt', 'desc'),
         orderBy('__name__', 'asc')
@@ -75,7 +77,7 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
         apiEndpoint: 'getCollections',
         operation: 'QUERY' as const,
         firebaseFunc: 'getDocs',
-        path: 'collections',
+        path,
         requestPayload: q,
       };
       try {
@@ -103,8 +105,9 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
 
   getPublicCollectionsByUserId: builder.query<Collection[], string>({
     async queryFn(userId) {
+      const path = await resolveDataCollectionPath('collections');
       const q = query(
-        collection(db, 'collections'),
+        collection(db, path),
         where('userId', '==', userId),
         where('visibility.public', '==', true),
         orderBy('createdAt', 'desc'),
@@ -114,7 +117,7 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
         apiEndpoint: 'getPublicCollectionsByUserId',
         operation: 'QUERY' as const,
         firebaseFunc: 'getDocs',
-        path: 'collections',
+        path,
         requestPayload: q,
       };
       try {
@@ -135,6 +138,7 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
 
   createCollection: builder.mutation<Collection, CollectionInput>({
     async queryFn(collectionData) {
+      const path = await resolveDataCollectionPath('collections');
       const requestPayload = {
         ...collectionData,
         visibility: collectionData.visibility ?? { public: false },
@@ -145,14 +149,11 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
         apiEndpoint: 'createCollection',
         operation: 'CREATE' as const,
         firebaseFunc: 'addDoc',
-        path: 'collections',
+        path,
         requestPayload,
       };
       try {
-        const docRef = await addDoc(
-          collection(db, 'collections'),
-          requestPayload
-        );
+        const docRef = await addDoc(collection(db, path), requestPayload);
 
         return {
           data: {
@@ -176,6 +177,7 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
     { id: string; updates: CollectionUpdate }
   >({
     async queryFn({ id, updates }) {
+      const path = await resolveDataCollectionPath('collections');
       const requestPayload = {
         ...updates,
         updatedAt: serverTimestamp(),
@@ -184,12 +186,12 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
         apiEndpoint: 'updateCollection',
         operation: 'UPDATE' as const,
         firebaseFunc: 'updateDoc',
-        path: 'collections',
+        path,
         segmentPaths: [id],
         requestPayload,
       };
       try {
-        await updateDoc(doc(db, 'collections', id), requestPayload);
+        await updateDoc(doc(db, path, id), requestPayload);
 
         return { data: undefined };
       } catch (error) {
@@ -205,15 +207,16 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
 
   deleteCollection: builder.mutation<void, string>({
     async queryFn(id) {
+      const path = await resolveDataCollectionPath('collections');
       const context = {
         apiEndpoint: 'deleteCollection',
         operation: 'DELETE' as const,
         firebaseFunc: 'deleteDoc',
-        path: 'collections',
+        path,
         segmentPaths: [id],
       };
       try {
-        await deleteDoc(doc(db, context.path, ...context.segmentPaths));
+        await deleteDoc(doc(db, path, ...context.segmentPaths));
 
         return { data: undefined };
       } catch (error) {

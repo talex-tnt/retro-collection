@@ -26,8 +26,8 @@ This file tracks implementation requirements and coding guidelines for the retro
     - `match /test/data/{document=**}` - admin read/write only
 - [x] Implement dataFolder configuration and access control (7/7 tests passing on emulator & live)
   - ✅ Architecture:
-    - Config stored at `/main/config/public/runtime` with `{dataFolder: 'collections'}` value
-    - Users can only write to `/main/data/{folder}/{resourceType}/{document}` paths
+    - Config stored at `/main/config/public/runtime` with `{dataFolder: 'default'}` value
+    - Users can only write to `/main/data/{folder}/{resourceType}/docs/{document}` paths
     - Direct writes to `/main/data/{folder}/**` are blocked (requires nested resourceType)
   - ✅ Smoke test suite with 7 assertions:
     - Admin can write to test/data/rulesSmoke (admin-only test path)
@@ -35,7 +35,7 @@ This file tracks implementation requirements and coding guidelines for the retro
     - Admin can write to test/config/public/runtime
     - Non-admin cannot write to test config
     - User can write to matched dataFolder path
-    - User cannot write to non-matched dataFolder (e.g., writing to 'items' when dataFolder='collections')
+    - User cannot write to non-matched dataFolder (e.g., writing to `items` when `dataFolder='default'`)
     - Authenticated user can read data
 - [ ] Implement resource type rules (collections, items, users) with validation
 - [ ] Implement authorization rules for multi-user access patterns
@@ -49,15 +49,15 @@ This file tracks implementation requirements and coding guidelines for the retro
 ### Path Structure
 ```
 /main/config/{document=**}                  # Admin-only main configuration
-/main/config/public/runtime                 # Config metadata: {dataFolder: 'collections'}
+/main/config/public/runtime                 # Config metadata: {dataFolder: 'default'}
 /test/data/{document=**}                    # Admin-only test data
 /main/data/{folder}/                        # Common users cannot write here (requires resourceType)
-/main/data/{folder}/{resourceType}/{docId}  # Common users can write here (only if folder matches dataFolder config)
+/main/data/{folder}/{resourceType}/docs/{docId}  # Common users can write here (only if folder matches dataFolder config)
 ```
 
 ### Database Hierarchy
 - `main` / `test`: Static top-level environments (main for production, test for testing)
-- `{folder}`: Configurable data folder from `/main/config/public/runtime.dataFolder` (currently 'collections')
+- `{folder}`: Configurable data folder from `/main/config/public/runtime.dataFolder` (currently 'default')
 - `{resourceType}`: Resource type like collections, items, users - users can only write to matched resourceType paths
 - `{docId}`: Individual document ID
 

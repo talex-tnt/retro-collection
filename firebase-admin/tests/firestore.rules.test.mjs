@@ -19,6 +19,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocFromServer,
   getFirestore,
   setDoc,
   terminate,
@@ -28,11 +29,16 @@ import {
 const RULES_TARGET = process.env.RULES_TARGET ?? 'emulator';
 const ENV = process.env.ENV ?? 'dev';
 const TEST_ENV = 'test';
+const TEST_DATA_FOLDER = 'default';
+const TEST_ALT_DATA_FOLDER_1 = 'default1';
+const TEST_ALT_DATA_FOLDER_2 = 'default2';
 const TEST_DATA_TEST_PATH = `${TEST_ENV}/data/rulesSmoke/adminOnlyWrite`;
 const TEST_CONFIG_PATH = `${TEST_ENV}/config/public/runtime`;
 const TEST_COLLECTION_ID = 'test-collection-1';
 const TEST_USER_ID = 'rules-regular-user';
-const TEST_COLLECTION_PATH = `${TEST_ENV}/data/collections/${TEST_COLLECTION_ID}`;
+const TEST_COLLECTION_PATH = `${TEST_ENV}/data/${TEST_DATA_FOLDER}/collections/docs/${TEST_COLLECTION_ID}`;
+const TEST_ALT_COLLECTION_PATH_1 = `${TEST_ENV}/data/${TEST_ALT_DATA_FOLDER_1}/collections/docs/test-collection-default1`;
+const TEST_ALT_COLLECTION_PATH_2 = `${TEST_ENV}/data/${TEST_ALT_DATA_FOLDER_2}/collections/docs/test-collection-default2`;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 
@@ -143,6 +149,8 @@ const cleanupTestDocs = async () => {
   await getAdminDb().doc(TEST_DATA_TEST_PATH).delete().catch(() => undefined);
   await getAdminDb().doc(TEST_CONFIG_PATH).delete().catch(() => undefined);
   await getAdminDb().doc(TEST_COLLECTION_PATH).delete().catch(() => undefined);
+  await getAdminDb().doc(TEST_ALT_COLLECTION_PATH_1).delete().catch(() => undefined);
+  await getAdminDb().doc(TEST_ALT_COLLECTION_PATH_2).delete().catch(() => undefined);
 };
 
 const expectPermissionDenied = async (promise) => {
@@ -165,7 +173,7 @@ test.beforeEach(async () => {
   // Initialize config with dataFolder value AFTER cleanup
   const adminDb = getAdminDb();
   await adminDb.doc(TEST_CONFIG_PATH).set(
-    { dataFolder: 'collections' },
+    { dataFolder: TEST_DATA_FOLDER },
     { merge: true }
   );
 });
@@ -272,9 +280,9 @@ test(`user cannot write to non-matched dataFolder on ${RULES_TARGET}`, async () 
   });
 
   try {
-    // Should fail because dataFolder is 'collections', not 'items'
+    // Should fail because dataFolder is 'default', not 'items'
     await expectPermissionDenied(
-      setDoc(doc(context.db, `${TEST_ENV}/data/items/test-item-1`), {
+      setDoc(doc(context.db, `${TEST_ENV}/data/items/items/docs/test-item-1`), {
         testData: 'value',
       })
     );
@@ -293,8 +301,63 @@ test(`authenticated user can read data on ${RULES_TARGET}`, async () => {
   });
 
   try {
-    const snap = await getDoc(doc(context.db, TEST_COLLECTION_PATH));
+    const snap = await getDocFromServer(doc(context.db, TEST_COLLECTION_PATH));
     assert.ok(snap.exists(), 'Should be readable by authenticated user');
+  } finally {
+    await context.cleanup();
+  }
+});
+
+test(`user can read config public and then read matched dataFolder data on ${RULES_TARGET}`, async () => {
+  await getAdminDb().doc(TEST_COLLECTION_PATH).set({ testData: 'value' });
+
+  const context = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    const configSnap = await getDocFromServer(doc(context.db, TEST_CONFIG_PATH));
+    assert.ok(configSnap.exists(), 'Public runtime config should be readable');
+
+    const dataFolder = configSnap.data()?.dataFolder;
+    assert.equal(dataFolder, TEST_DATA_FOLDER);
+
+    const matchedPath = `${TEST_ENV}/data/${dataFolder}/collections/docs/${TEST_COLLECTION_ID}`;
+    const dataSnap = await getDocFromServer(doc(context.db, matchedPath));
+    assert.ok(dataSnap.exists(), 'Matched dataFolder data should be readable');
+    assert.equal(dataSnap.data()?.testData, 'value');
+  } finally {
+    await context.cleanup();
+  }
+});
+
+test(`user cannot read data from a folder that does not match public config on ${RULES_TARGET}`, async () => {
+  await getAdminDb().doc(TEST_ALT_COLLECTION_PATH_1).set({ testData: 'wrong-folder' });
+  await getAdminDb().doc(TEST_ALT_COLLECTION_PATH_2).set({ testData: 'matched-folder' });
+  await getAdminDb().doc(TEST_CONFIG_PATH).set(
+    { dataFolder: TEST_ALT_DATA_FOLDER_2 },
+    { merge: true }
+  );
+
+  const context = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    const configSnap = await getDocFromServer(doc(context.db, TEST_CONFIG_PATH));
+    assert.ok(configSnap.exists(), 'Public runtime config should be readable');
+    assert.equal(configSnap.data()?.dataFolder, TEST_ALT_DATA_FOLDER_2);
+
+    await expectPermissionDenied(
+      getDocFromServer(doc(context.db, TEST_ALT_COLLECTION_PATH_1))
+    );
+
+    const matchedSnap = await getDocFromServer(
+      doc(context.db, TEST_ALT_COLLECTION_PATH_2)
+    );
+    assert.ok(matchedSnap.exists(), 'Configured folder data should stay readable');
   } finally {
     await context.cleanup();
   }

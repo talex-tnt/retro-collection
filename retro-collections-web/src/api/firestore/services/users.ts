@@ -16,6 +16,7 @@ import {
 import type { FirestoreBuilder } from '../types/firestoreBuilder';
 import { createFirestoreApiError } from '../errorLogger';
 import { db } from '../../../lib/firebase';
+import { resolveDataCollectionPath } from '../runtimeConfig';
 
 export interface UserRecord {
   id: string;
@@ -46,12 +47,13 @@ const mapUserDoc = (
 const getUsersEndpoints = (builder: FirestoreBuilder) => ({
   getUsers: builder.query<UserRecord[], void>({
     async queryFn() {
-      const q = query(collection(db, 'users'), orderBy('lastLogin', 'desc'));
+      const path = await resolveDataCollectionPath('users');
+      const q = query(collection(db, path), orderBy('lastLogin', 'desc'));
       const context = {
         apiEndpoint: 'getUsers',
         operation: 'QUERY' as const,
         firebaseFunc: 'getDocs',
-        path: 'users',
+        path,
         requestPayload: q,
       };
       try {
@@ -70,17 +72,16 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
 
   getUserById: builder.query<UserRecord | null, string>({
     async queryFn(userId) {
+      const path = await resolveDataCollectionPath('users');
       const context = {
         apiEndpoint: 'getUserById',
         operation: 'GET' as const,
         firebaseFunc: 'getDoc',
-        path: 'users',
+        path,
         segmentPaths: [userId],
       };
       try {
-        const snap = await getDoc(
-          doc(db, context.path, ...context.segmentPaths)
-        );
+        const snap = await getDoc(doc(db, path, ...context.segmentPaths));
 
         if (!snap.exists()) return { data: null };
 
@@ -109,6 +110,7 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
     }
   >({
     async queryFn({ id, ...data }) {
+      const path = await resolveDataCollectionPath('users');
       const requestPayload = {
         ...data,
         lastLogin: serverTimestamp(),
@@ -117,12 +119,12 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
         apiEndpoint: 'createOrUpdateUser',
         operation: 'CREATE' as const,
         firebaseFunc: 'setDoc',
-        path: 'users',
+        path,
         segmentPaths: [id],
         requestPayload,
       };
       try {
-        await setDoc(doc(db, 'users', id), requestPayload, { merge: true });
+        await setDoc(doc(db, path, id), requestPayload, { merge: true });
 
         return {
           data: undefined,
@@ -152,6 +154,7 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
     }
   >({
     async queryFn({ id, updates }) {
+      const path = await resolveDataCollectionPath('users');
       const requestPayload = {
         ...updates,
         lastLogin: serverTimestamp(),
@@ -160,12 +163,12 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
         apiEndpoint: 'updateUser',
         operation: 'UPDATE' as const,
         firebaseFunc: 'updateDoc',
-        path: 'users',
+        path,
         segmentPaths: [id],
         requestPayload,
       };
       try {
-        await updateDoc(doc(db, 'users', id), requestPayload);
+        await updateDoc(doc(db, path, id), requestPayload);
 
         return {
           data: undefined,

@@ -25,14 +25,16 @@ service cloud.firestore {
     }
 
     match /{env}/data/{folder}/{document=**} {
-      allow read: if isAdmin() || isAuthenticated();
-      allow list: if isAdmin() || isAuthenticated();
+      allow read: if isAdmin();
+      allow list: if isAdmin();
       allow write: if false;
     }
 
     match /{env}/data/{folder}/{resourceType}/{document=**} {
-      allow read: if isAdmin() || isAuthenticated();
-      allow list: if isAdmin() || isAuthenticated();
+      allow read: if isAdmin() || (isAuthenticated() && 
+        get(/databases/$(database)/documents/$(env)/config/public/runtime).data.dataFolder == folder);
+      allow list: if isAdmin() || (isAuthenticated() && 
+        get(/databases/$(database)/documents/$(env)/config/public/runtime).data.dataFolder == folder);
       allow write: if isAdmin() || (isAuthenticated() && 
         get(/databases/$(database)/documents/$(env)/config/public/runtime).data.dataFolder == folder);
     }

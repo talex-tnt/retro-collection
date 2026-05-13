@@ -6,8 +6,54 @@ import AdminPage from '../pages/AdminPage';
 import CollectorPage from '../pages/CollectorPage';
 import UsersPage from '../pages/UsersPage';
 import MyCollectionsPage from '../pages/MyCollectionsPage';
+import { onAuthStateChanged } from 'firebase/auth';
+import { useEffect, useState } from 'react';
+import { auth } from '../lib/firebase';
+import { useGetRuntimeConfigQuery } from '../api/firestore/firestoreApi';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isLoading: isRuntimeConfigLoading, isError: isRuntimeConfigError } =
+    useGetRuntimeConfigQuery(undefined, {
+      skip: !isAuthenticated,
+    });
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setIsAuthenticated(Boolean(currentUser));
+    });
+
+    return unsubscribe;
+  }, []);
+
+  if (isAuthenticated && isRuntimeConfigLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-base-200 text-base-content">
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body">
+            <span className="loading loading-spinner loading-lg" />
+            <p>Loading Firestore config...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated && isRuntimeConfigError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-base-200 text-base-content">
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body">
+            <h2 className="card-title">Firestore config unavailable</h2>
+            <p>
+              Please try again after the public runtime config is reachable.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <HashRouter>
       <div className="flex flex-col min-h-screen bg-base-200 text-base-content">
