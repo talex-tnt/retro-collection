@@ -5,10 +5,14 @@
     "deploy:indexes": "dotenv -e .env -- sh -c 'firebase deploy --only firestore:indexes --project=$ENV'",
     "deploy": "dotenv -e .env -- sh -c 'echo $ENV && firebase deploy --project=$ENV'",
     "deploy:ci" : "firebase deploy --project $ENV",
-    "set-admin": "node set-admin.mjs"
+    "set-admin": "node set-admin.mjs",
+    "test:rules": "node --test tests/firestore.rules.test.mjs",
+    "test:rules:emulator": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/firestore.rules.test.mjs'",
+    "test:rules:live": "RULES_TARGET=live ENV=dev node --test tests/firestore.rules.test.mjs"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
+    "firebase": "^12.12.1",
     "firebase-admin": "^13.8.0",
     "firebase-tools": "^15.17.0"
   },

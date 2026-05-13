@@ -8,6 +8,7 @@ This file tracks implementation requirements and coding guidelines for the retro
 - **Stack**: React, TypeScript, Tailwind CSS, Firebase/Firestore
 
 ## Implementation Tasks
+-  Update this file with new implementation tasks as they arise, and mark them as completed when done. This will help maintain a clear record of what has been implemented and what is currently being worked on.
 
 ### Completed Tasks
 - [x] Add delete collection button to MyCollectionsPage with confirmation dialog
@@ -19,13 +20,15 @@ This file tracks implementation requirements and coding guidelines for the retro
 - [x] Implement orphaned items feature: special non-deletable collection showing items with non-existent parent collectionId
 
 ### Current Tasks
-- None
+- [ ] Add Firestore rules test harness that runs against emulator and live Firebase
+- [ ] Implement admin-only access for config and test data paths
 
 ## Coding Guidelines
 - TypeScript for all new code
 - Functional components with hooks in React
 - Follow existing project structure and naming conventions
 - Firestore API abstraction layer in `src/api/firestore/`
+- In Firestore API logging, do not duplicate document or collection refs just for logging. Use `path` and `segmentPaths` in the context, and only include `requestPayload` when it is the actual data or query object passed to Firebase.
 
 ## Notes
 Last updated: {{DATE}}
