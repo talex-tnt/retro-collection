@@ -20,9 +20,55 @@ This file tracks implementation requirements and coding guidelines for the retro
 - [x] Implement orphaned items feature: special non-deletable collection showing items with non-existent parent collectionId
 
 ### Current Tasks
-- [ ] Implement admin-only access for config and test data paths
-- [ ] Enable and test collections rules with {env}/data prefix
-- [ ] Enable and test items rules with {env}/data prefix
+- [x] Implement admin-only access for config and test data paths (4/7 tests)
+  - ✅ Admin-only rules:
+    - `match /main/config/{document=**}` - admin read/write only
+    - `match /test/data/{document=**}` - admin read/write only
+- [x] Implement dataFolder configuration and access control (7/7 tests passing on emulator & live)
+  - ✅ Architecture:
+    - Config stored at `/main/config/public/runtime` with `{dataFolder: 'collections'}` value
+    - Users can only write to `/main/data/{folder}/{resourceType}/{document}` paths
+    - Direct writes to `/main/data/{folder}/**` are blocked (requires nested resourceType)
+  - ✅ Smoke test suite with 7 assertions:
+    - Admin can write to test/data/rulesSmoke (admin-only test path)
+    - Non-admin cannot write to test data
+    - Admin can write to test/config/public/runtime
+    - Non-admin cannot write to test config
+    - User can write to matched dataFolder path
+    - User cannot write to non-matched dataFolder (e.g., writing to 'items' when dataFolder='collections')
+    - Authenticated user can read data
+- [ ] Implement resource type rules (collections, items, users) with validation
+- [ ] Implement authorization rules for multi-user access patterns
+
+## Firestore Architecture
+
+### User Types
+- **Admin**: Can read/write anywhere (config, test data, any data path)
+- **Common User**: Can read authenticated data, can only write to `/main/data/{folder}/{resourceType}/**` paths
+
+### Path Structure
+```
+/main/config/{document=**}                  # Admin-only main configuration
+/main/config/public/runtime                 # Config metadata: {dataFolder: 'collections'}
+/test/data/{document=**}                    # Admin-only test data
+/main/data/{folder}/                        # Common users cannot write here (requires resourceType)
+/main/data/{folder}/{resourceType}/{docId}  # Common users can write here (only if folder matches dataFolder config)
+```
+
+### Database Hierarchy
+- `main` / `test`: Static top-level environments (main for production, test for testing)
+- `{folder}`: Configurable data folder from `/main/config/public/runtime.dataFolder` (currently 'collections')
+- `{resourceType}`: Resource type like collections, items, users - users can only write to matched resourceType paths
+- `{docId}`: Individual document ID
+
+### Rules Structure
+- **Config rules** (`/main/config/**`): Admin-only read/write
+- **Test data rules** (`/test/data/**`): Admin-only read/write (for testing admin isolation)
+- **Direct folder write block** (`/main/data/{folder}/**`): Blocked for everyone - requires resourceType nesting
+- **Resource type rules** (`/main/data/{folder}/{resourceType}/**`): 
+  - Common users: can write only if `{folder}` matches `config.public/runtime.dataFolder`
+  - Admins: can write anywhere
+- **Future resource-specific rules**: Will validate each resourceType (collections, items, users) with field validation and ownership rules
 
 ## Coding Guidelines
 - TypeScript for all new code

@@ -11,91 +11,117 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.token.admin == true;
     }
 
-    function isOwner(ownerId) {
-      return isAuthenticated() && request.auth.uid == ownerId;
+    match /{env}/config/{document=**} {
+      allow read, write: if isAdmin();
     }
 
-    function validString(field, maxLength) {
-      return field is string && field.size() > 0 && field.size() <= maxLength;
+    match /{env}/config/public/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
-    function validOptionalString(field, maxLength) {
-      return !(field is string) || field.size() <= maxLength;
+    match /test/data/{document=**} {
+      allow read, write: if isAdmin();
     }
 
-    function validTimestamp(field) {
-      return field is timestamp && 
-        field.toMillis() > 0 &&
-        field.toMillis() < now.toMillis() + 60000; // Allow up to 60 seconds in the future for clock skew
+    match /{env}/data/{folder}/{document=**} {
+      allow read: if isAdmin() || isAuthenticated();
+      allow list: if isAdmin() || isAuthenticated();
+      allow write: if false;
     }
 
-    function validVisibility(field) {
-      return !(field is map) || (field.keys().hasOnly(['public']) && field.public is bool);
+    match /{env}/data/{folder}/{resourceType}/{document=**} {
+      allow read: if isAdmin() || isAuthenticated();
+      allow list: if isAdmin() || isAuthenticated();
+      allow write: if isAdmin() || (isAuthenticated() && 
+        get(/databases/$(database)/documents/$(env)/config/public/runtime).data.dataFolder == folder);
     }
 
-    function validCollection(data, ownerId) {
-      return data.keys().hasAll(['name', 'userId', 'createdAt']) &&
-        validString(data.name, 100) &&
-        (!('description' in data) || validOptionalString(data.description, 500)) &&
-        data.userId == ownerId &&
-        (!('visibility' in data) || validVisibility(data.visibility)) &&
-        validTimestamp(data.createdAt);
-    }
+    // function isOwner(ownerId) {
+    //   return isAuthenticated() && request.auth.uid == ownerId;
+    // }
 
-    function validItem(data, ownerId) {
-      return data.keys().hasAll(['name', 'userId', 'createdAt']) &&
-        validString(data.name, 100) &&
-        (!('description' in data) || validOptionalString(data.description, 1000)) &&
-        data.userId == ownerId &&
-        (!('collectionId' in data) || data.collectionId == null || data.collectionId is string) &&
-        (!('visibility' in data) || validVisibility(data.visibility)) &&
-        validTimestamp(data.createdAt);
-    }
+    // function validString(field, maxLength) {
+    //   return field is string && field.size() > 0 && field.size() <= maxLength;
+    // }
 
-    function hasValidItemCollection(data, ownerId) {
-      return !('collectionId' in data) || data.collectionId == null || (
-        data.collectionId is string && 
-        data.collectionId.size() > 0 &&
-        exists(/databases/$(database)/documents/collections/$(data.collectionId)) &&
-        get(/databases/$(database)/documents/collections/$(data.collectionId)).data.userId == ownerId
-      );
-    }
+    // function validOptionalString(field, maxLength) {
+    //   return !(field is string) || field.size() <= maxLength;
+    // }
 
-    function normalizedCollectionId(data) {
-      return ('collectionId' in data && data.collectionId != null) ? data.collectionId : null;
-    }
+    // function validTimestamp(field) {
+    //   return field is timestamp && 
+    //     field.toMillis() > 0 &&
+    //     field.toMillis() < now.toMillis() + 60000; // Allow up to 60 seconds in the future for clock skew
+    // }
 
-    function validCollectionUpdate(data, ownerId) {
-      return data.userId == ownerId &&
-        validString(data.name, 100) &&
-        (!('description' in data) || validOptionalString(data.description, 500)) &&
-        data.createdAt == resource.data.createdAt &&
-        (!('visibility' in data) || validVisibility(data.visibility)) &&
-        (!('updatedAt' in data) || validTimestamp(data.updatedAt));
-    }
+    // function validVisibility(field) {
+    //   return !(field is map) || (field.keys().hasOnly(['public']) && field.public is bool);
+    // }
 
-    function validItemUpdate(data, ownerId) {
-      return data.userId == resource.data.userId &&
-        data.userId == ownerId &&
-        data.createdAt == resource.data.createdAt &&
-        (
-          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['name']) ||
-          validString(data.name, 100)
-        ) &&
-        (
-          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['description']) ||
-          validOptionalString(data.description, 1000)
-        ) &&
-        (
-          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['collectionId']) ||
-          hasValidItemCollection(data, ownerId)
-        ) &&
-        (
-          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['visibility']) ||
-          validVisibility(data.visibility)
-        ) &&
-        (!('updatedAt' in data) || validTimestamp(data.updatedAt));
-    }
+    // function validCollection(data, ownerId) {
+    //   return data.keys().hasAll(['name', 'userId', 'createdAt']) &&
+    //     validString(data.name, 100) &&
+    //     (!('description' in data) || validOptionalString(data.description, 500)) &&
+    //     data.userId == ownerId &&
+    //     (!('visibility' in data) || validVisibility(data.visibility)) &&
+    //     validTimestamp(data.createdAt);
+    // }
+
+    // function validItem(data, ownerId) {
+    //   return data.keys().hasAll(['name', 'userId', 'createdAt']) &&
+    //     validString(data.name, 100) &&
+    //     (!('description' in data) || validOptionalString(data.description, 1000)) &&
+    //     data.userId == ownerId &&
+    //     (!('collectionId' in data) || data.collectionId == null || data.collectionId is string) &&
+    //     (!('visibility' in data) || validVisibility(data.visibility)) &&
+    //     validTimestamp(data.createdAt);
+    // }
+
+    // function hasValidItemCollection(data, ownerId) {
+    //   return !('collectionId' in data) || data.collectionId == null || (
+    //     data.collectionId is string && 
+    //     data.collectionId.size() > 0 &&
+    //     exists(/databases/$(database)/documents/collections/$(data.collectionId)) &&
+    //     get(/databases/$(database)/documents/collections/$(data.collectionId)).data.userId == ownerId
+    //   );
+    // }
+
+    // function normalizedCollectionId(data) {
+    //   return ('collectionId' in data && data.collectionId != null) ? data.collectionId : null;
+    // }
+
+    // function validCollectionUpdate(data, ownerId) {
+    //   return data.userId == ownerId &&
+    //     validString(data.name, 100) &&
+    //     (!('description' in data) || validOptionalString(data.description, 500)) &&
+    //     data.createdAt == resource.data.createdAt &&
+    //     (!('visibility' in data) || validVisibility(data.visibility)) &&
+    //     (!('updatedAt' in data) || validTimestamp(data.updatedAt));
+    // }
+
+    // function validItemUpdate(data, ownerId) {
+    //   return data.userId == resource.data.userId &&
+    //     data.userId == ownerId &&
+    //     data.createdAt == resource.data.createdAt &&
+    //     (
+    //       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['name']) ||
+    //       validString(data.name, 100)
+    //     ) &&
+    //     (
+    //       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['description']) ||
+    //       validOptionalString(data.description, 1000)
+    //     ) &&
+    //     (
+    //       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['collectionId']) ||
+    //       hasValidItemCollection(data, ownerId)
+    //     ) &&
+    //     (
+    //       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['visibility']) ||
+    //       validVisibility(data.visibility)
+    //     ) &&
+    //     (!('updatedAt' in data) || validTimestamp(data.updatedAt));
+    // }
 
     // function isCollectionQueryForCurrentUser() {
     //   return (request.query.where.size() == 1 &&
@@ -111,26 +137,20 @@ service cloud.firestore {
     //     request.query.where.size() == 0;
     // }
 
-    match /authorized-users/{email} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
+    // match /authorized-users/{email} {
+    //   allow read: if true;
+    //   allow write: if isAdmin();
+    // }
 
-    match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
-      allow create: if isOwner(userId) || isAdmin();
-      allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isAdmin();
-    }
+    // match /users/{userId} {
+    //   allow get: if isOwner(userId) || isAdmin();
+    //   allow list: if isAdmin();
+    //   allow create: if isOwner(userId) || isAdmin();
+    //   allow update: if isOwner(userId) || isAdmin();
+    //   allow delete: if isAdmin();
+    // }
 
-    match /{env}/config/{document=**} {
-      allow read, write: if isAdmin();
-    }
-
-    match /test/data/{document=**} {
-      allow read, write: if isAdmin();
-    }
+   
 
     // match /collections/{collectionId} {
     //   allow get: if isAdmin() || resource.data.userId == request.auth.uid || ('visibility' in resource.data && resource.data.visibility.public == true);

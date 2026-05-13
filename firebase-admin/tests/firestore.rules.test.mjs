@@ -18,9 +18,11 @@ import {
   connectFirestoreEmulator,
   deleteDoc,
   doc,
+  getDoc,
   getFirestore,
   setDoc,
   terminate,
+  serverTimestamp,
 } from 'firebase/firestore';
 
 const RULES_TARGET = process.env.RULES_TARGET ?? 'emulator';
@@ -28,6 +30,9 @@ const ENV = process.env.ENV ?? 'dev';
 const TEST_ENV = 'test';
 const TEST_DATA_TEST_PATH = `${TEST_ENV}/data/rulesSmoke/adminOnlyWrite`;
 const TEST_CONFIG_PATH = `${TEST_ENV}/config/public/runtime`;
+const TEST_COLLECTION_ID = 'test-collection-1';
+const TEST_USER_ID = 'rules-regular-user';
+const TEST_COLLECTION_PATH = `${TEST_ENV}/data/collections/${TEST_COLLECTION_ID}`;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 
@@ -137,6 +142,7 @@ const cleanupTestDocs = async () => {
 
   await getAdminDb().doc(TEST_DATA_TEST_PATH).delete().catch(() => undefined);
   await getAdminDb().doc(TEST_CONFIG_PATH).delete().catch(() => undefined);
+  await getAdminDb().doc(TEST_COLLECTION_PATH).delete().catch(() => undefined);
 };
 
 const expectPermissionDenied = async (promise) => {
@@ -155,6 +161,13 @@ const expectPermissionDenied = async (promise) => {
 
 test.beforeEach(async () => {
   await cleanupTestDocs();
+
+  // Initialize config with dataFolder value AFTER cleanup
+  const adminDb = getAdminDb();
+  await adminDb.doc(TEST_CONFIG_PATH).set(
+    { dataFolder: 'collections' },
+    { merge: true }
+  );
 });
 
 test.after(async () => {
@@ -229,6 +242,59 @@ test(`non-admin cannot write into ${TEST_CONFIG_PATH} on ${RULES_TARGET}`, async
         dataFolder: 'data',
       })
     );
+  } finally {
+    await context.cleanup();
+  }
+});
+
+test(`user can write to matched dataFolder on ${RULES_TARGET}`, async () => {
+  const context = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    // Should succeed because dataFolder is 'collections'
+    await assert.doesNotReject(
+      setDoc(doc(context.db, TEST_COLLECTION_PATH), {
+        testData: 'value',
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
+
+test(`user cannot write to non-matched dataFolder on ${RULES_TARGET}`, async () => {
+  const context = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    // Should fail because dataFolder is 'collections', not 'items'
+    await expectPermissionDenied(
+      setDoc(doc(context.db, `${TEST_ENV}/data/items/test-item-1`), {
+        testData: 'value',
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
+
+test(`authenticated user can read data on ${RULES_TARGET}`, async () => {
+  // Admin creates test data
+  await getAdminDb().doc(TEST_COLLECTION_PATH).set({ testData: 'value' });
+
+  const context = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    const snap = await getDoc(doc(context.db, TEST_COLLECTION_PATH));
+    assert.ok(snap.exists(), 'Should be readable by authenticated user');
   } finally {
     await context.cleanup();
   }
