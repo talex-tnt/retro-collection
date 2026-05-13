@@ -25,7 +25,8 @@ import {
 
 const RULES_TARGET = process.env.RULES_TARGET ?? 'emulator';
 const ENV = process.env.ENV ?? 'dev';
-const TEST_DOC_PATH = 'data/test/rulesSmoke/adminOnlyWrite';
+const TEST_DATA_TEST_PATH = 'data/test/rulesSmoke/adminOnlyWrite';
+const TEST_CONFIG_PATH = 'config/public';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 
@@ -119,7 +120,7 @@ const buildClientContext = async ({ uid, claims = {} }) => {
   };
 };
 
-const cleanupTestDoc = async () => {
+const cleanupTestDocs = async () => {
   if (RULES_TARGET === 'emulator') {
     const response = await fetch(
       `http://127.0.0.1:8080/emulator/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents`,
@@ -133,7 +134,8 @@ const cleanupTestDoc = async () => {
     return;
   }
 
-  await getAdminDb().doc(TEST_DOC_PATH).delete().catch(() => undefined);
+  await getAdminDb().doc(TEST_DATA_TEST_PATH).delete().catch(() => undefined);
+  await getAdminDb().doc(TEST_CONFIG_PATH).delete().catch(() => undefined);
 };
 
 const expectPermissionDenied = async (promise) => {
@@ -151,17 +153,17 @@ const expectPermissionDenied = async (promise) => {
 };
 
 test.beforeEach(async () => {
-  await cleanupTestDoc();
+  await cleanupTestDocs();
 });
 
 test.after(async () => {
-  await cleanupTestDoc();
+  await cleanupTestDocs();
   if (adminApp) {
     await adminApp.delete();
   }
 });
 
-test(`admin can write into ${TEST_DOC_PATH} on ${RULES_TARGET}`, async () => {
+test(`admin can write into ${TEST_DATA_TEST_PATH} on ${RULES_TARGET}`, async () => {
   const context = await buildClientContext({
     uid: 'rules-admin-user',
     claims: { admin: true },
@@ -169,7 +171,7 @@ test(`admin can write into ${TEST_DOC_PATH} on ${RULES_TARGET}`, async () => {
 
   try {
     await assert.doesNotReject(
-      setDoc(doc(context.db, TEST_DOC_PATH), {
+      setDoc(doc(context.db, TEST_DATA_TEST_PATH), {
         createdBy: 'rules-admin-user',
         target: RULES_TARGET,
       })
@@ -179,7 +181,7 @@ test(`admin can write into ${TEST_DOC_PATH} on ${RULES_TARGET}`, async () => {
   }
 });
 
-test(`non-admin cannot write into ${TEST_DOC_PATH} on ${RULES_TARGET}`, async () => {
+test(`non-admin cannot write into ${TEST_DATA_TEST_PATH} on ${RULES_TARGET}`, async () => {
   const context = await buildClientContext({
     uid: 'rules-regular-user',
     claims: { admin: false },
@@ -187,9 +189,43 @@ test(`non-admin cannot write into ${TEST_DOC_PATH} on ${RULES_TARGET}`, async ()
 
   try {
     await expectPermissionDenied(
-      setDoc(doc(context.db, TEST_DOC_PATH), {
+      setDoc(doc(context.db, TEST_DATA_TEST_PATH), {
         createdBy: 'rules-regular-user',
         target: RULES_TARGET,
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
+
+test(`admin can write into ${TEST_CONFIG_PATH} on ${RULES_TARGET}`, async () => {
+  const context = await buildClientContext({
+    uid: 'rules-admin-user',
+    claims: { admin: true },
+  });
+
+  try {
+    await assert.doesNotReject(
+      setDoc(doc(context.db, TEST_CONFIG_PATH), {
+        dataFolder: 'main',
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
+
+test(`non-admin cannot write into ${TEST_CONFIG_PATH} on ${RULES_TARGET}`, async () => {
+  const context = await buildClientContext({
+    uid: 'rules-regular-user',
+    claims: { admin: false },
+  });
+
+  try {
+    await expectPermissionDenied(
+      setDoc(doc(context.db, TEST_CONFIG_PATH), {
+        dataFolder: 'main',
       })
     );
   } finally {

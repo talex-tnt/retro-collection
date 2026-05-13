@@ -20,8 +20,9 @@ This file tracks implementation requirements and coding guidelines for the retro
 - [x] Implement orphaned items feature: special non-deletable collection showing items with non-existent parent collectionId
 
 ### Current Tasks
-- [ ] Add Firestore rules test harness that runs against emulator and live Firebase
 - [ ] Implement admin-only access for config and test data paths
+- [ ] Enable and test collections rules with data/{env}/ prefix
+- [ ] Enable and test items rules with data/{env}/ prefix
 
 ## Coding Guidelines
 - TypeScript for all new code
