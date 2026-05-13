@@ -11,6 +11,10 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.token.admin == true;
     }
 
+    function isAllowedResourceType(resourceType) {
+      return resourceType in ['collections', 'items', 'users', 'authorized-users'];
+    }
+
     // Canonical root: /docs/{env}/...
     // Public runtime config doc
     match /docs/{env}/config/runtime {
@@ -37,6 +41,7 @@ service cloud.firestore {
     match /docs/{env}/data/{folder}/{resourceType}/{document=**} {
       allow read, list, write: if isAdmin() || (
         isAuthenticated() &&
+        isAllowedResourceType(resourceType) &&
         get(/databases/$(database)/documents/docs/$(env)/config/runtime).data.dataFolder == folder
       );
     }

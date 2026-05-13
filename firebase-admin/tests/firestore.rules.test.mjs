@@ -328,6 +328,30 @@ test(`user cannot write to non-matched dataFolder on ${RULES_TARGET}`, async () 
   }
 });
 
+test(`user cannot write to unknown resourceType on ${RULES_TARGET}`, async () => {
+  const context = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    // Folder matches config (default), but resourceType is not allowed
+    await expectPermissionDenied(
+      setDoc(
+        doc(
+          context.db,
+          joinPath(ROOT_COLLECTION, TEST_ENV, 'data', TEST_DATA_FOLDER, 'unknown-type', 'doc-1')
+        ),
+        {
+          testData: 'value',
+        }
+      )
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
+
 test(`authenticated user can read data on ${RULES_TARGET}`, async () => {
   // Admin creates test data
   await getAdminDb().collection(getCollectionsArrayPath(TEST_DATA_FOLDER)).doc(TEST_COLLECTION_ID).set({ testData: 'value' });
