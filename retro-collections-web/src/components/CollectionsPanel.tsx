@@ -147,9 +147,15 @@ function CollectionsPanel({
                 <button
                   type="button"
                   className={`btn btn-xs ${collectionItem.visibility?.public ? 'btn-success' : 'btn-ghost'}`}
-                  onClick={() => handleToggleCollectionVisibility(collectionItem)}
+                  onClick={() =>
+                    handleToggleCollectionVisibility(collectionItem)
+                  }
                   disabled={!user}
-                  title={collectionItem.visibility?.public ? 'Make private' : 'Make public'}
+                  title={
+                    collectionItem.visibility?.public
+                      ? 'Make private'
+                      : 'Make public'
+                  }
                 >
                   {collectionItem.visibility?.public ? 'Public' : 'Private'}
                 </button>

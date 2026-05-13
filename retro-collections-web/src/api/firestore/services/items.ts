@@ -15,7 +15,7 @@ import {
   getCountFromServer,
 } from 'firebase/firestore';
 import type { FirestoreBuilder } from '../types/firestoreBuilder';
-
+import { createFirestoreApiError } from '../errorLogger';
 import { db } from '../../../lib/firebase';
 
 export interface Item {
@@ -81,22 +81,27 @@ const sortItemsNewestFirst = (left: Item, right: Item) => {
 const getItemsEndpoints = (builder: FirestoreBuilder) => ({
   getItems: builder.query<Item[], { collectionId: string; userId: string }>({
     async queryFn({ collectionId /*, userId*/ }) {
+      const q = query(
+        collection(db, 'items'),
+        where('collectionId', '==', collectionId),
+        orderBy('createdAt', 'desc'),
+        orderBy('__name__', 'asc')
+      );
+      const context = {
+        apiEndpoint: 'getItems',
+        operation: 'QUERY' as const,
+        firebaseFunc: 'getDocs',
+        path: 'items',
+        requestPayload: q,
+      };
       try {
-        const q = query(
-          collection(db, 'items'),
-          where('collectionId', '==', collectionId),
-          // where('userId', '==', userId),
-          orderBy('createdAt', 'desc'),
-          orderBy('__name__', 'asc')
-        );
-
         const snapshot = await getDocs(q);
 
         return {
           data: snapshot.docs.map(mapItemDoc),
         };
       } catch (error) {
-        return { error };
+        return { error: createFirestoreApiError(context, error) };
       }
     },
 
@@ -114,22 +119,28 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
 
   getPublicItemsByCollectionId: builder.query<Item[], string>({
     async queryFn(collectionId) {
+      const q = query(
+        collection(db, 'items'),
+        where('collectionId', '==', collectionId),
+        where('visibility.public', '==', true),
+        orderBy('createdAt', 'desc'),
+        orderBy('__name__', 'asc')
+      );
+      const context = {
+        apiEndpoint: 'getPublicItemsByCollectionId',
+        operation: 'QUERY' as const,
+        firebaseFunc: 'getDocs',
+        path: 'items',
+        requestPayload: q,
+      };
       try {
-        const q = query(
-          collection(db, 'items'),
-          where('collectionId', '==', collectionId),
-          where('visibility.public', '==', true),
-          orderBy('createdAt', 'desc'),
-          orderBy('__name__', 'asc')
-        );
-
         const snapshot = await getDocs(q);
 
         return {
           data: snapshot.docs.map(mapItemDoc),
         };
       } catch (error) {
-        return { error };
+        return { error: createFirestoreApiError(context, error) };
       }
     },
 
@@ -142,22 +153,28 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
     { collectionId: string; userId?: string }
   >({
     async queryFn({ collectionId, userId }) {
+      const constraints = [where('collectionId', '==', collectionId)];
+
+      if (userId) {
+        constraints.push(where('userId', '==', userId));
+      }
+
+      const q = query(collection(db, 'items'), ...constraints);
+      const context = {
+        apiEndpoint: 'getItemsCount',
+        operation: 'QUERY' as const,
+        firebaseFunc: 'getCountFromServer',
+        path: 'items',
+        requestPayload: q,
+      };
       try {
-        const constraints = [where('collectionId', '==', collectionId)];
-
-        if (userId) {
-          constraints.push(where('userId', '==', userId));
-        }
-
-        const q = query(collection(db, 'items'), ...constraints);
-
         const snapshot = await getCountFromServer(q);
 
         return {
           data: snapshot.data().count,
         };
       } catch (error) {
-        return { error };
+        return { error: createFirestoreApiError(context, error) };
       }
     },
     providesTags: (_result, _error, request) => [
@@ -167,20 +184,26 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
 
   getAllItems: builder.query<Item[], void>({
     async queryFn() {
+      const q = query(
+        collection(db, 'items'),
+        orderBy('createdAt', 'desc'),
+        orderBy('__name__', 'asc')
+      );
+      const context = {
+        apiEndpoint: 'getAllItems',
+        operation: 'QUERY' as const,
+        firebaseFunc: 'getDocs',
+        path: 'items',
+        requestPayload: q,
+      };
       try {
-        const q = query(
-          collection(db, 'items'),
-          orderBy('createdAt', 'desc'),
-          orderBy('__name__', 'asc')
-        );
-
         const snapshot = await getDocs(q);
 
         return {
           data: snapshot.docs.map(mapItemDoc),
         };
       } catch (error) {
-        return { error };
+        return { error: createFirestoreApiError(context, error) };
       }
     },
 
@@ -189,16 +212,22 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
 
   getUserItems: builder.query<Item[], string>({
     async queryFn(userId) {
+      const q = query(collection(db, 'items'), where('userId', '==', userId));
+      const context = {
+        apiEndpoint: 'getUserItems',
+        operation: 'QUERY' as const,
+        firebaseFunc: 'getDocs',
+        path: 'items',
+        requestPayload: q,
+      };
       try {
-        const q = query(collection(db, 'items'), where('userId', '==', userId));
-
         const snapshot = await getDocs(q);
 
         return {
           data: snapshot.docs.map(mapItemDoc).sort(sortItemsNewestFirst),
         };
       } catch (error) {
-        return { error };
+        return { error: createFirestoreApiError(context, error) };
       }
     },
 
@@ -215,16 +244,22 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
   }),
   getUserItemsCount: builder.query<number, string>({
     async queryFn(userId) {
+      const q = query(collection(db, 'items'), where('userId', '==', userId));
+      const context = {
+        apiEndpoint: 'getUserItemsCount',
+        operation: 'QUERY' as const,
+        firebaseFunc: 'getCountFromServer',
+        path: 'items',
+        requestPayload: q,
+      };
       try {
-        const q = query(collection(db, 'items'), where('userId', '==', userId));
-
         const snapshot = await getCountFromServer(q);
 
         return {
           data: snapshot.data().count,
         };
       } catch (error) {
-        return { error };
+        return { error: createFirestoreApiError(context, error) };
       }
     },
     providesTags: (result, _error, userId) =>
@@ -233,12 +268,20 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
 
   createItem: builder.mutation<Item, ItemInput>({
     async queryFn(itemData) {
+      const requestPayload = {
+        ...itemData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      const context = {
+        apiEndpoint: 'createItem',
+        operation: 'CREATE' as const,
+        firebaseFunc: 'addDoc',
+        path: 'items',
+        requestPayload,
+      };
       try {
-        const docRef = await addDoc(collection(db, 'items'), {
-          ...itemData,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
+        const docRef = await addDoc(collection(db, 'items'), requestPayload);
 
         return {
           data: {
@@ -249,7 +292,7 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
           },
         };
       } catch (error) {
-        return { error };
+        return { error: createFirestoreApiError(context, error) };
       }
     },
 
@@ -274,15 +317,24 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
     }
   >({
     async queryFn({ id, updates }) {
+      const requestPayload = {
+        ...updates,
+        updatedAt: serverTimestamp(),
+      };
+      const context = {
+        apiEndpoint: 'updateItem',
+        operation: 'UPDATE' as const,
+        firebaseFunc: 'updateDoc',
+        path: 'items',
+        segmentPaths: [id],
+        requestPayload,
+      };
       try {
-        await updateDoc(doc(db, 'items', id), {
-          ...updates,
-          updatedAt: serverTimestamp(),
-        });
+        await updateDoc(doc(db, 'items', id), requestPayload);
 
         return { data: undefined };
       } catch (error) {
-        return { error };
+        return { error: createFirestoreApiError(context, error) };
       }
     },
 
@@ -319,12 +371,19 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
     { id: string; collectionId: string; userId: string }
   >({
     async queryFn({ id }) {
+      const context = {
+        apiEndpoint: 'deleteItem',
+        operation: 'DELETE' as const,
+        firebaseFunc: 'deleteDoc',
+        path: 'items',
+        segmentPaths: [id],
+      };
       try {
-        await deleteDoc(doc(db, 'items', id));
+        await deleteDoc(doc(db, context.path, ...context.segmentPaths));
 
         return { data: undefined };
       } catch (error) {
-        return { error };
+        return { error: createFirestoreApiError(context, error) };
       }
     },
 

@@ -81,7 +81,9 @@ function MyCollectionsPage() {
         : null;
     }
 
-    return collections.find((collection) => collection.id === collectionId) ?? null;
+    return (
+      collections.find((collection) => collection.id === collectionId) ?? null
+    );
   }, [collectionId, collections, orphanedItems.length]);
 
   useEffect(() => {

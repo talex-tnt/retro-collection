@@ -44,7 +44,9 @@ function CollectorPage() {
       return null;
     }
 
-    return collections.find((collection) => collection.id === collectionId) ?? null;
+    return (
+      collections.find((collection) => collection.id === collectionId) ?? null
+    );
   }, [collectionId, collections]);
 
   const { data: items = [], isLoading: loadingItems } =
@@ -96,7 +98,9 @@ function CollectorPage() {
                   onClick={() => handleSelectCollection(collection)}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium truncate">{collection.name}</span>
+                    <span className="font-medium truncate">
+                      {collection.name}
+                    </span>
                     <span className="badge badge-sm badge-outline">Public</span>
                   </div>
                 </button>
@@ -112,13 +116,17 @@ function CollectorPage() {
             <>
               <div>
                 <h2 className="card-title">{selectedCollection.name}</h2>
-                <p className="text-sm text-base-content/70">Public items only</p>
+                <p className="text-sm text-base-content/70">
+                  Public items only
+                </p>
               </div>
 
               {loadingItems ? (
                 <div className="alert alert-info">Loading items...</div>
               ) : items.length === 0 ? (
-                <div className="alert alert-info">No public items in this collection.</div>
+                <div className="alert alert-info">
+                  No public items in this collection.
+                </div>
               ) : (
                 <div className="space-y-3">
                   {items.map((item: ItemRecord) => (
@@ -135,10 +143,15 @@ function CollectorPage() {
                             </p>
                           )}
                         </div>
-                        <span className="badge badge-sm badge-success">Public</span>
+                        <span className="badge badge-sm badge-success">
+                          Public
+                        </span>
                       </div>
                       <p className="mt-2 text-sm text-base-content/70">
-                        Added {item.createdAt ? new Date(item.createdAt).toLocaleString() : 'No timestamp'}
+                        Added{' '}
+                        {item.createdAt
+                          ? new Date(item.createdAt).toLocaleString()
+                          : 'No timestamp'}
                       </p>
                     </div>
                   ))}

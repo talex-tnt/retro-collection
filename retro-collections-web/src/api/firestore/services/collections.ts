@@ -14,7 +14,7 @@ import {
   type DocumentData,
 } from 'firebase/firestore';
 import type { FirestoreBuilder } from '../types/firestoreBuilder';
-
+import { createFirestoreApiError } from '../errorLogger';
 import { db } from '../../../lib/firebase';
 
 export interface Collection {
@@ -65,21 +65,27 @@ const mapCollectionDoc = (
 const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
   getCollections: builder.query<Collection[], string>({
     async queryFn(userId) {
+      const q = query(
+        collection(db, 'collections'),
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc'),
+        orderBy('__name__', 'asc')
+      );
+      const context = {
+        apiEndpoint: 'getCollections',
+        operation: 'QUERY' as const,
+        firebaseFunc: 'getDocs',
+        path: 'collections',
+        requestPayload: q,
+      };
       try {
-        const q = query(
-          collection(db, 'collections'),
-          where('userId', '==', userId),
-          orderBy('createdAt', 'desc'),
-          orderBy('__name__', 'asc')
-        );
-
         const snapshot = await getDocs(q);
 
         return {
           data: snapshot.docs.map(mapCollectionDoc),
         };
       } catch (error) {
-        return { error };
+        return { error: createFirestoreApiError(context, error) };
       }
     },
 
@@ -97,22 +103,28 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
 
   getPublicCollectionsByUserId: builder.query<Collection[], string>({
     async queryFn(userId) {
+      const q = query(
+        collection(db, 'collections'),
+        where('userId', '==', userId),
+        where('visibility.public', '==', true),
+        orderBy('createdAt', 'desc'),
+        orderBy('__name__', 'asc')
+      );
+      const context = {
+        apiEndpoint: 'getPublicCollectionsByUserId',
+        operation: 'QUERY' as const,
+        firebaseFunc: 'getDocs',
+        path: 'collections',
+        requestPayload: q,
+      };
       try {
-        const q = query(
-          collection(db, 'collections'),
-          where('userId', '==', userId),
-          where('visibility.public', '==', true),
-          orderBy('createdAt', 'desc'),
-          orderBy('__name__', 'asc')
-        );
-
         const snapshot = await getDocs(q);
 
         return {
           data: snapshot.docs.map(mapCollectionDoc),
         };
       } catch (error) {
-        return { error };
+        return { error: createFirestoreApiError(context, error) };
       }
     },
 
@@ -123,13 +135,24 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
 
   createCollection: builder.mutation<Collection, CollectionInput>({
     async queryFn(collectionData) {
+      const requestPayload = {
+        ...collectionData,
+        visibility: collectionData.visibility ?? { public: false },
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      const context = {
+        apiEndpoint: 'createCollection',
+        operation: 'CREATE' as const,
+        firebaseFunc: 'addDoc',
+        path: 'collections',
+        requestPayload,
+      };
       try {
-        const docRef = await addDoc(collection(db, 'collections'), {
-          ...collectionData,
-          visibility: collectionData.visibility ?? { public: false },
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
+        const docRef = await addDoc(
+          collection(db, 'collections'),
+          requestPayload
+        );
 
         return {
           data: {
@@ -141,7 +164,7 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
           },
         };
       } catch (error) {
-        return { error };
+        return { error: createFirestoreApiError(context, error) };
       }
     },
 
@@ -153,15 +176,24 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
     { id: string; updates: CollectionUpdate }
   >({
     async queryFn({ id, updates }) {
+      const requestPayload = {
+        ...updates,
+        updatedAt: serverTimestamp(),
+      };
+      const context = {
+        apiEndpoint: 'updateCollection',
+        operation: 'UPDATE' as const,
+        firebaseFunc: 'updateDoc',
+        path: 'collections',
+        segmentPaths: [id],
+        requestPayload,
+      };
       try {
-        await updateDoc(doc(db, 'collections', id), {
-          ...updates,
-          updatedAt: serverTimestamp(),
-        });
+        await updateDoc(doc(db, 'collections', id), requestPayload);
 
         return { data: undefined };
       } catch (error) {
-        return { error };
+        return { error: createFirestoreApiError(context, error) };
       }
     },
 
@@ -173,12 +205,19 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
 
   deleteCollection: builder.mutation<void, string>({
     async queryFn(id) {
+      const context = {
+        apiEndpoint: 'deleteCollection',
+        operation: 'DELETE' as const,
+        firebaseFunc: 'deleteDoc',
+        path: 'collections',
+        segmentPaths: [id],
+      };
       try {
-        await deleteDoc(doc(db, 'collections', id));
+        await deleteDoc(doc(db, context.path, ...context.segmentPaths));
 
         return { data: undefined };
       } catch (error) {
-        return { error };
+        return { error: createFirestoreApiError(context, error) };
       }
     },
 

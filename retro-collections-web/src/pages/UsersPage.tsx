@@ -81,7 +81,9 @@ function UsersPage() {
                     <tr
                       key={user.id}
                       className="cursor-pointer hover:bg-base-200"
-                      onClick={() => navigate(`/collectors/${user.id}/collections`)}
+                      onClick={() =>
+                        navigate(`/collectors/${user.id}/collections`)
+                      }
                     >
                       <td>{user.email}</td>
                       <td>{user.name || '—'}</td>

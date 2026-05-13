@@ -84,7 +84,8 @@ function NewItem({ userId, collections, selectedCollection }: NewItemProps) {
         <div>
           <h2 className="card-title text-lg">New Item</h2>
           <p className="text-sm text-base-content/70">
-            Choose a collection or leave it unassigned to create an orphaned item.
+            Choose a collection or leave it unassigned to create an orphaned
+            item.
           </p>
         </div>
 

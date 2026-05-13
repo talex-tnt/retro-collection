@@ -146,7 +146,9 @@ function Header() {
               <div className="avatar placeholder">
                 <div className="w-10 rounded-full bg-primary text-primary-content">
                   <span className="text-sm font-semibold">
-                    {(user?.displayName || user?.email || 'G').charAt(0).toUpperCase()}
+                    {(user?.displayName || user?.email || 'G')
+                      .charAt(0)
+                      .toUpperCase()}
                   </span>
                 </div>
               </div>
@@ -162,7 +164,9 @@ function Header() {
                 <div className="space-y-3">
                   <div>
                     <p className="text-sm text-base-content/70">Signed in as</p>
-                    <p className="font-semibold">{user.displayName || user.email}</p>
+                    <p className="font-semibold">
+                      {user.displayName || user.email}
+                    </p>
                   </div>
                   <div className="space-y-1 text-sm text-base-content/80">
                     <p>{user.email}</p>
