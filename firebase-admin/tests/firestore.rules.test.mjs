@@ -504,7 +504,7 @@ test(`users: owner cannot access user doc in non-configured folder on ${RULES_TA
   }
 });
 
-test(`users: list and delete are admin-only on ${RULES_TARGET}`, async () => {
+test(`users: delete is admin-only on ${RULES_TARGET}`, async () => {
   const usersCollectionPath = joinPath(
     ROOT_COLLECTION,
     TEST_ENV,
@@ -521,7 +521,6 @@ test(`users: list and delete are admin-only on ${RULES_TARGET}`, async () => {
   });
 
   try {
-    await expectPermissionDenied(getDocs(query(collection(nonAdmin.db, usersCollectionPath))));
     await expectPermissionDenied(deleteDoc(doc(nonAdmin.db, userDocPath)));
   } finally {
     await nonAdmin.cleanup();
@@ -533,10 +532,103 @@ test(`users: list and delete are admin-only on ${RULES_TARGET}`, async () => {
   });
 
   try {
-    await assert.doesNotReject(getDocs(query(collection(adminUser.db, usersCollectionPath))));
     await assert.doesNotReject(deleteDoc(doc(adminUser.db, userDocPath)));
   } finally {
     await adminUser.cleanup();
+  }
+});
+
+test(`users visibility: anyone can get a public user, but not a private one on ${RULES_TARGET}`, async () => {
+  const usersCollectionPath = joinPath(
+    ROOT_COLLECTION,
+    TEST_ENV,
+    'data',
+    TEST_DATA_FOLDER,
+    'users'
+  );
+
+  const publicUserId = `public-user-${Date.now()}`;
+  const privateUserId = `private-user-${Date.now()}`;
+  const publicUserDocPath = joinPath(usersCollectionPath, publicUserId);
+  const privateUserDocPath = joinPath(usersCollectionPath, privateUserId);
+
+  await getAdminDb().doc(publicUserDocPath).set({
+    displayName: 'Public User',
+    visibility: { public: true },
+  });
+  await getAdminDb().doc(privateUserDocPath).set({
+    displayName: 'Private User',
+    visibility: { public: false },
+  });
+
+  const unauth = await buildUnauthenticatedClientContext();
+  try {
+    const publicSnap = await getDocFromServer(doc(unauth.db, publicUserDocPath));
+    assert.ok(publicSnap.exists(), 'Unauth should be able to read public user');
+
+    await expectPermissionDenied(getDocFromServer(doc(unauth.db, privateUserDocPath)));
+  } finally {
+    await unauth.cleanup();
+  }
+
+  const nonOwner = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    const publicSnap = await getDocFromServer(doc(nonOwner.db, publicUserDocPath));
+    assert.ok(publicSnap.exists(), 'Non-owner should be able to read public user');
+
+    await expectPermissionDenied(getDocFromServer(doc(nonOwner.db, privateUserDocPath)));
+  } finally {
+    await nonOwner.cleanup();
+  }
+});
+
+test(`users visibility: can list public users only with explicit filter on ${RULES_TARGET}`, async () => {
+  const usersCollectionPath = joinPath(
+    ROOT_COLLECTION,
+    TEST_ENV,
+    'data',
+    TEST_DATA_FOLDER,
+    'users'
+  );
+
+  const publicUserId = `public-user-${Date.now()}`;
+  const privateUserId = `private-user-${Date.now()}`;
+  await getAdminDb().doc(joinPath(usersCollectionPath, publicUserId)).set({
+    displayName: 'Public User',
+    visibility: { public: true },
+  });
+  await getAdminDb().doc(joinPath(usersCollectionPath, privateUserId)).set({
+    displayName: 'Private User',
+    visibility: { public: false },
+  });
+
+  const unauth = await buildUnauthenticatedClientContext();
+  try {
+    // Without explicit filter, list is denied
+    await expectPermissionDenied(getDocs(query(collection(unauth.db, usersCollectionPath))));
+
+    const snap = await getDocs(
+      query(
+        collection(unauth.db, usersCollectionPath),
+        where('visibility.public', '==', true)
+      )
+    );
+
+    assert.ok(snap.size >= 1, 'Should return at least the public user');
+    assert.ok(
+      snap.docs.some((d) => d.id === publicUserId),
+      'Public user should be present in results'
+    );
+    assert.ok(
+      !snap.docs.some((d) => d.id === privateUserId),
+      'Private user should not be present in results'
+    );
+  } finally {
+    await unauth.cleanup();
   }
 });
 

@@ -19,6 +19,18 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == ownerId;
     }
 
+    function isPubliclyVisible() {
+      return resource != null &&
+        resource.data != null &&
+        ('visibility' in resource.data) &&
+        (resource.data.visibility is map) &&
+        ('public' in resource.data.visibility) &&
+        resource.data.visibility.public == true;
+    }
+
+
+
+
     // Canonical root: /docs/{env}/...
     // Public runtime config doc
     match /docs/{env}/config/runtime {
@@ -51,8 +63,11 @@ service cloud.firestore {
 
       // users: owner can read/create/update their own doc; admin can do anything; list/delete are admin-only
       match /users/{userId} {
-        allow get: if isAdmin() || (isOwner(userId) && folderMatchesConfig());
-        allow list: if isAdmin();
+        allow get: if isAdmin() || (folderMatchesConfig() && (isOwner(userId) || isPubliclyVisible()));
+        // For list/query: non-admins may only read public profiles.
+        // Firestore evaluates this per returned document, so queries succeed only when
+        // every document in the result set is publicly visible.
+        allow list: if isAdmin() || (folderMatchesConfig() && isPubliclyVisible());
         allow create: if isAdmin() || (isOwner(userId) && folderMatchesConfig());
         allow update: if isAdmin() || (isOwner(userId) && folderMatchesConfig());
         allow delete: if isAdmin();
