@@ -12,7 +12,9 @@ import {
 import { auth, getIsAdmin } from '../lib/firebase';
 import {
   useCreateOrUpdateUserMutation,
+  useGetUserByIdQuery,
   useLazyIsUserAuthorizedQuery,
+  useSetUserVisibilityMutation,
 } from '../api/firestore/firestoreApi';
 import { useIsAdmin } from '../hooks';
 
@@ -24,6 +26,14 @@ function Header() {
   const provider = new GoogleAuthProvider();
   const [checkAuthorizedUser] = useLazyIsUserAuthorizedQuery();
   const [createOrUpdateUser] = useCreateOrUpdateUserMutation();
+  const [setUserVisibility, { isLoading: isUpdatingVisibility }] =
+    useSetUserVisibilityMutation();
+
+  const { data: currentUserDoc } = useGetUserByIdQuery(user?.uid ?? '', {
+    skip: !user,
+  });
+
+  const isPublicProfile = currentUserDoc?.visibility?.public === true;
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -113,13 +123,23 @@ function Header() {
                 My Collections
               </NavLink>
               <NavLink
-                to="/users"
+                to="/collectors"
                 className={({ isActive }) =>
                   isActive ? 'tab tab-active' : 'tab'
                 }
               >
-                Users
+                Collectors
               </NavLink>
+              {isAdmin && (
+                <NavLink
+                  to="/users"
+                  className={({ isActive }) =>
+                    isActive ? 'tab tab-active' : 'tab'
+                  }
+                >
+                  Users
+                </NavLink>
+              )}
               {isAdmin && (
                 <NavLink
                   to="/admin"
@@ -172,6 +192,37 @@ function Header() {
                     <p>{user.email}</p>
                     <p className="break-all">UID: {user.uid}</p>
                   </div>
+
+                  <div className="rounded-box border border-base-300 bg-base-200 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium">Public profile</p>
+                        <p className="text-xs text-base-content/70">
+                          Allow others to discover you as a collector.
+                        </p>
+                      </div>
+
+                      <input
+                        type="checkbox"
+                        className="toggle"
+                        checked={isPublicProfile}
+                        disabled={!currentUserDoc || isUpdatingVisibility}
+                        onChange={async () => {
+                          try {
+                            setError('');
+                            await setUserVisibility({
+                              userId: user.uid,
+                              public: !isPublicProfile,
+                            }).unwrap();
+                          } catch (e) {
+                            console.error(e);
+                            setError('Failed to update profile visibility.');
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+
                   <button className="btn btn-primary w-full" onClick={logout}>
                     Logout
                   </button>

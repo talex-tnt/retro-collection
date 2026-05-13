@@ -22,9 +22,17 @@ function HomePage() {
         </div>
         <div className="card bg-base-100 shadow-md">
           <div className="card-body">
+            <h3 className="font-semibold">/collectors</h3>
+            <p className="text-sm text-base-content/70">
+              Browse collectors with public profiles.
+            </p>
+          </div>
+        </div>
+        <div className="card bg-base-100 shadow-md">
+          <div className="card-body">
             <h3 className="font-semibold">/users</h3>
             <p className="text-sm text-base-content/70">
-              Browse all registered users stored in Firestore.
+              Admin-only list of all registered users.
             </p>
           </div>
         </div>

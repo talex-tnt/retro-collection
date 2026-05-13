@@ -6,6 +6,7 @@ import {
   getDocs,
   orderBy,
   query,
+  where,
   serverTimestamp,
   Timestamp,
   updateDoc,
@@ -23,12 +24,18 @@ export interface UserRecord {
   name?: string;
   email?: string;
   lastLogin?: string;
+  visibility?: {
+    public: boolean;
+  };
 }
 
 interface FirestoreUserDoc {
   name?: string;
   email?: string;
   lastLogin?: Timestamp;
+  visibility?: {
+    public: boolean;
+  };
 }
 
 const mapUserDoc = (
@@ -41,6 +48,7 @@ const mapUserDoc = (
     name: data.name,
     email: data.email,
     lastLogin: data.lastLogin?.toDate?.()?.toISOString(),
+    visibility: data.visibility,
   };
 };
 
@@ -70,6 +78,34 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
     providesTags: [{ type: 'Users' as const, id: 'LIST' }],
   }),
 
+  getPublicUsers: builder.query<UserRecord[], void>({
+    async queryFn() {
+      const path = await resolveDataCollectionPath('users');
+      const q = query(
+        collection(db, path),
+        where('visibility.public', '==', true)
+      );
+      const context = {
+        apiEndpoint: 'getPublicUsers',
+        operation: 'QUERY' as const,
+        firebaseFunc: 'getDocs',
+        path,
+        requestPayload: q,
+      };
+      try {
+        const snapshot = await getDocs(q);
+
+        return {
+          data: snapshot.docs.map(mapUserDoc),
+        };
+      } catch (error) {
+        return { error: createFirestoreApiError(context, error) };
+      }
+    },
+
+    providesTags: [{ type: 'Users' as const, id: 'PUBLIC_LIST' }],
+  }),
+
   getUserById: builder.query<UserRecord | null, string>({
     async queryFn(userId) {
       const path = await resolveDataCollectionPath('users');
@@ -93,12 +129,17 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
             name: data.name,
             email: data.email,
             lastLogin: data.lastLogin?.toDate?.()?.toISOString(),
+            visibility: data.visibility,
           },
         };
       } catch (error) {
         return { error: createFirestoreApiError(context, error) };
       }
     },
+
+    providesTags: (_result, _error, userId) => [
+      { type: 'Users' as const, id: userId },
+    ],
   }),
   createOrUpdateUser: builder.mutation<
     void,
@@ -188,6 +229,39 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
         type: 'Users' as const,
         id: 'LIST',
       },
+    ],
+  }),
+
+  setUserVisibility: builder.mutation<
+    void,
+    { userId: string; public: boolean }
+  >({
+    async queryFn({ userId, public: isPublic }) {
+      const path = await resolveDataCollectionPath('users');
+      const requestPayload = {
+        visibility: { public: isPublic },
+      };
+      const context = {
+        apiEndpoint: 'setUserVisibility',
+        operation: 'UPDATE' as const,
+        firebaseFunc: 'setDoc',
+        path,
+        segmentPaths: [userId],
+        requestPayload,
+      };
+
+      try {
+        await setDoc(doc(db, path, userId), requestPayload, { merge: true });
+        return { data: undefined };
+      } catch (error) {
+        return { error: createFirestoreApiError(context, error) };
+      }
+    },
+
+    invalidatesTags: (_result, _error, { userId }) => [
+      { type: 'Users' as const, id: userId },
+      { type: 'Users' as const, id: 'LIST' },
+      { type: 'Users' as const, id: 'PUBLIC_LIST' },
     ],
   }),
 });

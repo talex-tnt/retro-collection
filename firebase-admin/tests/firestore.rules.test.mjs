@@ -653,6 +653,74 @@ test(`users visibility: anyone can get a public user, but not a private one on $
   }
 });
 
+test(`users visibility: only owner can update own visibility on ${RULES_TARGET}`, async () => {
+  const usersCollectionPath = joinPath(
+    ROOT_COLLECTION,
+    TEST_ENV,
+    'data',
+    TEST_DATA_FOLDER,
+    'users'
+  );
+
+  const ownerId = `owner-${Date.now()}`;
+  const otherId = `other-${Date.now()}`;
+  const ownerDocPath = joinPath(usersCollectionPath, ownerId);
+  const otherDocPath = joinPath(usersCollectionPath, otherId);
+
+  // Seed both docs
+  await getAdminDb().doc(ownerDocPath).set({
+    displayName: 'Owner',
+    visibility: { public: false },
+  });
+  await getAdminDb().doc(otherDocPath).set({
+    displayName: 'Other',
+    visibility: { public: false },
+  });
+
+  // Owner can update their own visibility
+  const owner = await buildClientContext({
+    uid: ownerId,
+    claims: { admin: false },
+  });
+
+  try {
+    await assert.doesNotReject(
+      setDoc(
+        doc(owner.db, ownerDocPath),
+        { visibility: { public: true } },
+        { merge: true }
+      )
+    );
+
+    const snap = await getDocFromServer(doc(owner.db, ownerDocPath));
+    assert.equal(
+      snap.data()?.visibility?.public,
+      true,
+      'Owner visibility should be updated to public'
+    );
+  } finally {
+    await owner.cleanup();
+  }
+
+  // Another user cannot update someone else's visibility
+  const nonOwner = await buildClientContext({
+    uid: otherId,
+    claims: { admin: false },
+  });
+
+  try {
+    await expectPermissionDenied(
+      setDoc(
+        doc(nonOwner.db, ownerDocPath),
+        { visibility: { public: false } },
+        { merge: true }
+      )
+    );
+  } finally {
+    await nonOwner.cleanup();
+  }
+});
+
 test(`users visibility: can list public users only with explicit filter on ${RULES_TARGET}`, async () => {
   const usersCollectionPath = joinPath(
     ROOT_COLLECTION,

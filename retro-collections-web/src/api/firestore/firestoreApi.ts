@@ -43,9 +43,11 @@ export const {
   useDeleteItemMutation,
 
   useGetUsersQuery,
+  useGetPublicUsersQuery,
   useGetUserByIdQuery,
   useLazyIsUserAuthorizedQuery,
   useCreateOrUpdateUserMutation,
+  useSetUserVisibilityMutation,
 
   useIsUserAuthorizedQuery,
   useGetAuthorizedUsersQuery,
