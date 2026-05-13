@@ -12,7 +12,11 @@ service cloud.firestore {
     }
 
     function isAllowedResourceType(resourceType) {
-      return resourceType in ['collections', 'items', 'users', 'authorized-users'];
+      return resourceType in ['collections', 'items'];
+    }
+
+    function isOwner(ownerId) {
+      return isAuthenticated() && request.auth.uid == ownerId;
     }
 
     // Canonical root: /docs/{env}/...
@@ -35,15 +39,33 @@ service cloud.firestore {
     // Folder documents themselves are not user-writable
     match /docs/{env}/data/{folder} {
       allow read, list, write: if isAdmin();
-    }
 
-    // Actual user data lives in collections under the folder doc
-    match /docs/{env}/data/{folder}/{resourceType}/{document=**} {
-      allow read, list, write: if isAdmin() || (
-        isAuthenticated() &&
-        isAllowedResourceType(resourceType) &&
-        get(/databases/$(database)/documents/docs/$(env)/config/runtime).data.dataFolder == folder
-      );
+      function folderMatchesConfig() {
+        return get(/databases/$(database)/documents/docs/$(env)/config/runtime).data.dataFolder == folder;
+      }
+
+      // authorized-users: admin-only read/write (login allowlist)
+      match /authorized-users/{email} {
+        allow read, write: if isAdmin();
+      }
+
+      // users: owner can read/create/update their own doc; admin can do anything; list/delete are admin-only
+      match /users/{userId} {
+        allow get: if isAdmin() || (isOwner(userId) && folderMatchesConfig());
+        allow list: if isAdmin();
+        allow create: if isAdmin() || (isOwner(userId) && folderMatchesConfig());
+        allow update: if isAdmin() || (isOwner(userId) && folderMatchesConfig());
+        allow delete: if isAdmin();
+      }
+
+      // Actual user data lives in collections under the folder doc
+      match /{resourceType}/{document=**} {
+        allow read, list, write: if isAdmin() || (
+          isAuthenticated() &&
+          isAllowedResourceType(resourceType) &&
+          folderMatchesConfig()
+        );
+      }
     }
 
     // function isOwner(ownerId) {

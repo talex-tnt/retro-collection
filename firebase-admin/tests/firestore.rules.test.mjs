@@ -148,6 +148,29 @@ const buildClientContext = async ({ uid, claims = {} }) => {
   };
 };
 
+const buildUnauthenticatedClientContext = async () => {
+  const appName = `rules-client-${RULES_TARGET}-unauth-${Date.now()}-${Math.random()}`;
+  const app = initializeClientApp(firebaseConfig, appName);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  if (RULES_TARGET === 'emulator') {
+    connectAuthEmulator(auth, 'http://127.0.0.1:9099', {
+      disableWarnings: true,
+    });
+    connectFirestoreEmulator(db, '127.0.0.1', 8080);
+  }
+
+  return {
+    db,
+    cleanup: async () => {
+      await signOut(auth).catch(() => undefined);
+      await terminate(db).catch(() => undefined);
+      await deleteApp(app).catch(() => undefined);
+    },
+  };
+};
+
 const cleanupTestDocs = async () => {
   if (RULES_TARGET === 'emulator') {
     const response = await fetch(
@@ -349,6 +372,171 @@ test(`user cannot write to unknown resourceType on ${RULES_TARGET}`, async () =>
     );
   } finally {
     await context.cleanup();
+  }
+});
+
+test(`authorized-users is admin-only read/write on ${RULES_TARGET}`, async () => {
+  const path = joinPath(
+    ROOT_COLLECTION,
+    TEST_ENV,
+    'data',
+    TEST_DATA_FOLDER,
+    'authorized-users',
+    'writer@example.com'
+  );
+
+  // Unauthenticated cannot read
+  const unauth = await buildUnauthenticatedClientContext();
+  try {
+    await expectPermissionDenied(getDocFromServer(doc(unauth.db, path)));
+  } finally {
+    await unauth.cleanup();
+  }
+
+  // Non-admin cannot read or write
+  const nonAdmin = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    await expectPermissionDenied(getDocFromServer(doc(nonAdmin.db, path)));
+    await expectPermissionDenied(setDoc(doc(nonAdmin.db, path), { allowed: true }));
+  } finally {
+    await nonAdmin.cleanup();
+  }
+
+  // Admin can write then read
+  const adminUser = await buildClientContext({
+    uid: 'rules-admin-user',
+    claims: { admin: true },
+  });
+
+  try {
+    await assert.doesNotReject(setDoc(doc(adminUser.db, path), { allowed: true }));
+    const snap = await getDocFromServer(doc(adminUser.db, path));
+    assert.ok(snap.exists(), 'Admin should be able to read authorized-users doc');
+    assert.equal(snap.data()?.allowed, true);
+  } finally {
+    await adminUser.cleanup();
+  }
+});
+
+test(`users: owner can create/get/update own doc on ${RULES_TARGET}`, async () => {
+  const userDocPath = joinPath(
+    ROOT_COLLECTION,
+    TEST_ENV,
+    'data',
+    TEST_DATA_FOLDER,
+    'users',
+    TEST_USER_ID
+  );
+
+  const owner = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    await assert.doesNotReject(setDoc(doc(owner.db, userDocPath), { displayName: 'Me' }));
+
+    const snap = await getDocFromServer(doc(owner.db, userDocPath));
+    assert.ok(snap.exists(), 'Owner should be able to get their user doc');
+
+    await assert.doesNotReject(setDoc(doc(owner.db, userDocPath), { displayName: 'Me2' }, { merge: true }));
+  } finally {
+    await owner.cleanup();
+  }
+});
+
+test(`users: non-owner cannot get/create/update someone else's doc on ${RULES_TARGET}`, async () => {
+  const otherUserId = 'someone-else';
+  const otherUserDocPath = joinPath(
+    ROOT_COLLECTION,
+    TEST_ENV,
+    'data',
+    TEST_DATA_FOLDER,
+    'users',
+    otherUserId
+  );
+
+  // Seed other user's doc via admin
+  await getAdminDb().doc(otherUserDocPath).set({ displayName: 'Other' });
+
+  const nonOwner = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    await expectPermissionDenied(getDocFromServer(doc(nonOwner.db, otherUserDocPath)));
+    await expectPermissionDenied(setDoc(doc(nonOwner.db, otherUserDocPath), { displayName: 'Hax' }));
+    await expectPermissionDenied(setDoc(doc(nonOwner.db, otherUserDocPath), { displayName: 'Hax2' }, { merge: true }));
+  } finally {
+    await nonOwner.cleanup();
+  }
+});
+
+test(`users: owner cannot access user doc in non-configured folder on ${RULES_TARGET}`, async () => {
+  const wrongFolderUserDocPath = joinPath(
+    ROOT_COLLECTION,
+    TEST_ENV,
+    'data',
+    TEST_ALT_DATA_FOLDER_1,
+    'users',
+    TEST_USER_ID
+  );
+
+  // Seed via admin in the wrong folder
+  await getAdminDb().doc(wrongFolderUserDocPath).set({ displayName: 'WrongFolder' });
+
+  const owner = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    // config dataFolder remains 'default', so this should be denied
+    await expectPermissionDenied(getDocFromServer(doc(owner.db, wrongFolderUserDocPath)));
+    await expectPermissionDenied(setDoc(doc(owner.db, wrongFolderUserDocPath), { displayName: 'Nope' }, { merge: true }));
+  } finally {
+    await owner.cleanup();
+  }
+});
+
+test(`users: list and delete are admin-only on ${RULES_TARGET}`, async () => {
+  const usersCollectionPath = joinPath(
+    ROOT_COLLECTION,
+    TEST_ENV,
+    'data',
+    TEST_DATA_FOLDER,
+    'users'
+  );
+  const userDocPath = joinPath(usersCollectionPath, TEST_USER_ID);
+  await getAdminDb().doc(userDocPath).set({ displayName: 'Seed' });
+
+  const nonAdmin = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    await expectPermissionDenied(getDocs(query(collection(nonAdmin.db, usersCollectionPath))));
+    await expectPermissionDenied(deleteDoc(doc(nonAdmin.db, userDocPath)));
+  } finally {
+    await nonAdmin.cleanup();
+  }
+
+  const adminUser = await buildClientContext({
+    uid: 'rules-admin-user',
+    claims: { admin: true },
+  });
+
+  try {
+    await assert.doesNotReject(getDocs(query(collection(adminUser.db, usersCollectionPath))));
+    await assert.doesNotReject(deleteDoc(doc(adminUser.db, userDocPath)));
+  } finally {
+    await adminUser.cleanup();
   }
 });
 
