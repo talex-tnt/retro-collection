@@ -11,6 +11,7 @@ import {
 import type { FirestoreBuilder } from '../types/firestoreBuilder';
 import { createFirestoreApiError } from '../errorLogger';
 import { db } from '../../../lib/firebase';
+import { resolveDataCollectionPath } from '../runtimeConfig';
 
 export interface AuthorizedUser {
   id: string;
@@ -27,11 +28,12 @@ const getAuthorizedUsersEndpoints = (builder: FirestoreBuilder) => ({
   // -------------------------
   isUserAuthorized: builder.query<boolean, string>({
     async queryFn(email: string) {
+      const path = await resolveDataCollectionPath('authorized-users');
       const context = {
         apiEndpoint: 'isUserAuthorized',
         operation: 'GET' as const,
         firebaseFunc: 'getDoc',
-        path: 'authorized-users',
+        path,
         segmentPaths: [email],
       };
       try {
@@ -53,11 +55,12 @@ const getAuthorizedUsersEndpoints = (builder: FirestoreBuilder) => ({
   // -------------------------
   getAuthorizedUsers: builder.query<AuthorizedUser[], void>({
     async queryFn() {
+      const path = await resolveDataCollectionPath('authorized-users');
       const context = {
         apiEndpoint: 'getAuthorizedUsers',
         operation: 'QUERY' as const,
         firebaseFunc: 'getDocs',
-        path: 'authorized-users',
+        path,
       };
       try {
         const snapshot = await getDocs(collection(db, context.path));
@@ -89,11 +92,12 @@ const getAuthorizedUsersEndpoints = (builder: FirestoreBuilder) => ({
   // -------------------------
   addAuthorizedUser: builder.mutation<void, string>({
     async queryFn(email: string) {
+      const path = await resolveDataCollectionPath('authorized-users');
       const context = {
         apiEndpoint: 'addAuthorizedUser',
         operation: 'CREATE' as const,
         firebaseFunc: 'setDoc',
-        path: 'authorized-users',
+        path,
         segmentPaths: [email],
         requestPayload: {
           addedAt: serverTimestamp(),
@@ -118,11 +122,12 @@ const getAuthorizedUsersEndpoints = (builder: FirestoreBuilder) => ({
   // -------------------------
   removeAuthorizedUser: builder.mutation<void, string>({
     async queryFn(email: string) {
+      const path = await resolveDataCollectionPath('authorized-users');
       const context = {
         apiEndpoint: 'removeAuthorizedUser',
         operation: 'DELETE' as const,
         firebaseFunc: 'deleteDoc',
-        path: 'authorized-users',
+        path,
         segmentPaths: [email],
       };
       try {

@@ -422,6 +422,55 @@ test(`authorized-users is admin-only read/write on ${RULES_TARGET}`, async () =>
   }
 });
 
+test(`authorized-users: legacy root collection query is denied (repro getAuthorizedUsers error) on ${RULES_TARGET}`, async () => {
+  const adminUser = await buildClientContext({
+    uid: 'rules-admin-user',
+    claims: { admin: true },
+  });
+
+  try {
+    // This matches the current web implementation which queries a top-level
+    // collection named "authorized-users".
+    await expectPermissionDenied(
+      getDocs(collection(adminUser.db, 'authorized-users'))
+    );
+  } finally {
+    await adminUser.cleanup();
+  }
+});
+
+test(`authorized-users: admin can list from canonical docs-root path on ${RULES_TARGET}`, async () => {
+  const authorizedUsersCollectionPath = joinPath(
+    ROOT_COLLECTION,
+    TEST_ENV,
+    'data',
+    TEST_DATA_FOLDER,
+    'authorized-users'
+  );
+
+  const seededEmail = `seeded-${Date.now()}@example.com`;
+  await getAdminDb().doc(joinPath(authorizedUsersCollectionPath, seededEmail)).set({
+    allowed: true,
+    seededAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  const adminUser = await buildClientContext({
+    uid: 'rules-admin-user',
+    claims: { admin: true },
+  });
+
+  try {
+    const snap = await getDocs(collection(adminUser.db, authorizedUsersCollectionPath));
+    assert.ok(snap.size >= 1, 'Admin should be able to list authorized-users');
+    assert.ok(
+      snap.docs.some((d) => d.id === seededEmail),
+      'Seeded authorized user should be present'
+    );
+  } finally {
+    await adminUser.cleanup();
+  }
+});
+
 test(`users: owner can create/get/update own doc on ${RULES_TARGET}`, async () => {
   const userDocPath = joinPath(
     ROOT_COLLECTION,
