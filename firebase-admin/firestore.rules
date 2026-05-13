@@ -11,32 +11,34 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.token.admin == true;
     }
 
-    match /{env}/config/{document=**} {
-      allow read, write: if isAdmin();
-    }
-
-    match /{env}/config/public/{document=**} {
+    // Canonical root: /docs/{env}/...
+    // Public runtime config doc
+    match /docs/{env}/config/runtime {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
-    match /test/data/{document=**} {
+    // All other config paths are admin-only
+    match /docs/{env}/config/{document=**} {
       allow read, write: if isAdmin();
     }
 
-    match /{env}/data/{folder}/{document=**} {
-      allow read: if isAdmin();
-      allow list: if isAdmin();
-      allow write: if false;
+    // Admin-only scratch area for tests and diagnostics
+    match /docs/test/testData/{document=**} {
+      allow read, write: if isAdmin();
     }
 
-    match /{env}/data/{folder}/{resourceType}/{document=**} {
-      allow read: if isAdmin() || (isAuthenticated() && 
-        get(/databases/$(database)/documents/$(env)/config/public/runtime).data.dataFolder == folder);
-      allow list: if isAdmin() || (isAuthenticated() && 
-        get(/databases/$(database)/documents/$(env)/config/public/runtime).data.dataFolder == folder);
-      allow write: if isAdmin() || (isAuthenticated() && 
-        get(/databases/$(database)/documents/$(env)/config/public/runtime).data.dataFolder == folder);
+    // Folder documents themselves are not user-writable
+    match /docs/{env}/data/{folder} {
+      allow read, list, write: if isAdmin();
+    }
+
+    // Actual user data lives in collections under the folder doc
+    match /docs/{env}/data/{folder}/{resourceType}/{document=**} {
+      allow read, list, write: if isAdmin() || (
+        isAuthenticated() &&
+        get(/databases/$(database)/documents/docs/$(env)/config/runtime).data.dataFolder == folder
+      );
     }
 
     // function isOwner(ownerId) {

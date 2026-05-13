@@ -16,14 +16,20 @@ import {
 } from 'firebase/auth';
 import {
   connectFirestoreEmulator,
+  collection,
   deleteDoc,
+  documentId,
   doc,
+  getDocs,
   getDoc,
   getDocFromServer,
   getFirestore,
+  orderBy,
+  query,
   setDoc,
   terminate,
   serverTimestamp,
+  where,
 } from 'firebase/firestore';
 
 const RULES_TARGET = process.env.RULES_TARGET ?? 'emulator';
@@ -32,13 +38,23 @@ const TEST_ENV = 'test';
 const TEST_DATA_FOLDER = 'default';
 const TEST_ALT_DATA_FOLDER_1 = 'default1';
 const TEST_ALT_DATA_FOLDER_2 = 'default2';
-const TEST_DATA_TEST_PATH = `${TEST_ENV}/data/rulesSmoke/adminOnlyWrite`;
-const TEST_CONFIG_PATH = `${TEST_ENV}/config/public/runtime`;
+const ROOT_COLLECTION = 'docs';
+
+const TEST_DATA_TEST_PATH = `${ROOT_COLLECTION}/${TEST_ENV}/testData/rulesSmoke/adminOnlyWrite/doc`;
+const TEST_CONFIG_PATH = `${ROOT_COLLECTION}/${TEST_ENV}/config/runtime`;
 const TEST_COLLECTION_ID = 'test-collection-1';
 const TEST_USER_ID = 'rules-regular-user';
-const TEST_COLLECTION_PATH = `${TEST_ENV}/data/${TEST_DATA_FOLDER}/collections/docs/${TEST_COLLECTION_ID}`;
-const TEST_ALT_COLLECTION_PATH_1 = `${TEST_ENV}/data/${TEST_ALT_DATA_FOLDER_1}/collections/docs/test-collection-default1`;
-const TEST_ALT_COLLECTION_PATH_2 = `${TEST_ENV}/data/${TEST_ALT_DATA_FOLDER_2}/collections/docs/test-collection-default2`;
+
+const joinPath = (...segments) => segments.filter(Boolean).join('/');
+
+const getCollectionsArrayPath = (folder) =>
+  joinPath(ROOT_COLLECTION, TEST_ENV, 'data', folder, 'collections');
+const getCollectionsDocPath = (folder, docId) =>
+  joinPath(getCollectionsArrayPath(folder), docId);
+
+const TEST_COLLECTION_PATH = getCollectionsDocPath(TEST_DATA_FOLDER, TEST_COLLECTION_ID);
+const TEST_ALT_COLLECTION_PATH_1 = getCollectionsDocPath(TEST_ALT_DATA_FOLDER_1, 'test-collection-default1');
+const TEST_ALT_COLLECTION_PATH_2 = getCollectionsDocPath(TEST_ALT_DATA_FOLDER_2, 'test-collection-default2');
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 
@@ -146,11 +162,32 @@ const cleanupTestDocs = async () => {
     return;
   }
 
-  await getAdminDb().doc(TEST_DATA_TEST_PATH).delete().catch(() => undefined);
-  await getAdminDb().doc(TEST_CONFIG_PATH).delete().catch(() => undefined);
-  await getAdminDb().doc(TEST_COLLECTION_PATH).delete().catch(() => undefined);
-  await getAdminDb().doc(TEST_ALT_COLLECTION_PATH_1).delete().catch(() => undefined);
-  await getAdminDb().doc(TEST_ALT_COLLECTION_PATH_2).delete().catch(() => undefined);
+  // Live Firebase cleanup - try to delete but don't fail if paths don't exist
+  try {
+    await getAdminDb().doc(TEST_DATA_TEST_PATH).delete();
+  } catch (e) {
+    // Path might not exist or might have different structure
+  }
+  try {
+    await getAdminDb().doc(TEST_CONFIG_PATH).delete();
+  } catch (e) {
+    // Path might not exist
+  }
+  try {
+    await getAdminDb().doc(TEST_COLLECTION_PATH).delete();
+  } catch (e) {
+    // Path structure might be different
+  }
+  try {
+    await getAdminDb().doc(TEST_ALT_COLLECTION_PATH_1).delete();
+  } catch (e) {
+    // Fallback
+  }
+  try {
+    await getAdminDb().doc(TEST_ALT_COLLECTION_PATH_2).delete();
+  } catch (e) {
+    // Fallback
+  }
 };
 
 const expectPermissionDenied = async (promise) => {
@@ -282,7 +319,7 @@ test(`user cannot write to non-matched dataFolder on ${RULES_TARGET}`, async () 
   try {
     // Should fail because dataFolder is 'default', not 'items'
     await expectPermissionDenied(
-      setDoc(doc(context.db, `${TEST_ENV}/data/items/items/docs/test-item-1`), {
+      setDoc(doc(context.db, joinPath(ROOT_COLLECTION, TEST_ENV, 'data', 'items', 'items', 'test-item-1')), {
         testData: 'value',
       })
     );
@@ -293,7 +330,7 @@ test(`user cannot write to non-matched dataFolder on ${RULES_TARGET}`, async () 
 
 test(`authenticated user can read data on ${RULES_TARGET}`, async () => {
   // Admin creates test data
-  await getAdminDb().doc(TEST_COLLECTION_PATH).set({ testData: 'value' });
+  await getAdminDb().collection(getCollectionsArrayPath(TEST_DATA_FOLDER)).doc(TEST_COLLECTION_ID).set({ testData: 'value' });
 
   const context = await buildClientContext({
     uid: TEST_USER_ID,
@@ -309,7 +346,7 @@ test(`authenticated user can read data on ${RULES_TARGET}`, async () => {
 });
 
 test(`user can read config public and then read matched dataFolder data on ${RULES_TARGET}`, async () => {
-  await getAdminDb().doc(TEST_COLLECTION_PATH).set({ testData: 'value' });
+  await getAdminDb().collection(getCollectionsArrayPath(TEST_DATA_FOLDER)).doc(TEST_COLLECTION_ID).set({ testData: 'value' });
 
   const context = await buildClientContext({
     uid: TEST_USER_ID,
@@ -323,7 +360,7 @@ test(`user can read config public and then read matched dataFolder data on ${RUL
     const dataFolder = configSnap.data()?.dataFolder;
     assert.equal(dataFolder, TEST_DATA_FOLDER);
 
-    const matchedPath = `${TEST_ENV}/data/${dataFolder}/collections/docs/${TEST_COLLECTION_ID}`;
+    const matchedPath = getCollectionsDocPath(dataFolder, TEST_COLLECTION_ID);
     const dataSnap = await getDocFromServer(doc(context.db, matchedPath));
     assert.ok(dataSnap.exists(), 'Matched dataFolder data should be readable');
     assert.equal(dataSnap.data()?.testData, 'value');
@@ -333,8 +370,8 @@ test(`user can read config public and then read matched dataFolder data on ${RUL
 });
 
 test(`user cannot read data from a folder that does not match public config on ${RULES_TARGET}`, async () => {
-  await getAdminDb().doc(TEST_ALT_COLLECTION_PATH_1).set({ testData: 'wrong-folder' });
-  await getAdminDb().doc(TEST_ALT_COLLECTION_PATH_2).set({ testData: 'matched-folder' });
+  await getAdminDb().collection(getCollectionsArrayPath(TEST_ALT_DATA_FOLDER_1)).doc('test-collection-default1').set({ testData: 'wrong-folder' });
+  await getAdminDb().collection(getCollectionsArrayPath(TEST_ALT_DATA_FOLDER_2)).doc('test-collection-default2').set({ testData: 'matched-folder' });
   await getAdminDb().doc(TEST_CONFIG_PATH).set(
     { dataFolder: TEST_ALT_DATA_FOLDER_2 },
     { merge: true }
@@ -355,10 +392,68 @@ test(`user cannot read data from a folder that does not match public config on $
     );
 
     const matchedSnap = await getDocFromServer(
-      doc(context.db, TEST_ALT_COLLECTION_PATH_2)
+      doc(context.db, getCollectionsDocPath(TEST_ALT_DATA_FOLDER_2, 'test-collection-default2'))
     );
     assert.ok(matchedSnap.exists(), 'Configured folder data should stay readable');
   } finally {
+    await context.cleanup();
+  }
+});
+
+test(`collections array is queryable (allowed folder): insert 1 item then query it`, async () => {
+  const collectionsArrayPath = getCollectionsArrayPath(TEST_DATA_FOLDER);
+  const testDocId = `test-collection-${Date.now()}`;
+
+  // Insert exactly one document for this test run
+  const adminDb = getAdminDb();
+  await adminDb.collection(collectionsArrayPath).doc(testDocId).set({
+    name: 'test-collection',
+  });
+
+  const context = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    const q = query(
+      collection(context.db, collectionsArrayPath),
+      where(documentId(), '==', testDocId)
+    );
+    const snapshot = await getDocs(q);
+
+    assert.equal(snapshot.size, 1, 'Query should return exactly 1 document');
+    assert.equal(snapshot.docs[0].id, testDocId);
+    assert.equal(snapshot.docs[0].data().name, 'test-collection');
+  } finally {
+    await adminDb.collection(collectionsArrayPath).doc(testDocId).delete();
+    await context.cleanup();
+  }
+});
+
+test(`collections array is not queryable (wrong folder): query should be denied`, async () => {
+  const wrongCollectionsArrayPath = getCollectionsArrayPath(TEST_ALT_DATA_FOLDER_1);
+  const testDocId = `test-collection-${Date.now()}`;
+
+  // Create a doc in the wrong folder; config still points at TEST_DATA_FOLDER ('default')
+  const adminDb = getAdminDb();
+  await adminDb.collection(wrongCollectionsArrayPath).doc(testDocId).set({
+    name: 'test-collection',
+  });
+
+  const context = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    const q = query(
+      collection(context.db, wrongCollectionsArrayPath),
+      where(documentId(), '==', testDocId)
+    );
+    await expectPermissionDenied(getDocs(q));
+  } finally {
+    await adminDb.collection(wrongCollectionsArrayPath).doc(testDocId).delete();
     await context.cleanup();
   }
 });

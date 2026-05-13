@@ -6,6 +6,7 @@
     "deploy": "dotenv -e .env -- sh -c 'echo $ENV && firebase deploy --project=$ENV'",
     "deploy:ci" : "firebase deploy --project $ENV",
     "set-admin": "node set-admin.mjs",
+    "list:indexes": "dotenv -e .env -- sh -c 'firebase firestore:indexes --project=$ENV'",
     "test:rules": "node --test tests/firestore.rules.test.mjs",
     "test:rules:emulator": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/firestore.rules.test.mjs'",
     "test:rules:live": "RULES_TARGET=live ENV=dev node --test tests/firestore.rules.test.mjs"
