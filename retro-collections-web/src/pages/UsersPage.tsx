@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 import { auth } from '../lib/firebase';
 
 import { useGetUsersQuery } from '../api/firestore/firestoreApi';
 import { useIsAdmin } from '../hooks';
 
 function UsersPage() {
+  const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const isAdmin = useIsAdmin(currentUser);
@@ -76,7 +78,11 @@ function UsersPage() {
 
                 <tbody>
                   {users.map((user) => (
-                    <tr key={user.id}>
+                    <tr
+                      key={user.id}
+                      className="cursor-pointer hover:bg-base-200"
+                      onClick={() => navigate(`/collectors/${user.id}/collections`)}
+                    >
                       <td>{user.email}</td>
                       <td>{user.name || '—'}</td>
                       <td>

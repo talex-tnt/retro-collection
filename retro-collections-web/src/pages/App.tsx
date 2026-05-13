@@ -3,6 +3,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import HomePage from '../pages/HomePage';
 import AdminPage from '../pages/AdminPage';
+import CollectorPage from '../pages/CollectorPage';
 import UsersPage from '../pages/UsersPage';
 import MyCollectionsPage from '../pages/MyCollectionsPage';
 
@@ -20,6 +21,10 @@ function App() {
                 <Route
                   path="/my-collections/:collectionId?"
                   element={<MyCollectionsPage />}
+                />
+                <Route
+                  path="/collectors/:userId/collections/:collectionId?"
+                  element={<CollectorPage />}
                 />
                 <Route path="/users" element={<UsersPage />} />
                 <Route path="/admin" element={<AdminPage />} />

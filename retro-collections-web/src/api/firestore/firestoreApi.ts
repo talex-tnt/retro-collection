@@ -22,11 +22,13 @@ export const firestoreApi = createApi({
 
 export const {
   useGetCollectionsQuery,
+  useGetPublicCollectionsByUserIdQuery,
   useCreateCollectionMutation,
   useUpdateCollectionMutation,
   useDeleteCollectionMutation,
 
   useGetItemsQuery,
+  useGetPublicItemsByCollectionIdQuery,
   useGetItemsCountQuery,
   useGetAllItemsQuery,
   useGetUserItemsQuery,

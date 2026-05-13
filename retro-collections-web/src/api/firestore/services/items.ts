@@ -111,6 +111,32 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
           ]
         : [{ type: 'Items' as const, id: `${request.collectionId}_LIST` }],
   }),
+
+  getPublicItemsByCollectionId: builder.query<Item[], string>({
+    async queryFn(collectionId) {
+      try {
+        const q = query(
+          collection(db, 'items'),
+          where('collectionId', '==', collectionId),
+          where('visibility.public', '==', true),
+          orderBy('createdAt', 'desc'),
+          orderBy('__name__', 'asc')
+        );
+
+        const snapshot = await getDocs(q);
+
+        return {
+          data: snapshot.docs.map(mapItemDoc),
+        };
+      } catch (error) {
+        return { error };
+      }
+    },
+
+    providesTags: (_result, _error, collectionId) => [
+      { type: 'Items' as const, id: `${collectionId}_PUBLIC_LIST` },
+    ],
+  }),
   getItemsCount: builder.query<
     number,
     { collectionId: string; userId?: string }
@@ -227,10 +253,15 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
       }
     },
 
-    invalidatesTags: (_r, _e, { collectionId, userId }) => [
-      { type: 'Items' as const, id: `${collectionId}_LIST` },
-      { type: 'Items' as const, id: `${userId}_LIST` },
-    ],
+    invalidatesTags: (_r, _e, { collectionId, userId }) => {
+      const tags = [{ type: 'Items' as const, id: `${userId}_LIST` }];
+
+      if (collectionId) {
+        tags.push({ type: 'Items' as const, id: `${collectionId}_LIST` });
+      }
+
+      return tags;
+    },
   }),
 
   updateItem: builder.mutation<

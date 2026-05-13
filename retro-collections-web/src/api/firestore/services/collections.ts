@@ -95,6 +95,32 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
         : [{ type: 'Collections' as const, id: 'LIST' }],
   }),
 
+  getPublicCollectionsByUserId: builder.query<Collection[], string>({
+    async queryFn(userId) {
+      try {
+        const q = query(
+          collection(db, 'collections'),
+          where('userId', '==', userId),
+          where('visibility.public', '==', true),
+          orderBy('createdAt', 'desc'),
+          orderBy('__name__', 'asc')
+        );
+
+        const snapshot = await getDocs(q);
+
+        return {
+          data: snapshot.docs.map(mapCollectionDoc),
+        };
+      } catch (error) {
+        return { error };
+      }
+    },
+
+    providesTags: (_result, _error, userId) => [
+      { type: 'Collections' as const, id: `${userId}_PUBLIC_LIST` },
+    ],
+  }),
+
   createCollection: builder.mutation<Collection, CollectionInput>({
     async queryFn(collectionData) {
       try {
