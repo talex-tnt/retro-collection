@@ -19,6 +19,14 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == ownerId;
     }
 
+    function tokenEmail() {
+      return (isAuthenticated() && ('email' in request.auth.token) && request.auth.token.email is string)
+        ? request.auth.token.email
+        : (isAuthenticated() && ('authEmail' in request.auth.token) && request.auth.token.authEmail is string)
+          ? request.auth.token.authEmail
+          : null;
+    }
+
     function isPubliclyVisible() {
       return resource != null &&
         resource.data != null &&
@@ -58,7 +66,16 @@ service cloud.firestore {
 
       // authorized-users: admin-only read/write (login allowlist)
       match /authorized-users/{email} {
-        allow read, write: if isAdmin();
+        // Allow a signed-in user to check *only their own* authorization doc.
+        // This enables a client-side allowlist check without permitting enumeration.
+        allow get: if isAdmin() || (
+          folderMatchesConfig() &&
+          isAuthenticated() &&
+          tokenEmail() != null &&
+          tokenEmail().lower() == email.lower()
+        );
+        allow list: if isAdmin();
+        allow write: if isAdmin();
       }
 
       // users: owner can read/create/update their own doc; admin can do anything; list/delete are admin-only

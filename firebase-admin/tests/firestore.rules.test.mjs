@@ -376,32 +376,50 @@ test(`user cannot write to unknown resourceType on ${RULES_TARGET}`, async () =>
 });
 
 test(`authorized-users is admin-only read/write on ${RULES_TARGET}`, async () => {
-  const path = joinPath(
+  const ownEmail = 'self@example.com';
+  const otherEmail = 'other@example.com';
+  const ownDocPath = joinPath(
     ROOT_COLLECTION,
     TEST_ENV,
     'data',
     TEST_DATA_FOLDER,
     'authorized-users',
-    'writer@example.com'
+    ownEmail
   );
+  const otherDocPath = joinPath(
+    ROOT_COLLECTION,
+    TEST_ENV,
+    'data',
+    TEST_DATA_FOLDER,
+    'authorized-users',
+    otherEmail
+  );
+
+  // Seed both docs
+  await getAdminDb().doc(ownDocPath).set({ allowed: true });
+  await getAdminDb().doc(otherDocPath).set({ allowed: true });
 
   // Unauthenticated cannot read
   const unauth = await buildUnauthenticatedClientContext();
   try {
-    await expectPermissionDenied(getDocFromServer(doc(unauth.db, path)));
+    await expectPermissionDenied(getDocFromServer(doc(unauth.db, ownDocPath)));
   } finally {
     await unauth.cleanup();
   }
 
-  // Non-admin cannot read or write
+  // Non-admin can only read their own doc (by token email), cannot read others, cannot write
   const nonAdmin = await buildClientContext({
     uid: TEST_USER_ID,
-    claims: { admin: false },
+    claims: { admin: false, authEmail: ownEmail },
   });
 
   try {
-    await expectPermissionDenied(getDocFromServer(doc(nonAdmin.db, path)));
-    await expectPermissionDenied(setDoc(doc(nonAdmin.db, path), { allowed: true }));
+    const ownSnap = await getDocFromServer(doc(nonAdmin.db, ownDocPath));
+    assert.ok(ownSnap.exists(), 'Non-admin should be able to read own authorized-users doc');
+
+    await expectPermissionDenied(getDocFromServer(doc(nonAdmin.db, otherDocPath)));
+
+    await expectPermissionDenied(setDoc(doc(nonAdmin.db, ownDocPath), { allowed: true }));
   } finally {
     await nonAdmin.cleanup();
   }
@@ -413,8 +431,8 @@ test(`authorized-users is admin-only read/write on ${RULES_TARGET}`, async () =>
   });
 
   try {
-    await assert.doesNotReject(setDoc(doc(adminUser.db, path), { allowed: true }));
-    const snap = await getDocFromServer(doc(adminUser.db, path));
+    await assert.doesNotReject(setDoc(doc(adminUser.db, ownDocPath), { allowed: true }));
+    const snap = await getDocFromServer(doc(adminUser.db, ownDocPath));
     assert.ok(snap.exists(), 'Admin should be able to read authorized-users doc');
     assert.equal(snap.data()?.allowed, true);
   } finally {
