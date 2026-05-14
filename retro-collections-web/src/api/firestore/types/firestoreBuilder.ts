@@ -5,7 +5,7 @@ export type FirestoreTagTypes =
   | 'PublicCollections'
   | 'PublicItems'
   | 'PublicUsers'
-  | 'PublicAuthorizedUsers';
+  | 'PrivateAuthorizedUsers';
 
 export type FirestoreBuilder = EndpointBuilder<
   BaseQueryFn<void, unknown, FirestoreApiError>,

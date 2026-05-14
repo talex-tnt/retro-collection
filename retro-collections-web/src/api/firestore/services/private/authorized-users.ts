@@ -13,7 +13,7 @@ import { createFirestoreApiError } from '../../errorLogger';
 import { db } from '../../../../lib/firebase';
 import { resolveDataCollectionPath } from '../../runtimeConfig';
 
-const visibility = 'public' as const;
+const visibility = 'private' as const;
 
 export interface AuthorizedUser {
   id: string;
@@ -87,12 +87,12 @@ const getAuthorizedUsersEndpoints = (builder: FirestoreBuilder) => ({
       result
         ? [
             ...result.map((u) => ({
-              type: 'PublicAuthorizedUsers' as const,
+              type: 'PrivateAuthorizedUsers' as const,
               id: u.id,
             })),
-            { type: 'PublicAuthorizedUsers' as const, id: 'LIST' },
+            { type: 'PrivateAuthorizedUsers' as const, id: 'LIST' },
           ]
-        : [{ type: 'PublicAuthorizedUsers' as const, id: 'LIST' }],
+        : [{ type: 'PrivateAuthorizedUsers' as const, id: 'LIST' }],
   }),
 
   // -------------------------
@@ -125,7 +125,7 @@ const getAuthorizedUsersEndpoints = (builder: FirestoreBuilder) => ({
         return { error: createFirestoreApiError(context, error) };
       }
     },
-    invalidatesTags: [{ type: 'PublicAuthorizedUsers' as const, id: 'LIST' }],
+    invalidatesTags: [{ type: 'PrivateAuthorizedUsers' as const, id: 'LIST' }],
   }),
 
   // -------------------------
@@ -153,7 +153,7 @@ const getAuthorizedUsersEndpoints = (builder: FirestoreBuilder) => ({
       }
     },
 
-    invalidatesTags: [{ type: 'PublicAuthorizedUsers' as const, id: 'LIST' }],
+    invalidatesTags: [{ type: 'PrivateAuthorizedUsers' as const, id: 'LIST' }],
   }),
 });
 

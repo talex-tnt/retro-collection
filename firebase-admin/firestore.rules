@@ -65,7 +65,7 @@ service cloud.firestore {
       }
 
       // authorized-users: admin-only read/write (login allowlist)
-      match /public/authorized-users/{email} {
+      match /private/authorized-users/{email} {
         // Allow a signed-in user to check *only their own* authorization doc.
         // This enables a client-side allowlist check without permitting enumeration.
         allow get: if isAdmin() || (

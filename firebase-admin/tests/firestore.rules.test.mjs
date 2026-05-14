@@ -51,7 +51,7 @@ const getPublicResourcePath = (folder, resourceType) =>
 const getPublicResourceDocPath = (folder, resourceType, docId) =>
   joinPath(getPublicResourcePath(folder, resourceType), docId);
 const getAuthorizedUsersPath = (folder) =>
-  joinPath(TEST_ROOT, 'data', folder, 'public', 'authorized-users');
+  joinPath(TEST_ROOT, 'data', folder, 'private', 'authorized-users');
 
 const TEST_COLLECTION_PATH = getPublicResourceDocPath(TEST_DATA_FOLDER, 'collections', TEST_COLLECTION_ID);
 const TEST_ALT_COLLECTION_PATH_1 = getPublicResourceDocPath(TEST_ALT_DATA_FOLDER_1, 'collections', 'test-collection-default1');

@@ -5,7 +5,7 @@ import getRuntimeConfigEndpoints from './services/runtime-config';
 import getCollectionsEndpoints from './services/public/collections';
 import getItemsEndpoints from './services/public/items';
 import getUsersEndpoints from './services/public/users';
-import getAuthorizedUsersEndpoints from './services/public/authorized-users';
+import getAuthorizedUsersEndpoints from './services/private/authorized-users';
 
 export const firestoreApi = createApi({
   reducerPath: 'firestoreApi',
@@ -16,7 +16,7 @@ export const firestoreApi = createApi({
     'PublicCollections',
     'PublicItems',
     'PublicUsers',
-    'PublicAuthorizedUsers',
+    'PrivateAuthorizedUsers',
   ],
 
   endpoints: (builder) => ({
