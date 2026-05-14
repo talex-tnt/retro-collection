@@ -19,6 +19,12 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == ownerId;
     }
 
+    function validTimestamp(field) {
+      return field is timestamp && 
+        field.toMillis() > 0 &&
+        field.toMillis() < request.time.toMillis() + 60000; // Allow up to 60 seconds in the future for clock skew
+    }
+
     function tokenEmail() {
       return (isAuthenticated() && ('email' in request.auth.token) && request.auth.token.email is string)
         ? request.auth.token.email
@@ -66,7 +72,7 @@ service cloud.firestore {
     function isValidPrivateUserData(data) {
       return data.keys().hasOnly(['email', 'lastLogin']) &&
         (!('email' in data) || data.email is string) &&
-        (!('lastLogin' in data) || data.lastLogin is timestamp);
+        (!('lastLogin' in data) || validTimestamp(data.lastLogin));
     }
 
 
@@ -194,11 +200,7 @@ service cloud.firestore {
     //   return !(field is string) || field.size() <= maxLength;
     // }
 
-    // function validTimestamp(field) {
-    //   return field is timestamp && 
-    //     field.toMillis() > 0 &&
-    //     field.toMillis() < now.toMillis() + 60000; // Allow up to 60 seconds in the future for clock skew
-    // }
+  
 
     // function validVisibility(field) {
     //   return !(field is map) || (field.keys().hasOnly(['public']) && field.public is bool);
