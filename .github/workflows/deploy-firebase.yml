@@ -34,6 +34,10 @@ jobs:
         working-directory: firebase-admin
         run: npm ci
 
+      - name: Test Firestore rules (emulator)
+        working-directory: firebase-admin
+        run: npm run test:rules:emulator
+
       - name: Deploy Firebase
         working-directory: firebase-admin
         run: npm run deploy:ci -- --token ${{ secrets.FIREBASE_TOKEN }}
