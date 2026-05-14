@@ -1,0 +1,39 @@
+name: Deploy Firebase
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'firebase-admin/**'
+      - '.github/workflows/deploy-firebase.yml'
+
+jobs:
+  deploy-firebase:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+
+      - name: Set environment variables
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            echo "ENV=prod" >> $GITHUB_ENV
+          else
+            echo "ENV=dev" >> $GITHUB_ENV
+          fi
+
+      - name: Install Firebase dependencies
+        working-directory: firebase-admin
+        run: npm ci
+
+      - name: Deploy Firebase
+        working-directory: firebase-admin
+        run: npm run deploy:ci -- --token ${{ secrets.FIREBASE_TOKEN }}

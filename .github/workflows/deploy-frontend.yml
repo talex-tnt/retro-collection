@@ -1,17 +1,16 @@
-name: "(DISABLED) Build and Deploy Retro Collections"
-
-# Reference-only workflow.
-# This is intentionally disabled to avoid duplicate deploys.
-# The active workflows are:
-# - deploy-frontend.yml
-# - deploy-firebase.yml
+name: Deploy Frontend (GitHub Pages)
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'retro-collections-web/**'
+      - '.github/workflows/deploy-frontend.yml'
 
 jobs:
-  deploy:
-    if: ${{ false }}
+  deploy-frontend:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,16 +25,14 @@ jobs:
       - name: Set environment variables
         run: |
           if [ "${GITHUB_REF_NAME}" = "main" ]; then
-            echo "ENV=prod" >> $GITHUB_ENV
             echo "VITE_ENV=prod" >> $GITHUB_ENV
             echo "basename=retro-collections" >> $GITHUB_ENV
           else
-            echo "ENV=dev" >> $GITHUB_ENV
             echo "VITE_ENV=dev" >> $GITHUB_ENV
             echo "basename=retro-collections-develop" >> $GITHUB_ENV
           fi
 
-      - name: Install Frontend dependencies
+      - name: Install frontend dependencies
         working-directory: retro-collections-web
         run: npm ci
 
@@ -65,11 +62,3 @@ jobs:
           git add ${{ env.basename }}
           git commit -m "Deploy ${{ env.basename }}" || echo "No changes"
           git push
-
-      - name: Install Firebase dependencies
-        working-directory: firebase-admin
-        run: npm ci
-
-      - name: Deploy Firebase
-        working-directory: firebase-admin
-        run: npm run deploy:ci -- --token ${{ secrets.FIREBASE_TOKEN }}
