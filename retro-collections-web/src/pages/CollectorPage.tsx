@@ -78,7 +78,7 @@ function CollectorPage() {
           <div>
             <h2 className="card-title text-lg">Collector</h2>
             <p className="text-sm text-base-content/70">
-              {user?.name || user?.email || userId}
+              {user?.name || userId}
             </p>
           </div>
 

@@ -11,6 +11,7 @@ import {
 } from 'firebase/auth';
 import { auth, getIsAdmin } from '../lib/firebase';
 import {
+  useCreateOrUpdatePrivateUserMutation,
   useCreateOrUpdateUserMutation,
   useGetUserByIdQuery,
   useLazyIsUserAuthorizedQuery,
@@ -26,6 +27,7 @@ function Header() {
   const provider = new GoogleAuthProvider();
   const [checkAuthorizedUser] = useLazyIsUserAuthorizedQuery();
   const [createOrUpdateUser] = useCreateOrUpdateUserMutation();
+  const [createOrUpdatePrivateUser] = useCreateOrUpdatePrivateUserMutation();
   const [setUserVisibility, { isLoading: isUpdatingVisibility }] =
     useSetUserVisibilityMutation();
 
@@ -74,6 +76,10 @@ function Header() {
       await createOrUpdateUser({
         id: currentUser.uid,
         name: currentUser.displayName || '',
+      });
+
+      await createOrUpdatePrivateUser({
+        id: currentUser.uid,
         email: currentUser.email || '',
         lastLogin: new Date().toISOString(),
       });

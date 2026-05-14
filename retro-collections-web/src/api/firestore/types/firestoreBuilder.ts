@@ -5,6 +5,7 @@ export type FirestoreTagTypes =
   | 'PublicCollections'
   | 'PublicItems'
   | 'PublicUsers'
+  | 'PrivateUsers'
   | 'PrivateAuthorizedUsers';
 
 export type FirestoreBuilder = EndpointBuilder<

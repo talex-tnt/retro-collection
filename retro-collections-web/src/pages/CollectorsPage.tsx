@@ -30,7 +30,6 @@ function CollectorsPage() {
                 <thead>
                   <tr>
                     <th>Name</th>
-                    <th>Last Login</th>
                   </tr>
                 </thead>
 
@@ -43,12 +42,7 @@ function CollectorsPage() {
                         navigate(`/collectors/${user.id}/collections`)
                       }
                     >
-                      <td>{user.name || user.email || user.id}</td>
-                      <td>
-                        {user.lastLogin
-                          ? new Date(user.lastLogin).toLocaleString()
-                          : '—'}
-                      </td>
+                      <td>{user.name || user.id}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -1,10 +1,39 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../lib/firebase';
 
-import { useGetUsersQuery } from '../api/firestore/firestoreApi';
+import {
+  useGetUsersQuery,
+  useGetPrivateUsersQuery,
+} from '../api/firestore/firestoreApi';
 import { useIsAdmin } from '../hooks';
+import type { PrivateUserRecord } from '../api/firestore/services/private/users';
+
+interface PublicUserRecord {
+  id: string;
+  name?: string;
+}
+
+type UserRecord = PublicUserRecord & PrivateUserRecord;
+
+function UserRow({
+  user,
+  onSelect,
+}: {
+  user: UserRecord;
+  onSelect: () => void;
+}) {
+  return (
+    <tr className="cursor-pointer hover:bg-base-200" onClick={onSelect}>
+      <td>{user.email || '—'}</td>
+      <td>{user.name || '—'}</td>
+      <td>
+        {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : '—'}
+      </td>
+    </tr>
+  );
+}
 
 function UsersPage() {
   const navigate = useNavigate();
@@ -12,9 +41,38 @@ function UsersPage() {
 
   const isAdmin = useIsAdmin(currentUser);
 
-  const { data: users = [], isLoading } = useGetUsersQuery(undefined, {
-    skip: !currentUser || !isAdmin,
-  });
+  const { data: publicUsers = [], isLoading: isPublicUsersLoading } =
+    useGetUsersQuery(undefined, {
+      skip: !currentUser || !isAdmin,
+    });
+
+  const { data: privateUsers = [], isLoading: isPrivateUsersLoading } =
+    useGetPrivateUsersQuery(undefined, {
+      skip: !currentUser || !isAdmin,
+    });
+
+  const privateUsersById = useMemo<Record<string, PrivateUserRecord>>(
+    () =>
+      privateUsers.reduce<Record<string, PrivateUserRecord>>(
+        (accumulator, user) => {
+          accumulator[user.id] = user;
+          return accumulator;
+        },
+        {}
+      ),
+    [privateUsers]
+  );
+
+  const users = useMemo<UserRecord[]>(
+    () =>
+      publicUsers.map((user) => ({
+        ...user,
+        ...privateUsersById[user.id],
+      })),
+    [privateUsersById, publicUsers]
+  );
+
+  const isLoading = isPublicUsersLoading || isPrivateUsersLoading;
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -78,21 +136,13 @@ function UsersPage() {
 
                 <tbody>
                   {users.map((user) => (
-                    <tr
+                    <UserRow
                       key={user.id}
-                      className="cursor-pointer hover:bg-base-200"
-                      onClick={() =>
+                      user={user}
+                      onSelect={() =>
                         navigate(`/collectors/${user.id}/collections`)
                       }
-                    >
-                      <td>{user.email}</td>
-                      <td>{user.name || '—'}</td>
-                      <td>
-                        {user.lastLogin
-                          ? new Date(user.lastLogin).toLocaleString()
-                          : '—'}
-                      </td>
-                    </tr>
+                    />
                   ))}
                 </tbody>
               </table>
