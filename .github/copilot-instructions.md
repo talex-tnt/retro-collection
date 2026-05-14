@@ -42,6 +42,7 @@ This file tracks implementation requirements and coding guidelines for the retro
 - [ ] **NICKNAME FEATURE** — Add nickname support to users (Spark-compatible, Cloud Functions ready)
   - Current Plan (Spark, before plan upgrade):
     - [ ] Add `nickname` field to user public profile schema validation in rules
+    - [ ] Require `nickname` when `visibility.public == true` on user public profiles
     - [ ] Create `nicknameIndex` collection rules at `/{env}/data/{folder}/public/nicknameIndex/{nickname}`
     - [ ] Rules: user can only read/write nicknameIndex docs if they contain their own userId
     - [ ] Client-side transaction: atomic update of user profile + nicknameIndex

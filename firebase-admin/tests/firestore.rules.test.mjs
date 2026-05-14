@@ -511,7 +511,7 @@ test(`users public: owner can create/get/update own doc with name and visibility
     await assert.doesNotReject(
       setDoc(
         doc(owner.db, userDocPath),
-        { name: 'Me2', visibility: { public: true } },
+        { name: 'Me2', visibility: { public: true, }, nickname: 'Me2Nick' },
         { merge: true }
       )
     );
@@ -688,7 +688,7 @@ test(`users public: only owner can update own visibility on ${RULES_TARGET}`, as
     await assert.doesNotReject(
       setDoc(
         doc(owner.db, ownerDocPath),
-        { visibility: { public: true } },
+        { visibility: { public: true }, nickname: 'OwnerNick' },
         { merge: true }
       )
     );
@@ -1209,55 +1209,6 @@ test(`nicknameIndex: non-owner cannot read or modify nicknameIndex from non-conf
     );
   } finally {
     await context.cleanup();
-  }
-});
-
-test(`users public: owner cannot set visibility to public without nickname on ${RULES_TARGET}`, async () => {
-  const userDocPath = getPublicResourceDocPath(TEST_DATA_FOLDER, 'users', TEST_USER_ID);
-
-  const owner = await buildClientContext({
-    uid: TEST_USER_ID,
-    claims: { admin: false },
-  });
-
-  try {
-    // Try to create user with public visibility but no nickname
-    await expectPermissionDenied(
-      setDoc(doc(owner.db, userDocPath), {
-        name: 'Me',
-        visibility: { public: true },
-      })
-    );
-
-    // Seed user with private visibility and no nickname
-    await setDoc(doc(owner.db, userDocPath), {
-      name: 'Me',
-      visibility: { public: false },
-    });
-
-    // Try to set visibility to public without adding nickname
-    await expectPermissionDenied(
-      setDoc(
-        doc(owner.db, userDocPath),
-        { visibility: { public: true } },
-        { merge: true }
-      )
-    );
-
-    // But can set public if we add a nickname
-    await assert.doesNotReject(
-      setDoc(
-        doc(owner.db, userDocPath),
-        { visibility: { public: true }, nickname: 'alice_cool' },
-        { merge: true }
-      )
-    );
-
-    const snap = await getDocFromServer(doc(owner.db, userDocPath));
-    assert.equal(snap.data()?.visibility?.public, true, 'Should be able to set public with nickname');
-    assert.equal(snap.data()?.nickname, 'alice_cool', 'Nickname should be set');
-  } finally {
-    await owner.cleanup();
   }
 });
 

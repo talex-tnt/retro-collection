@@ -43,17 +43,24 @@ service cloud.firestore {
         data.public is bool;
     }
 
+      function hasValidNickname(data) {
+        return ('nickname' in data) &&
+          data.nickname is string &&
+          data.nickname.size() > 0;
+      }
+
+      function isPublicVisibilityEnabled(data) {
+        return ('visibility' in data) &&
+          isValidVisibilityMap(data.visibility) &&
+          data.visibility.public == true;
+      }
+
     function isValidPublicUserData(data) {
       return data.keys().hasOnly(['name', 'visibility', 'nickname']) &&
         (!('name' in data) || data.name is string) &&
         (!('visibility' in data) || isValidVisibilityMap(data.visibility)) &&
-        (!('nickname' in data) || (data.nickname is string && data.nickname.size() > 0)) &&
-        // If public visibility, nickname is required
-        (
-          !('visibility' in data) ||
-          !data.visibility.public ||
-          ('nickname' in data && data.nickname is string && data.nickname.size() > 0)
-        );
+          (!('nickname' in data) || data.nickname == null || hasValidNickname(data)) &&
+          (!isPublicVisibilityEnabled(data) || hasValidNickname(data));
     }
 
     function isValidPrivateUserData(data) {
