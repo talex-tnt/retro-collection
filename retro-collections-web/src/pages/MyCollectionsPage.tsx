@@ -124,7 +124,14 @@ function MyCollectionsPage() {
           onCollectionNameChange={setCollectionName}
           orphanedCount={orphanedItems.length}
         />
+
+        <NewItem
+          userId={user.uid}
+          collections={collections}
+          selectedCollection={resolvedSelectedCollection}
+        />
       </div>
+
       <ItemsPanel
         user={user}
         selectedCollection={resolvedSelectedCollection}
@@ -132,11 +139,6 @@ function MyCollectionsPage() {
         itemFilter={itemFilter}
         onItemFilterChange={setItemFilter}
         orphanedItems={orphanedItems}
-      />
-      <NewItem
-        userId={user.uid}
-        collections={collections}
-        selectedCollection={resolvedSelectedCollection}
       />
     </div>
   );
