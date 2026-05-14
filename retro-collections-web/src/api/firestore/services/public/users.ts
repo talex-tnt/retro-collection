@@ -14,10 +14,12 @@ import {
   type DocumentData,
 } from 'firebase/firestore';
 
-import type { FirestoreBuilder } from '../types/firestoreBuilder';
-import { createFirestoreApiError } from '../errorLogger';
-import { db } from '../../../lib/firebase';
-import { resolveDataCollectionPath } from '../runtimeConfig';
+import type { FirestoreBuilder } from '../../types/firestoreBuilder';
+import { createFirestoreApiError } from '../../errorLogger';
+import { db } from '../../../../lib/firebase';
+import { resolveDataCollectionPath } from '../../runtimeConfig';
+
+const visibility = 'public' as const;
 
 export interface UserRecord {
   id: string;
@@ -55,7 +57,10 @@ const mapUserDoc = (
 const getUsersEndpoints = (builder: FirestoreBuilder) => ({
   getUsers: builder.query<UserRecord[], void>({
     async queryFn() {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'users' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'users',
+      });
       const q = query(collection(db, path), orderBy('lastLogin', 'desc'));
       const context = {
         apiEndpoint: 'getUsers',
@@ -75,12 +80,15 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
       }
     },
 
-    providesTags: [{ type: 'Users' as const, id: 'LIST' }],
+    providesTags: [{ type: 'PublicUsers' as const, id: 'LIST' }],
   }),
 
   getPublicUsers: builder.query<UserRecord[], void>({
     async queryFn() {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'users' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'users',
+      });
       const q = query(
         collection(db, path),
         where('visibility.public', '==', true)
@@ -103,12 +111,15 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
       }
     },
 
-    providesTags: [{ type: 'Users' as const, id: 'PUBLIC_LIST' }],
+    providesTags: [{ type: 'PublicUsers' as const, id: 'PUBLIC_LIST' }],
   }),
 
   getUserById: builder.query<UserRecord | null, string>({
     async queryFn(userId) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'users' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'users',
+      });
       const context = {
         apiEndpoint: 'getUserById',
         operation: 'GET' as const,
@@ -138,7 +149,7 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
     },
 
     providesTags: (_result, _error, userId) => [
-      { type: 'Users' as const, id: userId },
+      { type: 'PublicUsers' as const, id: userId },
     ],
   }),
   createOrUpdateUser: builder.mutation<
@@ -151,7 +162,10 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
     }
   >({
     async queryFn({ id, ...data }) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'users' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'users',
+      });
       const requestPayload = {
         ...data,
         lastLogin: serverTimestamp(),
@@ -177,12 +191,12 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
 
     invalidatesTags: (_result, _error, { id }) => [
       {
-        type: 'Users' as const,
+        type: 'PublicUsers' as const,
         id,
       },
 
       {
-        type: 'Users' as const,
+        type: 'PublicUsers' as const,
         id: 'LIST',
       },
     ],
@@ -195,7 +209,10 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
     }
   >({
     async queryFn({ id, updates }) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'users' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'users',
+      });
       const requestPayload = {
         ...updates,
         lastLogin: serverTimestamp(),
@@ -221,12 +238,12 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
 
     invalidatesTags: (_result, _error, { id }) => [
       {
-        type: 'Users' as const,
+        type: 'PublicUsers' as const,
         id,
       },
 
       {
-        type: 'Users' as const,
+        type: 'PublicUsers' as const,
         id: 'LIST',
       },
     ],
@@ -237,7 +254,10 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
     { userId: string; public: boolean }
   >({
     async queryFn({ userId, public: isPublic }) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'users' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'users',
+      });
       const requestPayload = {
         visibility: { public: isPublic },
       };
@@ -259,9 +279,9 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
     },
 
     invalidatesTags: (_result, _error, { userId }) => [
-      { type: 'Users' as const, id: userId },
-      { type: 'Users' as const, id: 'LIST' },
-      { type: 'Users' as const, id: 'PUBLIC_LIST' },
+      { type: 'PublicUsers' as const, id: userId },
+      { type: 'PublicUsers' as const, id: 'LIST' },
+      { type: 'PublicUsers' as const, id: 'PUBLIC_LIST' },
     ],
   }),
 });

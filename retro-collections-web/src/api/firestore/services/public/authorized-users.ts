@@ -8,10 +8,12 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 
-import type { FirestoreBuilder } from '../types/firestoreBuilder';
-import { createFirestoreApiError } from '../errorLogger';
-import { db } from '../../../lib/firebase';
-import { resolveDataCollectionPath } from '../runtimeConfig';
+import type { FirestoreBuilder } from '../../types/firestoreBuilder';
+import { createFirestoreApiError } from '../../errorLogger';
+import { db } from '../../../../lib/firebase';
+import { resolveDataCollectionPath } from '../../runtimeConfig';
+
+const visibility = 'public' as const;
 
 export interface AuthorizedUser {
   id: string;
@@ -28,7 +30,10 @@ const getAuthorizedUsersEndpoints = (builder: FirestoreBuilder) => ({
   // -------------------------
   isUserAuthorized: builder.query<boolean, string>({
     async queryFn(email: string) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'authorized-users' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'authorized-users',
+      });
       const context = {
         apiEndpoint: 'isUserAuthorized',
         operation: 'GET' as const,
@@ -55,7 +60,10 @@ const getAuthorizedUsersEndpoints = (builder: FirestoreBuilder) => ({
   // -------------------------
   getAuthorizedUsers: builder.query<AuthorizedUser[], void>({
     async queryFn() {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'authorized-users' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'authorized-users',
+      });
       const context = {
         apiEndpoint: 'getAuthorizedUsers',
         operation: 'QUERY' as const,
@@ -79,12 +87,12 @@ const getAuthorizedUsersEndpoints = (builder: FirestoreBuilder) => ({
       result
         ? [
             ...result.map((u) => ({
-              type: 'AuthorizedUsers' as const,
+              type: 'PublicAuthorizedUsers' as const,
               id: u.id,
             })),
-            { type: 'AuthorizedUsers' as const, id: 'LIST' },
+            { type: 'PublicAuthorizedUsers' as const, id: 'LIST' },
           ]
-        : [{ type: 'AuthorizedUsers' as const, id: 'LIST' }],
+        : [{ type: 'PublicAuthorizedUsers' as const, id: 'LIST' }],
   }),
 
   // -------------------------
@@ -92,7 +100,10 @@ const getAuthorizedUsersEndpoints = (builder: FirestoreBuilder) => ({
   // -------------------------
   addAuthorizedUser: builder.mutation<void, string>({
     async queryFn(email: string) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'authorized-users' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'authorized-users',
+      });
       const context = {
         apiEndpoint: 'addAuthorizedUser',
         operation: 'CREATE' as const,
@@ -114,7 +125,7 @@ const getAuthorizedUsersEndpoints = (builder: FirestoreBuilder) => ({
         return { error: createFirestoreApiError(context, error) };
       }
     },
-    invalidatesTags: [{ type: 'AuthorizedUsers' as const, id: 'LIST' }],
+    invalidatesTags: [{ type: 'PublicAuthorizedUsers' as const, id: 'LIST' }],
   }),
 
   // -------------------------
@@ -122,7 +133,10 @@ const getAuthorizedUsersEndpoints = (builder: FirestoreBuilder) => ({
   // -------------------------
   removeAuthorizedUser: builder.mutation<void, string>({
     async queryFn(email: string) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'authorized-users' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'authorized-users',
+      });
       const context = {
         apiEndpoint: 'removeAuthorizedUser',
         operation: 'DELETE' as const,
@@ -139,7 +153,7 @@ const getAuthorizedUsersEndpoints = (builder: FirestoreBuilder) => ({
       }
     },
 
-    invalidatesTags: [{ type: 'AuthorizedUsers' as const, id: 'LIST' }],
+    invalidatesTags: [{ type: 'PublicAuthorizedUsers' as const, id: 'LIST' }],
   }),
 });
 

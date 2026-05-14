@@ -13,10 +13,12 @@ import {
   type QueryDocumentSnapshot,
   type DocumentData,
 } from 'firebase/firestore';
-import type { FirestoreBuilder } from '../types/firestoreBuilder';
-import { createFirestoreApiError } from '../errorLogger';
-import { db } from '../../../lib/firebase';
-import { resolveDataCollectionPath } from '../runtimeConfig';
+import type { FirestoreBuilder } from '../../types/firestoreBuilder';
+import { createFirestoreApiError } from '../../errorLogger';
+import { db } from '../../../../lib/firebase';
+import { resolveDataCollectionPath } from '../../runtimeConfig';
+
+const visibility = 'public' as const;
 
 export interface Collection {
   id: string;
@@ -66,7 +68,10 @@ const mapCollectionDoc = (
 const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
   getCollections: builder.query<Collection[], string>({
     async queryFn(userId) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'collections' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'collections',
+      });
       const q = query(
         collection(db, path),
         where('userId', '==', userId),
@@ -95,17 +100,20 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
       result
         ? [
             ...result.map(({ id }) => ({
-              type: 'Collections' as const,
+              type: 'PublicCollections' as const,
               id,
             })),
-            { type: 'Collections' as const, id: 'LIST' },
+            { type: 'PublicCollections' as const, id: 'LIST' },
           ]
-        : [{ type: 'Collections' as const, id: 'LIST' }],
+        : [{ type: 'PublicCollections' as const, id: 'LIST' }],
   }),
 
-  getPublicCollectionsByUserId: builder.query<Collection[], string>({
+  getPublicCollections: builder.query<Collection[], string>({
     async queryFn(userId) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'collections' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'collections',
+      });
       const q = query(
         collection(db, path),
         where('userId', '==', userId),
@@ -114,7 +122,7 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
         orderBy('__name__', 'asc')
       );
       const context = {
-        apiEndpoint: 'getPublicCollectionsByUserId',
+        apiEndpoint: 'getPublicCollections',
         operation: 'QUERY' as const,
         firebaseFunc: 'getDocs',
         path,
@@ -132,13 +140,16 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
     },
 
     providesTags: (_result, _error, userId) => [
-      { type: 'Collections' as const, id: `${userId}_PUBLIC_LIST` },
+      { type: 'PublicCollections' as const, id: `${userId}_PUBLIC_LIST` },
     ],
   }),
 
   createCollection: builder.mutation<Collection, CollectionInput>({
     async queryFn(collectionData) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'collections' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'collections',
+      });
       const requestPayload = {
         ...collectionData,
         visibility: collectionData.visibility ?? { public: false },
@@ -169,7 +180,7 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
       }
     },
 
-    invalidatesTags: [{ type: 'Collections' as const, id: 'LIST' }],
+    invalidatesTags: [{ type: 'PublicCollections' as const, id: 'LIST' }],
   }),
 
   updateCollection: builder.mutation<
@@ -177,7 +188,10 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
     { id: string; updates: CollectionUpdate }
   >({
     async queryFn({ id, updates }) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'collections' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'collections',
+      });
       const requestPayload = {
         ...updates,
         updatedAt: serverTimestamp(),
@@ -200,14 +214,17 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
     },
 
     invalidatesTags: (_r, _e, { id }) => [
-      { type: 'Collections' as const, id },
-      { type: 'Collections' as const, id: 'LIST' },
+      { type: 'PublicCollections' as const, id },
+      { type: 'PublicCollections' as const, id: 'LIST' },
     ],
   }),
 
   deleteCollection: builder.mutation<void, string>({
     async queryFn(id) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'collections' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'collections',
+      });
       const context = {
         apiEndpoint: 'deleteCollection',
         operation: 'DELETE' as const,
@@ -225,8 +242,8 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
     },
 
     invalidatesTags: (_r, _e, id) => [
-      { type: 'Collections' as const, id },
-      { type: 'Collections' as const, id: 'LIST' },
+      { type: 'PublicCollections' as const, id },
+      { type: 'PublicCollections' as const, id: 'LIST' },
     ],
   }),
 });

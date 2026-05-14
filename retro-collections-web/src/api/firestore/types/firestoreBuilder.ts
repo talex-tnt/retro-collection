@@ -2,10 +2,10 @@ import type { BaseQueryFn, EndpointBuilder } from '@reduxjs/toolkit/query';
 import type { FirestoreApiError } from '../errorLogger';
 
 export type FirestoreTagTypes =
-  | 'Collections'
-  | 'Items'
-  | 'Users'
-  | 'AuthorizedUsers';
+  | 'PublicCollections'
+  | 'PublicItems'
+  | 'PublicUsers'
+  | 'PublicAuthorizedUsers';
 
 export type FirestoreBuilder = EndpointBuilder<
   BaseQueryFn<void, unknown, FirestoreApiError>,

@@ -2,17 +2,22 @@ import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { FirestoreApiError } from './errorLogger';
 
 import getRuntimeConfigEndpoints from './services/runtime-config';
-import getCollectionsEndpoints from './services/collections';
-import getItemsEndpoints from './services/items';
-import getUsersEndpoints from './services/users';
-import getAuthorizedUsersEndpoints from './services/authorized-users';
+import getCollectionsEndpoints from './services/public/collections';
+import getItemsEndpoints from './services/public/items';
+import getUsersEndpoints from './services/public/users';
+import getAuthorizedUsersEndpoints from './services/public/authorized-users';
 
 export const firestoreApi = createApi({
   reducerPath: 'firestoreApi',
 
   baseQuery: fakeBaseQuery<FirestoreApiError>(),
 
-  tagTypes: ['Collections', 'Items', 'Users', 'AuthorizedUsers'],
+  tagTypes: [
+    'PublicCollections',
+    'PublicItems',
+    'PublicUsers',
+    'PublicAuthorizedUsers',
+  ],
 
   endpoints: (builder) => ({
     ...getRuntimeConfigEndpoints(builder),
@@ -27,13 +32,13 @@ export const {
   useGetRuntimeConfigQuery,
 
   useGetCollectionsQuery,
-  useGetPublicCollectionsByUserIdQuery,
+  useGetPublicCollectionsQuery,
   useCreateCollectionMutation,
   useUpdateCollectionMutation,
   useDeleteCollectionMutation,
 
   useGetItemsQuery,
-  useGetPublicItemsByCollectionIdQuery,
+  useGetPublicItemsQuery,
   useGetItemsCountQuery,
   useGetAllItemsQuery,
   useGetUserItemsQuery,

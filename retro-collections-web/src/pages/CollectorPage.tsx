@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  useGetPublicCollectionsByUserIdQuery,
-  useGetPublicItemsByCollectionIdQuery,
+  useGetPublicCollectionsQuery,
+  useGetPublicItemsQuery,
   useGetUserByIdQuery,
 } from '../api/firestore/firestoreApi';
 
@@ -35,7 +35,7 @@ function CollectorPage() {
   });
 
   const { data: collections = [], isLoading: loadingCollections } =
-    useGetPublicCollectionsByUserIdQuery(userId || '', {
+    useGetPublicCollectionsQuery(userId || '', {
       skip: !userId,
     });
 
@@ -49,10 +49,12 @@ function CollectorPage() {
     );
   }, [collectionId, collections]);
 
-  const { data: items = [], isLoading: loadingItems } =
-    useGetPublicItemsByCollectionIdQuery(selectedCollection?.id || '', {
+  const { data: items = [], isLoading: loadingItems } = useGetPublicItemsQuery(
+    selectedCollection?.id || '',
+    {
       skip: !selectedCollection?.id,
-    });
+    }
+  );
 
   const handleSelectCollection = (collection: CollectionRecord) => {
     navigate(`/collectors/${userId}/collections/${collection.id}`);

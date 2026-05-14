@@ -14,10 +14,12 @@ import {
   type DocumentData,
   getCountFromServer,
 } from 'firebase/firestore';
-import type { FirestoreBuilder } from '../types/firestoreBuilder';
-import { createFirestoreApiError } from '../errorLogger';
-import { db } from '../../../lib/firebase';
-import { resolveDataCollectionPath } from '../runtimeConfig';
+import type { FirestoreBuilder } from '../../types/firestoreBuilder';
+import { createFirestoreApiError } from '../../errorLogger';
+import { db } from '../../../../lib/firebase';
+import { resolveDataCollectionPath } from '../../runtimeConfig';
+
+const visibility = 'public' as const;
 
 export interface Item {
   id: string;
@@ -82,7 +84,10 @@ const sortItemsNewestFirst = (left: Item, right: Item) => {
 const getItemsEndpoints = (builder: FirestoreBuilder) => ({
   getItems: builder.query<Item[], { collectionId: string; userId: string }>({
     async queryFn({ collectionId /*, userId*/ }) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'items' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'items',
+      });
       const q = query(
         collection(db, path),
         where('collectionId', '==', collectionId),
@@ -111,17 +116,28 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
       result
         ? [
             ...result.map(({ id }) => ({
-              type: 'Items' as const,
+              type: 'PublicItems' as const,
               id,
             })),
-            { type: 'Items' as const, id: `${request.collectionId}_LIST` },
+            {
+              type: 'PublicItems' as const,
+              id: `${request.collectionId}_LIST`,
+            },
           ]
-        : [{ type: 'Items' as const, id: `${request.collectionId}_LIST` }],
+        : [
+            {
+              type: 'PublicItems' as const,
+              id: `${request.collectionId}_LIST`,
+            },
+          ],
   }),
 
-  getPublicItemsByCollectionId: builder.query<Item[], string>({
+  getPublicItems: builder.query<Item[], string>({
     async queryFn(collectionId) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'items' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'items',
+      });
       const q = query(
         collection(db, path),
         where('collectionId', '==', collectionId),
@@ -130,7 +146,7 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
         orderBy('__name__', 'asc')
       );
       const context = {
-        apiEndpoint: 'getPublicItemsByCollectionId',
+        apiEndpoint: 'getPublicItems',
         operation: 'QUERY' as const,
         firebaseFunc: 'getDocs',
         path,
@@ -148,7 +164,7 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
     },
 
     providesTags: (_result, _error, collectionId) => [
-      { type: 'Items' as const, id: `${collectionId}_PUBLIC_LIST` },
+      { type: 'PublicItems' as const, id: `${collectionId}_PUBLIC_LIST` },
     ],
   }),
   getItemsCount: builder.query<
@@ -156,7 +172,10 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
     { collectionId: string; userId?: string }
   >({
     async queryFn({ collectionId, userId }) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'items' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'items',
+      });
       const constraints = [where('collectionId', '==', collectionId)];
 
       if (userId) {
@@ -182,13 +201,16 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
       }
     },
     providesTags: (_result, _error, request) => [
-      { type: 'Items' as const, id: `${request.collectionId}_LIST` },
+      { type: 'PublicItems' as const, id: `${request.collectionId}_LIST` },
     ],
   }),
 
   getAllItems: builder.query<Item[], void>({
     async queryFn() {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'items' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'items',
+      });
       const q = query(
         collection(db, path),
         orderBy('createdAt', 'desc'),
@@ -212,12 +234,15 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
       }
     },
 
-    providesTags: [{ type: 'Items' as const, id: 'LIST' }],
+    providesTags: [{ type: 'PublicItems' as const, id: 'LIST' }],
   }),
 
   getUserItems: builder.query<Item[], string>({
     async queryFn(userId) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'items' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'items',
+      });
       const q = query(collection(db, path), where('userId', '==', userId));
       const context = {
         apiEndpoint: 'getUserItems',
@@ -241,16 +266,19 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
       result
         ? [
             ...result.map(({ id }) => ({
-              type: 'Items' as const,
+              type: 'PublicItems' as const,
               id,
             })),
-            { type: 'Items' as const, id: `${userId}_LIST` },
+            { type: 'PublicItems' as const, id: `${userId}_LIST` },
           ]
-        : [{ type: 'Items' as const, id: `${userId}_LIST` }],
+        : [{ type: 'PublicItems' as const, id: `${userId}_LIST` }],
   }),
   getUserItemsCount: builder.query<number, string>({
     async queryFn(userId) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'items' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'items',
+      });
       const q = query(collection(db, path), where('userId', '==', userId));
       const context = {
         apiEndpoint: 'getUserItemsCount',
@@ -270,12 +298,15 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
       }
     },
     providesTags: (result, _error, userId) =>
-      result ? [{ type: 'Items' as const, id: `${userId}_LIST` }] : [],
+      result ? [{ type: 'PublicItems' as const, id: `${userId}_LIST` }] : [],
   }),
 
   createItem: builder.mutation<Item, ItemInput>({
     async queryFn(itemData) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'items' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'items',
+      });
       const requestPayload = {
         ...itemData,
         createdAt: serverTimestamp(),
@@ -305,10 +336,10 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
     },
 
     invalidatesTags: (_r, _e, { collectionId, userId }) => {
-      const tags = [{ type: 'Items' as const, id: `${userId}_LIST` }];
+      const tags = [{ type: 'PublicItems' as const, id: `${userId}_LIST` }];
 
       if (collectionId) {
-        tags.push({ type: 'Items' as const, id: `${collectionId}_LIST` });
+        tags.push({ type: 'PublicItems' as const, id: `${collectionId}_LIST` });
       }
 
       return tags;
@@ -325,7 +356,10 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
     }
   >({
     async queryFn({ id, updates }) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'items' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'items',
+      });
       const requestPayload = {
         ...updates,
         updatedAt: serverTimestamp(),
@@ -353,20 +387,20 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
       { id, userId, previousCollectionId, updates }
     ) => {
       const tags = [
-        { type: 'Items' as const, id },
-        { type: 'Items' as const, id: `${userId}_LIST` },
+        { type: 'PublicItems' as const, id },
+        { type: 'PublicItems' as const, id: `${userId}_LIST` },
       ];
 
       if (previousCollectionId) {
         tags.push({
-          type: 'Items' as const,
+          type: 'PublicItems' as const,
           id: `${previousCollectionId}_LIST`,
         });
       }
 
       if (updates.collectionId) {
         tags.push({
-          type: 'Items' as const,
+          type: 'PublicItems' as const,
           id: `${updates.collectionId}_LIST`,
         });
       }
@@ -380,7 +414,10 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
     { id: string; collectionId: string; userId: string }
   >({
     async queryFn({ id }) {
-      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'items' });
+      const path = await resolveDataCollectionPath({
+        visibility,
+        resourceType: 'items',
+      });
       const context = {
         apiEndpoint: 'deleteItem',
         operation: 'DELETE' as const,
@@ -398,9 +435,9 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
     },
 
     invalidatesTags: (_r, _e, { id, collectionId, userId }) => [
-      { type: 'Items' as const, id },
-      { type: 'Items' as const, id: `${collectionId}_LIST` },
-      { type: 'Items' as const, id: `${userId}_LIST` },
+      { type: 'PublicItems' as const, id },
+      { type: 'PublicItems' as const, id: `${collectionId}_LIST` },
+      { type: 'PublicItems' as const, id: `${userId}_LIST` },
     ],
   }),
 });
