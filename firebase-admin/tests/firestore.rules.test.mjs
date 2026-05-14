@@ -34,25 +34,24 @@ import {
 
 const RULES_TARGET = process.env.RULES_TARGET ?? 'emulator';
 const ENV = process.env.ENV ?? 'dev';
-const MAIN_ROOT = 'main';
 const TEST_ROOT = 'test';
 const TEST_DATA_FOLDER = 'default';
 const TEST_ALT_DATA_FOLDER_1 = 'default1';
 const TEST_ALT_DATA_FOLDER_2 = 'default2';
 
 const TEST_DATA_TEST_PATH = `${TEST_ROOT}/testData/rulesSmoke/adminOnlyWrite/doc/smokeDoc`;
-const TEST_CONFIG_PATH = `${MAIN_ROOT}/config/public/runtime`;
+const TEST_CONFIG_PATH = `${TEST_ROOT}/config/public/runtime`;
 const TEST_COLLECTION_ID = 'test-collection-1';
 const TEST_USER_ID = 'rules-regular-user';
 
 const joinPath = (...segments) => segments.filter(Boolean).join('/');
 
 const getPublicResourcePath = (folder, resourceType) =>
-  joinPath(MAIN_ROOT, 'data', folder, 'public', resourceType);
+  joinPath(TEST_ROOT, 'data', folder, 'public', resourceType);
 const getPublicResourceDocPath = (folder, resourceType, docId) =>
   joinPath(getPublicResourcePath(folder, resourceType), docId);
 const getAuthorizedUsersPath = (folder) =>
-  joinPath(MAIN_ROOT, 'data', folder, 'public', 'authorized-users');
+  joinPath(TEST_ROOT, 'data', folder, 'public', 'authorized-users');
 
 const TEST_COLLECTION_PATH = getPublicResourceDocPath(TEST_DATA_FOLDER, 'collections', TEST_COLLECTION_ID);
 const TEST_ALT_COLLECTION_PATH_1 = getPublicResourceDocPath(TEST_ALT_DATA_FOLDER_1, 'collections', 'test-collection-default1');
@@ -229,6 +228,19 @@ const expectPermissionDenied = async (promise) => {
   });
 };
 
+const expectFailedPrecondition = async (promise) => {
+  await assert.rejects(promise, (error) => {
+    const message = String(error?.message ?? '');
+    const code = String(error?.code ?? '');
+
+    return (
+      code.includes('failed-precondition') ||
+      message.includes('failed-precondition') ||
+      message.includes('The query requires an index')
+    );
+  });
+};
+
 test.beforeEach(async () => {
   await cleanupTestDocs();
 
@@ -344,7 +356,7 @@ test(`user cannot write to non-matched dataFolder on ${RULES_TARGET}`, async () 
   try {
     // Should fail because dataFolder is 'default', not 'items'
     await expectPermissionDenied(
-      setDoc(doc(context.db, joinPath(MAIN_ROOT, 'data', 'items', 'public', 'items', 'test-item-1')), {
+      setDoc(doc(context.db, joinPath(TEST_ROOT, 'data', 'items', 'public', 'items', 'test-item-1')), {
         testData: 'value',
       })
     );
@@ -365,7 +377,7 @@ test(`user cannot write to unknown resourceType on ${RULES_TARGET}`, async () =>
       setDoc(
         doc(
           context.db,
-          joinPath(MAIN_ROOT, 'data', TEST_DATA_FOLDER, 'public', 'unknown-type', 'doc-1')
+          joinPath(TEST_ROOT, 'data', TEST_DATA_FOLDER, 'public', 'unknown-type', 'doc-1')
         ),
         {
           testData: 'value',
@@ -803,6 +815,53 @@ test(`collections array is queryable (allowed folder): insert 1 item then query 
     assert.equal(snapshot.docs[0].data().name, 'test-collection');
   } finally {
     await adminDb.collection(collectionsArrayPath).doc(testDocId).delete();
+    await context.cleanup();
+  }
+});
+
+test(`items query reproduces the frontend getItems shape on ${RULES_TARGET}`, async () => {
+  const itemsPath = getPublicResourcePath(TEST_DATA_FOLDER, 'items');
+  const testCollectionId = `test-items-collection-${Date.now()}`;
+  const firstDocId = `item-a-${Date.now()}`;
+  const secondDocId = `item-b-${Date.now()}`;
+  const adminDb = getAdminDb();
+
+  await adminDb.collection(itemsPath).doc(firstDocId).set({
+    name: 'First item',
+    userId: TEST_USER_ID,
+    collectionId: testCollectionId,
+    createdAt: admin.firestore.Timestamp.fromMillis(1_700_000_000_000),
+  });
+  await adminDb.collection(itemsPath).doc(secondDocId).set({
+    name: 'Second item',
+    userId: TEST_USER_ID,
+    collectionId: testCollectionId,
+    createdAt: admin.firestore.Timestamp.fromMillis(1_700_000_001_000),
+  });
+
+  const context = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    const q = query(
+      collection(context.db, itemsPath),
+      where('collectionId', '==', testCollectionId),
+      orderBy('createdAt', 'desc'),
+      orderBy('__name__', 'asc')
+    );
+
+    if (RULES_TARGET === 'live') {
+      await expectFailedPrecondition(getDocs(q));
+      return;
+    }
+
+    const snapshot = await getDocs(q);
+    assert.equal(snapshot.size, 2, 'Emulator should allow the getItems query shape');
+  } finally {
+    await adminDb.collection(itemsPath).doc(firstDocId).delete().catch(() => undefined);
+    await adminDb.collection(itemsPath).doc(secondDocId).delete().catch(() => undefined);
     await context.cleanup();
   }
 });
