@@ -26,14 +26,13 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-const ROOT_COLLECTION = 'docs';
 const MAIN_ENV_DOC = 'main';
 const DEFAULT_FOLDER = 'default';
 
-const rootEnvRef = db.collection(ROOT_COLLECTION).doc(MAIN_ENV_DOC);
+const rootEnvRef = db.collection(MAIN_ENV_DOC);
 
-const configCol = rootEnvRef.collection('config');
-const dataCol = rootEnvRef.collection('data');
+const configCol = rootEnvRef.doc('config').collection('public');
+const dataCol = rootEnvRef.doc('data').collection(DEFAULT_FOLDER);
 
 // Clear everything except the runtime config we (re)create below.
 // This is a dev-environment initializer; it intentionally wipes data.
@@ -44,7 +43,7 @@ if (typeof db.recursiveDelete === 'function') {
   // Fallback: delete only the known docs we used previously.
   // (Full recursive delete requires Firestore recursiveDelete support.)
   await configCol.doc('runtime').delete().catch(() => undefined);
-  await dataCol.doc(DEFAULT_FOLDER).delete().catch(() => undefined);
+  await dataCol.doc('public').delete().catch(() => undefined);
 }
 
 // Runtime config doc (admin writable, authenticated readable in rules)
@@ -57,6 +56,6 @@ await configCol.doc('runtime').set(
 );
 
 console.log(
-  `Initialized docs/main/config/runtime with dataFolder=${DEFAULT_FOLDER} and cleared docs/main/data/**`
+  `Initialized main/config/public/runtime with dataFolder=${DEFAULT_FOLDER} and cleared main/data/${DEFAULT_FOLDER}/**`
 );
 process.exit(0);

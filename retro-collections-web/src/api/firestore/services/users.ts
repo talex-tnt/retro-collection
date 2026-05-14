@@ -55,7 +55,7 @@ const mapUserDoc = (
 const getUsersEndpoints = (builder: FirestoreBuilder) => ({
   getUsers: builder.query<UserRecord[], void>({
     async queryFn() {
-      const path = await resolveDataCollectionPath('users');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'users' });
       const q = query(collection(db, path), orderBy('lastLogin', 'desc'));
       const context = {
         apiEndpoint: 'getUsers',
@@ -80,7 +80,7 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
 
   getPublicUsers: builder.query<UserRecord[], void>({
     async queryFn() {
-      const path = await resolveDataCollectionPath('users');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'users' });
       const q = query(
         collection(db, path),
         where('visibility.public', '==', true)
@@ -108,7 +108,7 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
 
   getUserById: builder.query<UserRecord | null, string>({
     async queryFn(userId) {
-      const path = await resolveDataCollectionPath('users');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'users' });
       const context = {
         apiEndpoint: 'getUserById',
         operation: 'GET' as const,
@@ -151,7 +151,7 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
     }
   >({
     async queryFn({ id, ...data }) {
-      const path = await resolveDataCollectionPath('users');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'users' });
       const requestPayload = {
         ...data,
         lastLogin: serverTimestamp(),
@@ -195,7 +195,7 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
     }
   >({
     async queryFn({ id, updates }) {
-      const path = await resolveDataCollectionPath('users');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'users' });
       const requestPayload = {
         ...updates,
         lastLogin: serverTimestamp(),
@@ -237,7 +237,7 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
     { userId: string; public: boolean }
   >({
     async queryFn({ userId, public: isPublic }) {
-      const path = await resolveDataCollectionPath('users');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'users' });
       const requestPayload = {
         visibility: { public: isPublic },
       };

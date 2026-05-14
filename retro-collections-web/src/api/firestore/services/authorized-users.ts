@@ -28,7 +28,7 @@ const getAuthorizedUsersEndpoints = (builder: FirestoreBuilder) => ({
   // -------------------------
   isUserAuthorized: builder.query<boolean, string>({
     async queryFn(email: string) {
-      const path = await resolveDataCollectionPath('authorized-users');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'authorized-users' });
       const context = {
         apiEndpoint: 'isUserAuthorized',
         operation: 'GET' as const,
@@ -55,7 +55,7 @@ const getAuthorizedUsersEndpoints = (builder: FirestoreBuilder) => ({
   // -------------------------
   getAuthorizedUsers: builder.query<AuthorizedUser[], void>({
     async queryFn() {
-      const path = await resolveDataCollectionPath('authorized-users');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'authorized-users' });
       const context = {
         apiEndpoint: 'getAuthorizedUsers',
         operation: 'QUERY' as const,
@@ -92,7 +92,7 @@ const getAuthorizedUsersEndpoints = (builder: FirestoreBuilder) => ({
   // -------------------------
   addAuthorizedUser: builder.mutation<void, string>({
     async queryFn(email: string) {
-      const path = await resolveDataCollectionPath('authorized-users');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'authorized-users' });
       const context = {
         apiEndpoint: 'addAuthorizedUser',
         operation: 'CREATE' as const,
@@ -122,7 +122,7 @@ const getAuthorizedUsersEndpoints = (builder: FirestoreBuilder) => ({
   // -------------------------
   removeAuthorizedUser: builder.mutation<void, string>({
     async queryFn(email: string) {
-      const path = await resolveDataCollectionPath('authorized-users');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'authorized-users' });
       const context = {
         apiEndpoint: 'removeAuthorizedUser',
         operation: 'DELETE' as const,

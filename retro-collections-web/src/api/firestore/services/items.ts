@@ -82,7 +82,7 @@ const sortItemsNewestFirst = (left: Item, right: Item) => {
 const getItemsEndpoints = (builder: FirestoreBuilder) => ({
   getItems: builder.query<Item[], { collectionId: string; userId: string }>({
     async queryFn({ collectionId /*, userId*/ }) {
-      const path = await resolveDataCollectionPath('items');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'items' });
       const q = query(
         collection(db, path),
         where('collectionId', '==', collectionId),
@@ -121,7 +121,7 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
 
   getPublicItemsByCollectionId: builder.query<Item[], string>({
     async queryFn(collectionId) {
-      const path = await resolveDataCollectionPath('items');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'items' });
       const q = query(
         collection(db, path),
         where('collectionId', '==', collectionId),
@@ -156,7 +156,7 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
     { collectionId: string; userId?: string }
   >({
     async queryFn({ collectionId, userId }) {
-      const path = await resolveDataCollectionPath('items');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'items' });
       const constraints = [where('collectionId', '==', collectionId)];
 
       if (userId) {
@@ -188,7 +188,7 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
 
   getAllItems: builder.query<Item[], void>({
     async queryFn() {
-      const path = await resolveDataCollectionPath('items');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'items' });
       const q = query(
         collection(db, path),
         orderBy('createdAt', 'desc'),
@@ -217,7 +217,7 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
 
   getUserItems: builder.query<Item[], string>({
     async queryFn(userId) {
-      const path = await resolveDataCollectionPath('items');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'items' });
       const q = query(collection(db, path), where('userId', '==', userId));
       const context = {
         apiEndpoint: 'getUserItems',
@@ -250,7 +250,7 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
   }),
   getUserItemsCount: builder.query<number, string>({
     async queryFn(userId) {
-      const path = await resolveDataCollectionPath('items');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'items' });
       const q = query(collection(db, path), where('userId', '==', userId));
       const context = {
         apiEndpoint: 'getUserItemsCount',
@@ -275,7 +275,7 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
 
   createItem: builder.mutation<Item, ItemInput>({
     async queryFn(itemData) {
-      const path = await resolveDataCollectionPath('items');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'items' });
       const requestPayload = {
         ...itemData,
         createdAt: serverTimestamp(),
@@ -325,7 +325,7 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
     }
   >({
     async queryFn({ id, updates }) {
-      const path = await resolveDataCollectionPath('items');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'items' });
       const requestPayload = {
         ...updates,
         updatedAt: serverTimestamp(),
@@ -380,7 +380,7 @@ const getItemsEndpoints = (builder: FirestoreBuilder) => ({
     { id: string; collectionId: string; userId: string }
   >({
     async queryFn({ id }) {
-      const path = await resolveDataCollectionPath('items');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'items' });
       const context = {
         apiEndpoint: 'deleteItem',
         operation: 'DELETE' as const,

@@ -66,7 +66,7 @@ const mapCollectionDoc = (
 const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
   getCollections: builder.query<Collection[], string>({
     async queryFn(userId) {
-      const path = await resolveDataCollectionPath('collections');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'collections' });
       const q = query(
         collection(db, path),
         where('userId', '==', userId),
@@ -105,7 +105,7 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
 
   getPublicCollectionsByUserId: builder.query<Collection[], string>({
     async queryFn(userId) {
-      const path = await resolveDataCollectionPath('collections');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'collections' });
       const q = query(
         collection(db, path),
         where('userId', '==', userId),
@@ -138,7 +138,7 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
 
   createCollection: builder.mutation<Collection, CollectionInput>({
     async queryFn(collectionData) {
-      const path = await resolveDataCollectionPath('collections');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'collections' });
       const requestPayload = {
         ...collectionData,
         visibility: collectionData.visibility ?? { public: false },
@@ -177,7 +177,7 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
     { id: string; updates: CollectionUpdate }
   >({
     async queryFn({ id, updates }) {
-      const path = await resolveDataCollectionPath('collections');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'collections' });
       const requestPayload = {
         ...updates,
         updatedAt: serverTimestamp(),
@@ -207,7 +207,7 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
 
   deleteCollection: builder.mutation<void, string>({
     async queryFn(id) {
-      const path = await resolveDataCollectionPath('collections');
+      const path = await resolveDataCollectionPath({ visibility: 'public', resourceType: 'collections' });
       const context = {
         apiEndpoint: 'deleteCollection',
         operation: 'DELETE' as const,

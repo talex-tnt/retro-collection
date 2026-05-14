@@ -23,7 +23,7 @@ const normalizeRuntimeConfig = (
       : DEFAULT_RUNTIME_CONFIG.dataFolder,
 });
 
-export const getRuntimeConfigDocPath = () => 'docs/main/config/runtime';
+export const getRuntimeConfigDocPath = () => 'main/config/public/runtime';
 
 export const getRuntimeConfig = () => runtimeConfig;
 
@@ -53,7 +53,13 @@ export const loadRuntimeConfig = async (): Promise<RuntimeConfig> => {
   return runtimeConfigLoadPromise;
 };
 
-export const resolveDataCollectionPath = async (resourceType: string) => {
+export const resolveDataCollectionPath = async ({
+  visibility,
+  resourceType,
+}: {
+  visibility: string;
+  resourceType: string;
+}) => {
   const { dataFolder } = await loadRuntimeConfig();
-  return `docs/main/data/${dataFolder}/${resourceType}`;
+  return `main/data/${dataFolder}/${visibility}/${resourceType}`;
 };
