@@ -19,6 +19,14 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == ownerId;
     }
 
+    function validString(field, maxLength) {
+      return field is string && field.size() > 0 && field.size() <= maxLength;
+    }
+
+    function validOptionalString(field, maxLength) {
+      return !(field is string) || field.size() <= maxLength;
+    }
+
     function validTimestamp(field) {
       return field is timestamp && 
         field.toMillis() > 0 &&
@@ -48,31 +56,35 @@ service cloud.firestore {
         ('public' in data) &&
         data.public is bool;
     }
+    function isValidVisibilityMapOptional(data) {
+      return !('visibility' in data) || data.visibility == null || isValidVisibilityMap(data.visibility);
+    }
 
-      function hasValidNickname(data) {
-        return ('nickname' in data) &&
-          data.nickname is string &&
-          data.nickname.size() > 0;
-      }
+    function hasValidNickname(data) {
+      return ('nickname' in data) && validString(data.nickname, 50);
+    }
+      function hasValidOptionalNickname(data) {
+      return !('nickname' in data) || data.nickname == null || hasValidNickname(data);
+    }
 
-      function isPublicVisibilityEnabled(data) {
-        return ('visibility' in data) &&
-          isValidVisibilityMap(data.visibility) &&
-          data.visibility.public == true;
-      }
+    function isPublicVisibilityEnabled(data) {
+      return ('visibility' in data) &&
+        isValidVisibilityMap(data.visibility) &&
+        data.visibility.public == true;
+    }
 
     function isValidPublicUserData(data) {
       return data.keys().hasOnly(['name', 'visibility', 'nickname']) &&
-        (!('name' in data) || data.name is string) &&
-        (!('visibility' in data) || isValidVisibilityMap(data.visibility)) &&
-          (!('nickname' in data) || data.nickname == null || hasValidNickname(data)) &&
-          (!isPublicVisibilityEnabled(data) || hasValidNickname(data));
+        validString(data.name, 100) &&
+        isValidVisibilityMapOptional(data) &&
+        hasValidOptionalNickname(data) &&
+        (!isPublicVisibilityEnabled(data) || hasValidNickname(data));
     }
 
     function isValidPrivateUserData(data) {
       return data.keys().hasOnly(['email', 'lastLogin']) &&
-        (!('email' in data) || data.email is string) &&
-        (!('lastLogin' in data) || validTimestamp(data.lastLogin));
+        validOptionalString(data.email, 100) &&
+        validTimestamp(data.lastLogin);
     }
 
 
@@ -188,23 +200,7 @@ service cloud.firestore {
       }
     }
 
-    // function isOwner(ownerId) {
-    //   return isAuthenticated() && request.auth.uid == ownerId;
-    // }
 
-    // function validString(field, maxLength) {
-    //   return field is string && field.size() > 0 && field.size() <= maxLength;
-    // }
-
-    // function validOptionalString(field, maxLength) {
-    //   return !(field is string) || field.size() <= maxLength;
-    // }
-
-  
-
-    // function validVisibility(field) {
-    //   return !(field is map) || (field.keys().hasOnly(['public']) && field.public is bool);
-    // }
 
     // function validCollection(data, ownerId) {
     //   return data.keys().hasAll(['name', 'userId', 'createdAt']) &&
