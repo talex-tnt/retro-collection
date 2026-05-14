@@ -116,12 +116,6 @@ function MyCollectionsPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(300px,360px)_1fr]">
       <div className="space-y-6">
-        <NewItem
-          userId={user.uid}
-          collections={collections}
-          selectedCollection={resolvedSelectedCollection}
-        />
-
         <CollectionsPanel
           user={user}
           selectedCollection={resolvedSelectedCollection}
@@ -131,7 +125,6 @@ function MyCollectionsPage() {
           orphanedCount={orphanedItems.length}
         />
       </div>
-
       <ItemsPanel
         user={user}
         selectedCollection={resolvedSelectedCollection}
@@ -139,6 +132,11 @@ function MyCollectionsPage() {
         itemFilter={itemFilter}
         onItemFilterChange={setItemFilter}
         orphanedItems={orphanedItems}
+      />
+      <NewItem
+        userId={user.uid}
+        collections={collections}
+        selectedCollection={resolvedSelectedCollection}
       />
     </div>
   );
