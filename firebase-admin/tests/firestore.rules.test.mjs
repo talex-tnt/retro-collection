@@ -34,27 +34,29 @@ import {
 
 const RULES_TARGET = process.env.RULES_TARGET ?? 'emulator';
 const ENV = process.env.ENV ?? 'dev';
-const TEST_ENV = 'test';
+const MAIN_ROOT = 'main';
+const TEST_ROOT = 'test';
 const TEST_DATA_FOLDER = 'default';
 const TEST_ALT_DATA_FOLDER_1 = 'default1';
 const TEST_ALT_DATA_FOLDER_2 = 'default2';
-const ROOT_COLLECTION = 'docs';
 
-const TEST_DATA_TEST_PATH = `${ROOT_COLLECTION}/${TEST_ENV}/testData/rulesSmoke/adminOnlyWrite/doc`;
-const TEST_CONFIG_PATH = `${ROOT_COLLECTION}/${TEST_ENV}/config/runtime`;
+const TEST_DATA_TEST_PATH = `${TEST_ROOT}/testData/rulesSmoke/adminOnlyWrite/doc/smokeDoc`;
+const TEST_CONFIG_PATH = `${MAIN_ROOT}/config/public/runtime`;
 const TEST_COLLECTION_ID = 'test-collection-1';
 const TEST_USER_ID = 'rules-regular-user';
 
 const joinPath = (...segments) => segments.filter(Boolean).join('/');
 
-const getCollectionsArrayPath = (folder) =>
-  joinPath(ROOT_COLLECTION, TEST_ENV, 'data', folder, 'collections');
-const getCollectionsDocPath = (folder, docId) =>
-  joinPath(getCollectionsArrayPath(folder), docId);
+const getPublicResourcePath = (folder, resourceType) =>
+  joinPath(MAIN_ROOT, 'data', folder, 'public', resourceType);
+const getPublicResourceDocPath = (folder, resourceType, docId) =>
+  joinPath(getPublicResourcePath(folder, resourceType), docId);
+const getAuthorizedUsersPath = (folder) =>
+  joinPath(MAIN_ROOT, 'data', folder, 'public', 'authorized-users');
 
-const TEST_COLLECTION_PATH = getCollectionsDocPath(TEST_DATA_FOLDER, TEST_COLLECTION_ID);
-const TEST_ALT_COLLECTION_PATH_1 = getCollectionsDocPath(TEST_ALT_DATA_FOLDER_1, 'test-collection-default1');
-const TEST_ALT_COLLECTION_PATH_2 = getCollectionsDocPath(TEST_ALT_DATA_FOLDER_2, 'test-collection-default2');
+const TEST_COLLECTION_PATH = getPublicResourceDocPath(TEST_DATA_FOLDER, 'collections', TEST_COLLECTION_ID);
+const TEST_ALT_COLLECTION_PATH_1 = getPublicResourceDocPath(TEST_ALT_DATA_FOLDER_1, 'collections', 'test-collection-default1');
+const TEST_ALT_COLLECTION_PATH_2 = getPublicResourceDocPath(TEST_ALT_DATA_FOLDER_2, 'collections', 'test-collection-default2');
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 
@@ -342,7 +344,7 @@ test(`user cannot write to non-matched dataFolder on ${RULES_TARGET}`, async () 
   try {
     // Should fail because dataFolder is 'default', not 'items'
     await expectPermissionDenied(
-      setDoc(doc(context.db, joinPath(ROOT_COLLECTION, TEST_ENV, 'data', 'items', 'items', 'test-item-1')), {
+      setDoc(doc(context.db, joinPath(MAIN_ROOT, 'data', 'items', 'public', 'items', 'test-item-1')), {
         testData: 'value',
       })
     );
@@ -363,7 +365,7 @@ test(`user cannot write to unknown resourceType on ${RULES_TARGET}`, async () =>
       setDoc(
         doc(
           context.db,
-          joinPath(ROOT_COLLECTION, TEST_ENV, 'data', TEST_DATA_FOLDER, 'unknown-type', 'doc-1')
+          joinPath(MAIN_ROOT, 'data', TEST_DATA_FOLDER, 'public', 'unknown-type', 'doc-1')
         ),
         {
           testData: 'value',
@@ -378,22 +380,8 @@ test(`user cannot write to unknown resourceType on ${RULES_TARGET}`, async () =>
 test(`authorized-users is admin-only read/write on ${RULES_TARGET}`, async () => {
   const ownEmail = 'self@example.com';
   const otherEmail = 'other@example.com';
-  const ownDocPath = joinPath(
-    ROOT_COLLECTION,
-    TEST_ENV,
-    'data',
-    TEST_DATA_FOLDER,
-    'authorized-users',
-    ownEmail
-  );
-  const otherDocPath = joinPath(
-    ROOT_COLLECTION,
-    TEST_ENV,
-    'data',
-    TEST_DATA_FOLDER,
-    'authorized-users',
-    otherEmail
-  );
+  const ownDocPath = joinPath(getAuthorizedUsersPath(TEST_DATA_FOLDER), ownEmail);
+  const otherDocPath = joinPath(getAuthorizedUsersPath(TEST_DATA_FOLDER), otherEmail);
 
   // Seed both docs
   await getAdminDb().doc(ownDocPath).set({ allowed: true });
@@ -458,13 +446,7 @@ test(`authorized-users: legacy root collection query is denied (repro getAuthori
 });
 
 test(`authorized-users: admin can list from canonical docs-root path on ${RULES_TARGET}`, async () => {
-  const authorizedUsersCollectionPath = joinPath(
-    ROOT_COLLECTION,
-    TEST_ENV,
-    'data',
-    TEST_DATA_FOLDER,
-    'authorized-users'
-  );
+  const authorizedUsersCollectionPath = getAuthorizedUsersPath(TEST_DATA_FOLDER);
 
   const seededEmail = `seeded-${Date.now()}@example.com`;
   await getAdminDb().doc(joinPath(authorizedUsersCollectionPath, seededEmail)).set({
@@ -490,14 +472,7 @@ test(`authorized-users: admin can list from canonical docs-root path on ${RULES_
 });
 
 test(`users: owner can create/get/update own doc on ${RULES_TARGET}`, async () => {
-  const userDocPath = joinPath(
-    ROOT_COLLECTION,
-    TEST_ENV,
-    'data',
-    TEST_DATA_FOLDER,
-    'users',
-    TEST_USER_ID
-  );
+  const userDocPath = joinPath(getPublicResourcePath(TEST_DATA_FOLDER, 'users'), TEST_USER_ID);
 
   const owner = await buildClientContext({
     uid: TEST_USER_ID,
@@ -518,14 +493,7 @@ test(`users: owner can create/get/update own doc on ${RULES_TARGET}`, async () =
 
 test(`users: non-owner cannot get/create/update someone else's doc on ${RULES_TARGET}`, async () => {
   const otherUserId = 'someone-else';
-  const otherUserDocPath = joinPath(
-    ROOT_COLLECTION,
-    TEST_ENV,
-    'data',
-    TEST_DATA_FOLDER,
-    'users',
-    otherUserId
-  );
+  const otherUserDocPath = joinPath(getPublicResourcePath(TEST_DATA_FOLDER, 'users'), otherUserId);
 
   // Seed other user's doc via admin
   await getAdminDb().doc(otherUserDocPath).set({ displayName: 'Other' });
@@ -545,14 +513,7 @@ test(`users: non-owner cannot get/create/update someone else's doc on ${RULES_TA
 });
 
 test(`users: owner cannot access user doc in non-configured folder on ${RULES_TARGET}`, async () => {
-  const wrongFolderUserDocPath = joinPath(
-    ROOT_COLLECTION,
-    TEST_ENV,
-    'data',
-    TEST_ALT_DATA_FOLDER_1,
-    'users',
-    TEST_USER_ID
-  );
+  const wrongFolderUserDocPath = joinPath(getPublicResourcePath(TEST_ALT_DATA_FOLDER_1, 'users'), TEST_USER_ID);
 
   // Seed via admin in the wrong folder
   await getAdminDb().doc(wrongFolderUserDocPath).set({ displayName: 'WrongFolder' });
@@ -572,13 +533,7 @@ test(`users: owner cannot access user doc in non-configured folder on ${RULES_TA
 });
 
 test(`users: delete is admin-only on ${RULES_TARGET}`, async () => {
-  const usersCollectionPath = joinPath(
-    ROOT_COLLECTION,
-    TEST_ENV,
-    'data',
-    TEST_DATA_FOLDER,
-    'users'
-  );
+  const usersCollectionPath = getPublicResourcePath(TEST_DATA_FOLDER, 'users');
   const userDocPath = joinPath(usersCollectionPath, TEST_USER_ID);
   await getAdminDb().doc(userDocPath).set({ displayName: 'Seed' });
 
@@ -606,13 +561,7 @@ test(`users: delete is admin-only on ${RULES_TARGET}`, async () => {
 });
 
 test(`users visibility: anyone can get a public user, but not a private one on ${RULES_TARGET}`, async () => {
-  const usersCollectionPath = joinPath(
-    ROOT_COLLECTION,
-    TEST_ENV,
-    'data',
-    TEST_DATA_FOLDER,
-    'users'
-  );
+  const usersCollectionPath = getPublicResourcePath(TEST_DATA_FOLDER, 'users');
 
   const publicUserId = `public-user-${Date.now()}`;
   const privateUserId = `private-user-${Date.now()}`;
@@ -654,13 +603,7 @@ test(`users visibility: anyone can get a public user, but not a private one on $
 });
 
 test(`users visibility: only owner can update own visibility on ${RULES_TARGET}`, async () => {
-  const usersCollectionPath = joinPath(
-    ROOT_COLLECTION,
-    TEST_ENV,
-    'data',
-    TEST_DATA_FOLDER,
-    'users'
-  );
+  const usersCollectionPath = getPublicResourcePath(TEST_DATA_FOLDER, 'users');
 
   const ownerId = `owner-${Date.now()}`;
   const otherId = `other-${Date.now()}`;
@@ -722,13 +665,7 @@ test(`users visibility: only owner can update own visibility on ${RULES_TARGET}`
 });
 
 test(`users visibility: can list public users only with explicit filter on ${RULES_TARGET}`, async () => {
-  const usersCollectionPath = joinPath(
-    ROOT_COLLECTION,
-    TEST_ENV,
-    'data',
-    TEST_DATA_FOLDER,
-    'users'
-  );
+  const usersCollectionPath = getPublicResourcePath(TEST_DATA_FOLDER, 'users');
 
   const publicUserId = `public-user-${Date.now()}`;
   const privateUserId = `private-user-${Date.now()}`;
@@ -769,7 +706,7 @@ test(`users visibility: can list public users only with explicit filter on ${RUL
 
 test(`authenticated user can read data on ${RULES_TARGET}`, async () => {
   // Admin creates test data
-  await getAdminDb().collection(getCollectionsArrayPath(TEST_DATA_FOLDER)).doc(TEST_COLLECTION_ID).set({ testData: 'value' });
+  await getAdminDb().collection(getPublicResourcePath(TEST_DATA_FOLDER, 'collections')).doc(TEST_COLLECTION_ID).set({ testData: 'value' });
 
   const context = await buildClientContext({
     uid: TEST_USER_ID,
@@ -785,7 +722,7 @@ test(`authenticated user can read data on ${RULES_TARGET}`, async () => {
 });
 
 test(`user can read config public and then read matched dataFolder data on ${RULES_TARGET}`, async () => {
-  await getAdminDb().collection(getCollectionsArrayPath(TEST_DATA_FOLDER)).doc(TEST_COLLECTION_ID).set({ testData: 'value' });
+  await getAdminDb().collection(getPublicResourcePath(TEST_DATA_FOLDER, 'collections')).doc(TEST_COLLECTION_ID).set({ testData: 'value' });
 
   const context = await buildClientContext({
     uid: TEST_USER_ID,
@@ -799,7 +736,7 @@ test(`user can read config public and then read matched dataFolder data on ${RUL
     const dataFolder = configSnap.data()?.dataFolder;
     assert.equal(dataFolder, TEST_DATA_FOLDER);
 
-    const matchedPath = getCollectionsDocPath(dataFolder, TEST_COLLECTION_ID);
+    const matchedPath = getPublicResourceDocPath(dataFolder, 'collections', TEST_COLLECTION_ID);
     const dataSnap = await getDocFromServer(doc(context.db, matchedPath));
     assert.ok(dataSnap.exists(), 'Matched dataFolder data should be readable');
     assert.equal(dataSnap.data()?.testData, 'value');
@@ -809,8 +746,8 @@ test(`user can read config public and then read matched dataFolder data on ${RUL
 });
 
 test(`user cannot read data from a folder that does not match public config on ${RULES_TARGET}`, async () => {
-  await getAdminDb().collection(getCollectionsArrayPath(TEST_ALT_DATA_FOLDER_1)).doc('test-collection-default1').set({ testData: 'wrong-folder' });
-  await getAdminDb().collection(getCollectionsArrayPath(TEST_ALT_DATA_FOLDER_2)).doc('test-collection-default2').set({ testData: 'matched-folder' });
+  await getAdminDb().collection(getPublicResourcePath(TEST_ALT_DATA_FOLDER_1, 'collections')).doc('test-collection-default1').set({ testData: 'wrong-folder' });
+  await getAdminDb().collection(getPublicResourcePath(TEST_ALT_DATA_FOLDER_2, 'collections')).doc('test-collection-default2').set({ testData: 'matched-folder' });
   await getAdminDb().doc(TEST_CONFIG_PATH).set(
     { dataFolder: TEST_ALT_DATA_FOLDER_2 },
     { merge: true }
@@ -831,7 +768,7 @@ test(`user cannot read data from a folder that does not match public config on $
     );
 
     const matchedSnap = await getDocFromServer(
-      doc(context.db, getCollectionsDocPath(TEST_ALT_DATA_FOLDER_2, 'test-collection-default2'))
+      doc(context.db, getPublicResourceDocPath(TEST_ALT_DATA_FOLDER_2, 'collections', 'test-collection-default2'))
     );
     assert.ok(matchedSnap.exists(), 'Configured folder data should stay readable');
   } finally {
@@ -840,7 +777,7 @@ test(`user cannot read data from a folder that does not match public config on $
 });
 
 test(`collections array is queryable (allowed folder): insert 1 item then query it`, async () => {
-  const collectionsArrayPath = getCollectionsArrayPath(TEST_DATA_FOLDER);
+  const collectionsArrayPath = getPublicResourcePath(TEST_DATA_FOLDER, 'collections');
   const testDocId = `test-collection-${Date.now()}`;
 
   // Insert exactly one document for this test run
@@ -871,7 +808,7 @@ test(`collections array is queryable (allowed folder): insert 1 item then query 
 });
 
 test(`collections array is not queryable (wrong folder): query should be denied`, async () => {
-  const wrongCollectionsArrayPath = getCollectionsArrayPath(TEST_ALT_DATA_FOLDER_1);
+  const wrongCollectionsArrayPath = getPublicResourcePath(TEST_ALT_DATA_FOLDER_1, 'collections');
   const testDocId = `test-collection-${Date.now()}`;
 
   // Create a doc in the wrong folder; config still points at TEST_DATA_FOLDER ('default')

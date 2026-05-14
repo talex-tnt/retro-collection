@@ -39,33 +39,33 @@ service cloud.firestore {
 
 
 
-    // Canonical root: /docs/{env}/...
+    // Canonical root: /{env}/...
     // Public runtime config doc
-    match /docs/{env}/config/runtime {
+    match /{env}/config/public/runtime {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     // All other config paths are admin-only
-    match /docs/{env}/config/{document=**} {
+    match /{env}/config/{document=**} {
       allow read, write: if isAdmin();
     }
 
     // Admin-only scratch area for tests and diagnostics
-    match /docs/test/testData/{document=**} {
+    match /test/testData/{document=**} {
       allow read, write: if isAdmin();
     }
 
     // Folder documents themselves are not user-writable
-    match /docs/{env}/data/{folder} {
+    match /{env}/data/{folder} {
       allow read, list, write: if isAdmin();
 
       function folderMatchesConfig() {
-        return get(/databases/$(database)/documents/docs/$(env)/config/runtime).data.dataFolder == folder;
+        return get(/databases/$(database)/documents/$(env)/config/public/runtime).data.dataFolder == folder;
       }
 
       // authorized-users: admin-only read/write (login allowlist)
-      match /authorized-users/{email} {
+      match /public/authorized-users/{email} {
         // Allow a signed-in user to check *only their own* authorization doc.
         // This enables a client-side allowlist check without permitting enumeration.
         allow get: if isAdmin() || (
@@ -79,7 +79,7 @@ service cloud.firestore {
       }
 
       // users: owner can read/create/update their own doc; admin can do anything; list/delete are admin-only
-      match /users/{userId} {
+      match /public/users/{userId} {
         allow get: if isAdmin() || (folderMatchesConfig() && (isOwner(userId) || isPubliclyVisible()));
         // For list/query: non-admins may only read public profiles.
         // Firestore evaluates this per returned document, so queries succeed only when
@@ -91,7 +91,7 @@ service cloud.firestore {
       }
 
       // Actual user data lives in collections under the folder doc
-      match /{resourceType}/{document=**} {
+      match /public/{resourceType}/{document=**} {
         allow read, list, write: if isAdmin() || (
           isAuthenticated() &&
           isAllowedResourceType(resourceType) &&
