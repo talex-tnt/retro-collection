@@ -36,6 +36,25 @@ service cloud.firestore {
         resource.data.visibility.public == true;
     }
 
+    function isValidVisibilityMap(data) {
+      return (data is map) &&
+        data.keys().hasOnly(['public']) &&
+        ('public' in data) &&
+        data.public is bool;
+    }
+
+    function isValidPublicUserData(data) {
+      return data.keys().hasOnly(['name', 'visibility']) &&
+        (!('name' in data) || data.name is string) &&
+        (!('visibility' in data) || isValidVisibilityMap(data.visibility));
+    }
+
+    function isValidPrivateUserData(data) {
+      return data.keys().hasOnly(['email', 'lastLogin']) &&
+        (!('email' in data) || data.email is string) &&
+        (!('lastLogin' in data) || data.lastLogin is timestamp);
+    }
+
 
 
 
@@ -78,15 +97,40 @@ service cloud.firestore {
         allow write: if isAdmin();
       }
 
-      // users: owner can read/create/update their own doc; admin can do anything; list/delete are admin-only
+      // users public profile: owner writes only name + visibility.public; others may read only when public
       match /public/users/{userId} {
         allow get: if isAdmin() || (folderMatchesConfig() && (isOwner(userId) || isPubliclyVisible()));
         // For list/query: non-admins may only read public profiles.
         // Firestore evaluates this per returned document, so queries succeed only when
         // every document in the result set is publicly visible.
         allow list: if isAdmin() || (folderMatchesConfig() && isPubliclyVisible());
-        allow create: if isAdmin() || (isOwner(userId) && folderMatchesConfig());
-        allow update: if isAdmin() || (isOwner(userId) && folderMatchesConfig());
+        allow create: if isAdmin() || (
+          isOwner(userId) &&
+          folderMatchesConfig() &&
+          isValidPublicUserData(request.resource.data)
+        );
+        allow update: if isAdmin() || (
+          isOwner(userId) &&
+          folderMatchesConfig() &&
+          isValidPublicUserData(request.resource.data)
+        );
+        allow delete: if isAdmin();
+      }
+
+      // users private profile: owner-only read/write for email + lastLogin
+      match /private/users/{userId} {
+        allow get: if isAdmin() || (folderMatchesConfig() && isOwner(userId));
+        allow list: if isAdmin();
+        allow create: if isAdmin() || (
+          isOwner(userId) &&
+          folderMatchesConfig() &&
+          isValidPrivateUserData(request.resource.data)
+        );
+        allow update: if isAdmin() || (
+          isOwner(userId) &&
+          folderMatchesConfig() &&
+          isValidPrivateUserData(request.resource.data)
+        );
         allow delete: if isAdmin();
       }
 

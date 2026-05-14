@@ -1,14 +1,11 @@
 import {
   collection,
   doc,
-  setDoc,
   getDoc,
   getDocs,
-  orderBy,
   query,
+  setDoc,
   where,
-  serverTimestamp,
-  Timestamp,
   updateDoc,
   type QueryDocumentSnapshot,
   type DocumentData,
@@ -24,8 +21,6 @@ const visibility = 'public' as const;
 export interface UserRecord {
   id: string;
   name?: string;
-  email?: string;
-  lastLogin?: string;
   visibility?: {
     public: boolean;
   };
@@ -33,8 +28,6 @@ export interface UserRecord {
 
 interface FirestoreUserDoc {
   name?: string;
-  email?: string;
-  lastLogin?: Timestamp;
   visibility?: {
     public: boolean;
   };
@@ -48,8 +41,6 @@ const mapUserDoc = (
   return {
     id: snapshot.id,
     name: data.name,
-    email: data.email,
-    lastLogin: data.lastLogin?.toDate?.()?.toISOString(),
     visibility: data.visibility,
   };
 };
@@ -61,16 +52,14 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
         visibility,
         resourceType: 'users',
       });
-      const q = query(collection(db, path), orderBy('lastLogin', 'desc'));
       const context = {
         apiEndpoint: 'getUsers',
         operation: 'QUERY' as const,
         firebaseFunc: 'getDocs',
         path,
-        requestPayload: q,
       };
       try {
-        const snapshot = await getDocs(q);
+        const snapshot = await getDocs(collection(db, path));
 
         return {
           data: snapshot.docs.map(mapUserDoc),
@@ -138,8 +127,6 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
           data: {
             id: snap.id,
             name: data.name,
-            email: data.email,
-            lastLogin: data.lastLogin?.toDate?.()?.toISOString(),
             visibility: data.visibility,
           },
         };
@@ -152,13 +139,12 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
       { type: 'PublicUsers' as const, id: userId },
     ],
   }),
+
   createOrUpdateUser: builder.mutation<
     void,
     {
       id: string;
       name: string;
-      email: string;
-      lastLogin: string;
     }
   >({
     async queryFn({ id, ...data }) {
@@ -166,10 +152,7 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
         visibility,
         resourceType: 'users',
       });
-      const requestPayload = {
-        ...data,
-        lastLogin: serverTimestamp(),
-      };
+      const requestPayload = data;
       const context = {
         apiEndpoint: 'createOrUpdateUser',
         operation: 'CREATE' as const,
@@ -199,8 +182,14 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
         type: 'PublicUsers' as const,
         id: 'LIST',
       },
+
+      {
+        type: 'PublicUsers' as const,
+        id: 'PUBLIC_LIST',
+      },
     ],
   }),
+
   updateUser: builder.mutation<
     void,
     {
@@ -213,10 +202,7 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
         visibility,
         resourceType: 'users',
       });
-      const requestPayload = {
-        ...updates,
-        lastLogin: serverTimestamp(),
-      };
+      const requestPayload = updates;
       const context = {
         apiEndpoint: 'updateUser',
         operation: 'UPDATE' as const,
@@ -245,6 +231,11 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
       {
         type: 'PublicUsers' as const,
         id: 'LIST',
+      },
+
+      {
+        type: 'PublicUsers' as const,
+        id: 'PUBLIC_LIST',
       },
     ],
   }),

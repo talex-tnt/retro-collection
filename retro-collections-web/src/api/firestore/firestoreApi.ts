@@ -6,6 +6,7 @@ import getCollectionsEndpoints from './services/public/collections';
 import getItemsEndpoints from './services/public/items';
 import getUsersEndpoints from './services/public/users';
 import getAuthorizedUsersEndpoints from './services/private/authorized-users';
+import getPrivateUsersEndpoints from './services/private/users';
 
 export const firestoreApi = createApi({
   reducerPath: 'firestoreApi',
@@ -16,6 +17,7 @@ export const firestoreApi = createApi({
     'PublicCollections',
     'PublicItems',
     'PublicUsers',
+    'PrivateUsers',
     'PrivateAuthorizedUsers',
   ],
 
@@ -24,6 +26,7 @@ export const firestoreApi = createApi({
     ...getCollectionsEndpoints(builder),
     ...getItemsEndpoints(builder),
     ...getUsersEndpoints(builder),
+    ...getPrivateUsersEndpoints(builder),
     ...getAuthorizedUsersEndpoints(builder),
   }),
 });
@@ -49,9 +52,12 @@ export const {
 
   useGetUsersQuery,
   useGetPublicUsersQuery,
+  useGetPrivateUsersQuery,
   useGetUserByIdQuery,
+  useGetPrivateUserByIdQuery,
   useLazyIsUserAuthorizedQuery,
   useCreateOrUpdateUserMutation,
+  useCreateOrUpdatePrivateUserMutation,
   useSetUserVisibilityMutation,
 
   useIsUserAuthorizedQuery,
