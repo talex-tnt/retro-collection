@@ -1005,3 +1005,322 @@ test(`collections array is not queryable (wrong folder): query should be denied`
     await context.cleanup();
   }
 });
+
+test(`users public: owner can set and update nickname field on ${RULES_TARGET}`, async () => {
+  const userDocPath = getPublicResourceDocPath(TEST_DATA_FOLDER, 'users', TEST_USER_ID);
+
+  const owner = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    // Create user with nickname
+    await assert.doesNotReject(
+      setDoc(doc(owner.db, userDocPath), {
+        name: 'Me',
+        nickname: 'alice_cool',
+        visibility: { public: false },
+      })
+    );
+
+    const snap1 = await getDocFromServer(doc(owner.db, userDocPath));
+    assert.equal(snap1.data()?.nickname, 'alice_cool', 'Owner should be able to set nickname');
+
+    // Update nickname
+    await assert.doesNotReject(
+      setDoc(
+        doc(owner.db, userDocPath),
+        { nickname: 'alice_awesome' },
+        { merge: true }
+      )
+    );
+
+    const snap2 = await getDocFromServer(doc(owner.db, userDocPath));
+    assert.equal(snap2.data()?.nickname, 'alice_awesome', 'Owner should be able to update nickname');
+
+    // Remove nickname
+    await assert.doesNotReject(
+      setDoc(
+        doc(owner.db, userDocPath),
+        { nickname: null },
+        { merge: true }
+      )
+    );
+
+    const snap3 = await getDocFromServer(doc(owner.db, userDocPath));
+    assert.equal(snap3.data()?.nickname, null, 'Owner should be able to remove nickname');
+  } finally {
+    await owner.cleanup();
+  }
+});
+
+test(`users public: owner cannot set empty nickname on ${RULES_TARGET}`, async () => {
+  const userDocPath = getPublicResourceDocPath(TEST_DATA_FOLDER, 'users', TEST_USER_ID);
+
+  const owner = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    // Seed valid user first
+    await setDoc(doc(owner.db, userDocPath), {
+      name: 'Me',
+      nickname: 'alice_cool',
+      visibility: { public: false },
+    });
+
+    // Try to set empty nickname
+    await expectPermissionDenied(
+      setDoc(
+        doc(owner.db, userDocPath),
+        { nickname: '' },
+        { merge: true }
+      )
+    );
+  } finally {
+    await owner.cleanup();
+  }
+});
+
+test(`users public: non-owner cannot set or modify someone else's nickname on ${RULES_TARGET}`, async () => {
+  const otherUserId = 'someone-else-nickname';
+  const otherUserDocPath = getPublicResourceDocPath(TEST_DATA_FOLDER, 'users', otherUserId);
+
+  // Seed other user's doc via admin
+  await getAdminDb().doc(otherUserDocPath).set({
+    name: 'Other',
+    nickname: 'other_cool',
+    visibility: { public: false },
+  });
+
+  const nonOwner = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    await expectPermissionDenied(
+      setDoc(
+        doc(nonOwner.db, otherUserDocPath),
+        { nickname: 'hax_nickname' },
+        { merge: true }
+      )
+    );
+  } finally {
+    await nonOwner.cleanup();
+  }
+});
+
+test(`nicknameIndex: authenticated user can read any nickname entry on ${RULES_TARGET}`, async () => {
+  const nicknameIndexPath = getPublicResourcePath(TEST_DATA_FOLDER, 'nicknameIndex');
+  const nicknamePath = joinPath(nicknameIndexPath, 'alice_cool');
+
+  // Seed via admin
+  await getAdminDb().doc(nicknamePath).set({ userId: 'user-alice' });
+
+  const context = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    const snap = await getDocFromServer(doc(context.db, nicknamePath));
+    assert.ok(snap.exists(), 'Authenticated user should be able to read nickname entry');
+    assert.equal(snap.data()?.userId, 'user-alice');
+  } finally {
+    await context.cleanup();
+  }
+});
+
+test(`nicknameIndex: owner can create nickname entry only if it contains their own userId on ${RULES_TARGET}`, async () => {
+  const nicknameIndexPath = getPublicResourcePath(TEST_DATA_FOLDER, 'nicknameIndex');
+  const ownNicknamePath = joinPath(nicknameIndexPath, 'alice_cool');
+  const otherNicknamePath = joinPath(nicknameIndexPath, 'bob_cool');
+
+  const owner = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    // Create own nickname entry
+    await assert.doesNotReject(
+      setDoc(doc(owner.db, ownNicknamePath), { userId: TEST_USER_ID })
+    );
+
+    // Try to create someone else's nickname entry
+    await expectPermissionDenied(
+      setDoc(doc(owner.db, otherNicknamePath), { userId: 'someone-else' })
+    );
+
+    // Try to create nickname with wrong userId
+    await expectPermissionDenied(
+      setDoc(doc(owner.db, ownNicknamePath), { userId: 'wrong-user-id' })
+    );
+  } finally {
+    await owner.cleanup();
+  }
+});
+
+test(`nicknameIndex: owner can only delete nickname entry if they own it on ${RULES_TARGET}`, async () => {
+  const nicknameIndexPath = getPublicResourcePath(TEST_DATA_FOLDER, 'nicknameIndex');
+  const ownNicknamePath = joinPath(nicknameIndexPath, 'alice_cool');
+  const otherNicknamePath = joinPath(nicknameIndexPath, 'bob_cool');
+
+  // Seed entries via admin
+  await getAdminDb().doc(ownNicknamePath).set({ userId: TEST_USER_ID });
+  await getAdminDb().doc(otherNicknamePath).set({ userId: 'someone-else' });
+
+  const owner = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    // Delete own nickname entry
+    await assert.doesNotReject(deleteDoc(doc(owner.db, ownNicknamePath)));
+
+    // Try to delete someone else's nickname entry
+    await expectPermissionDenied(deleteDoc(doc(owner.db, otherNicknamePath)));
+  } finally {
+    await owner.cleanup();
+  }
+});
+
+test(`nicknameIndex: non-owner cannot read or modify nicknameIndex from non-configured folder on ${RULES_TARGET}`, async () => {
+  const nicknameIndexPath = getPublicResourcePath(TEST_ALT_DATA_FOLDER_1, 'nicknameIndex');
+  const nicknamePath = joinPath(nicknameIndexPath, 'alice_cool');
+
+  // Seed via admin in the non-configured folder
+  await getAdminDb().doc(nicknamePath).set({ userId: TEST_USER_ID });
+
+  const context = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    // config dataFolder remains 'default', so this should be denied
+    await expectPermissionDenied(getDocFromServer(doc(context.db, nicknamePath)));
+    await expectPermissionDenied(
+      setDoc(doc(context.db, nicknamePath), { userId: TEST_USER_ID }, { merge: true })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
+
+test(`users public: owner cannot set visibility to public without nickname on ${RULES_TARGET}`, async () => {
+  const userDocPath = getPublicResourceDocPath(TEST_DATA_FOLDER, 'users', TEST_USER_ID);
+
+  const owner = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    // Try to create user with public visibility but no nickname
+    await expectPermissionDenied(
+      setDoc(doc(owner.db, userDocPath), {
+        name: 'Me',
+        visibility: { public: true },
+      })
+    );
+
+    // Seed user with private visibility and no nickname
+    await setDoc(doc(owner.db, userDocPath), {
+      name: 'Me',
+      visibility: { public: false },
+    });
+
+    // Try to set visibility to public without adding nickname
+    await expectPermissionDenied(
+      setDoc(
+        doc(owner.db, userDocPath),
+        { visibility: { public: true } },
+        { merge: true }
+      )
+    );
+
+    // But can set public if we add a nickname
+    await assert.doesNotReject(
+      setDoc(
+        doc(owner.db, userDocPath),
+        { visibility: { public: true }, nickname: 'alice_cool' },
+        { merge: true }
+      )
+    );
+
+    const snap = await getDocFromServer(doc(owner.db, userDocPath));
+    assert.equal(snap.data()?.visibility?.public, true, 'Should be able to set public with nickname');
+    assert.equal(snap.data()?.nickname, 'alice_cool', 'Nickname should be set');
+  } finally {
+    await owner.cleanup();
+  }
+});
+
+test(`users public: owner can set visibility to private without nickname on ${RULES_TARGET}`, async () => {
+  const userDocPath = getPublicResourceDocPath(TEST_DATA_FOLDER, 'users', TEST_USER_ID);
+
+  // Seed user with public visibility and nickname via admin
+  await getAdminDb().doc(userDocPath).set({
+    name: 'Public User',
+    visibility: { public: true },
+    nickname: 'alice_cool',
+  });
+
+  const owner = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    // Owner can set visibility to private (nickname not required for private)
+    await assert.doesNotReject(
+      setDoc(
+        doc(owner.db, userDocPath),
+        { visibility: { public: false } },
+        { merge: true }
+      )
+    );
+
+    const snap = await getDocFromServer(doc(owner.db, userDocPath));
+    assert.equal(snap.data()?.visibility?.public, false, 'Should be able to set private');
+    assert.equal(snap.data()?.nickname, 'alice_cool', 'Nickname should remain');
+  } finally {
+    await owner.cleanup();
+  }
+});
+
+test(`nicknameIndex: admin can create/read/update/delete any nickname entry on ${RULES_TARGET}`, async () => {
+  const nicknameIndexPath = getPublicResourcePath(TEST_DATA_FOLDER, 'nicknameIndex');
+  const nicknamePath = joinPath(nicknameIndexPath, 'admin_nickname');
+
+  const admin = await buildClientContext({
+    uid: 'rules-admin-user',
+    claims: { admin: true },
+  });
+
+  try {
+    // Admin can create
+    await assert.doesNotReject(
+      setDoc(doc(admin.db, nicknamePath), { userId: 'any-user' })
+    );
+
+    // Admin can read
+    const snap = await getDocFromServer(doc(admin.db, nicknamePath));
+    assert.ok(snap.exists(), 'Admin should be able to read nickname entry');
+
+    // Admin can update
+    await assert.doesNotReject(
+      setDoc(doc(admin.db, nicknamePath), { userId: 'other-user' }, { merge: true })
+    );
+
+    // Admin can delete
+    await assert.doesNotReject(deleteDoc(doc(admin.db, nicknamePath)));
+  } finally {
+    await admin.cleanup();
+  }
+});

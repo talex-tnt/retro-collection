@@ -13,6 +13,7 @@ import type { PrivateUserRecord } from '../api/firestore/services/private/users'
 interface PublicUserRecord {
   id: string;
   name?: string;
+  nickname?: string;
 }
 
 type UserRecord = PublicUserRecord & PrivateUserRecord;
@@ -28,6 +29,13 @@ function UserRow({
     <tr className="cursor-pointer hover:bg-base-200" onClick={onSelect}>
       <td>{user.email || '—'}</td>
       <td>{user.name || '—'}</td>
+      <td>
+        {user.nickname ? (
+          <span className="badge badge-outline">@{user.nickname}</span>
+        ) : (
+          '—'
+        )}
+      </td>
       <td>
         {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : '—'}
       </td>
@@ -130,6 +138,7 @@ function UsersPage() {
                   <tr>
                     <th>Email</th>
                     <th>Name</th>
+                    <th>Nickname</th>
                     <th>Last Login</th>
                   </tr>
                 </thead>

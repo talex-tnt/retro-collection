@@ -39,6 +39,25 @@ This file tracks implementation requirements and coding guidelines for the retro
     - Authenticated user can read data
 - [ ] Implement resource type rules (collections, items, users) with validation
 - [ ] Implement authorization rules for multi-user access patterns
+- [ ] **NICKNAME FEATURE** — Add nickname support to users (Spark-compatible, Cloud Functions ready)
+  - Current Plan (Spark, before plan upgrade):
+    - [ ] Add `nickname` field to user public profile schema validation in rules
+    - [ ] Create `nicknameIndex` collection rules at `/{env}/data/{folder}/public/nicknameIndex/{nickname}`
+    - [ ] Rules: user can only read/write nicknameIndex docs if they contain their own userId
+    - [ ] Client-side transaction: atomic update of user profile + nicknameIndex
+    - [ ] Frontend: nickname UI component for users to set/change nickname
+  - Future Plan (after upgrading to Blaze):
+    - [ ] Create Cloud Function `setUserNickname` callable that validates uniqueness
+    - [ ] Cloud Function: check if nickname already exists before transaction
+    - [ ] Prevent users from creating multiple nicknames via direct Firebase writes
+    - [ ] No data structure changes needed — function wraps existing transaction
+- [ ] **ITEM LIMITS FEATURE** — Add max items per user limit (Cloud Functions required)
+  - Blocked by: Firebase Blaze plan upgrade (Cloud Functions not available on Spark)
+  - Implementation (future, Blaze only):
+    - [ ] Create Cloud Function to count user's existing items before create/update
+    - [ ] Enforce limit via function, return error if limit exceeded
+    - [ ] Add `itemLimit` field to user config (default ~100 or configurable per user)
+    - [ ] Log attempts to exceed limit for analytics
 
 ## Firestore Architecture
 
@@ -78,4 +97,6 @@ This file tracks implementation requirements and coding guidelines for the retro
 - In Firestore API logging, do not duplicate document or collection refs just for logging. Use `path` and `segmentPaths` in the context, and only include `requestPayload` when it is the actual data or query object passed to Firebase.
 
 ## Notes
-Last updated: {{DATE}}
+- **2026-05-14**: Decided on Spark-compatible nickname implementation with future Cloud Function path. Using separate `nicknameIndex` collection + client-side transaction. This prevents data structure lock-in and allows easy migration to Cloud Functions when upgrading to Blaze plan. Item limits deferred until Blaze plan upgrade (requires Cloud Functions for server-side enforcement).
+
+Last updated: 2026-05-14

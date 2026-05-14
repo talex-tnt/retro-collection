@@ -30,6 +30,7 @@ function CollectorsPage() {
                 <thead>
                   <tr>
                     <th>Name</th>
+                    <th>Nickname</th>
                   </tr>
                 </thead>
 
@@ -42,7 +43,14 @@ function CollectorsPage() {
                         navigate(`/collectors/${user.id}/collections`)
                       }
                     >
-                      <td>{user.name || user.id}</td>
+                      <td>{user.name || '—'}</td>
+                      <td>
+                        {user.nickname ? (
+                          <span className="badge badge-outline">@{user.nickname}</span>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

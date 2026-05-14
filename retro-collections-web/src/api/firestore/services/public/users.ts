@@ -21,6 +21,7 @@ const visibility = 'public' as const;
 export interface UserRecord {
   id: string;
   name?: string;
+  nickname?: string;
   visibility?: {
     public: boolean;
   };
@@ -28,6 +29,7 @@ export interface UserRecord {
 
 interface FirestoreUserDoc {
   name?: string;
+  nickname?: string;
   visibility?: {
     public: boolean;
   };
@@ -41,6 +43,7 @@ const mapUserDoc = (
   return {
     id: snapshot.id,
     name: data.name,
+    nickname: data.nickname,
     visibility: data.visibility,
   };
 };
@@ -127,6 +130,7 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
           data: {
             id: snap.id,
             name: data.name,
+            nickname: data.nickname,
             visibility: data.visibility,
           },
         };
@@ -144,7 +148,11 @@ const getUsersEndpoints = (builder: FirestoreBuilder) => ({
     void,
     {
       id: string;
-      name: string;
+      name?: string;
+      nickname?: string;
+      visibility?: {
+        public: boolean;
+      };
     }
   >({
     async queryFn({ id, ...data }) {

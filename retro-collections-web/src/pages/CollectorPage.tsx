@@ -78,8 +78,11 @@ function CollectorPage() {
           <div>
             <h2 className="card-title text-lg">Collector</h2>
             <p className="text-sm text-base-content/70">
-              {user?.name || userId}
+              {user?.nickname ? `@${user.nickname}` : user?.name || userId}
             </p>
+            {user?.name && user?.nickname && (
+              <p className="text-xs text-base-content/50 mt-1">{user.name}</p>
+            )}
           </div>
 
           <div className="space-y-2">

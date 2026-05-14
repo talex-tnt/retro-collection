@@ -7,6 +7,7 @@ import CollectorPage from '../pages/CollectorPage';
 import CollectorsPage from '../pages/CollectorsPage';
 import UsersPage from '../pages/UsersPage';
 import MyCollectionsPage from '../pages/MyCollectionsPage';
+import ProfilePage from '../pages/ProfilePage';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 import { auth } from '../lib/firebase';
@@ -65,6 +66,7 @@ function App() {
             <div className="space-y-6">
               <Routes>
                 <Route path="/" element={<HomePage />} />
+                <Route path="/profile" element={<ProfilePage />} />
                 <Route
                   path="/my-collections/:collectionId?"
                   element={<MyCollectionsPage />}

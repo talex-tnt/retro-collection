@@ -44,9 +44,16 @@ service cloud.firestore {
     }
 
     function isValidPublicUserData(data) {
-      return data.keys().hasOnly(['name', 'visibility']) &&
+      return data.keys().hasOnly(['name', 'visibility', 'nickname']) &&
         (!('name' in data) || data.name is string) &&
-        (!('visibility' in data) || isValidVisibilityMap(data.visibility));
+        (!('visibility' in data) || isValidVisibilityMap(data.visibility)) &&
+        (!('nickname' in data) || (data.nickname is string && data.nickname.size() > 0)) &&
+        // If public visibility, nickname is required
+        (
+          !('visibility' in data) ||
+          !data.visibility.public ||
+          ('nickname' in data && data.nickname is string && data.nickname.size() > 0)
+        );
     }
 
     function isValidPrivateUserData(data) {
@@ -132,6 +139,30 @@ service cloud.firestore {
           isValidPrivateUserData(request.resource.data)
         );
         allow delete: if isAdmin();
+      }
+
+      // Nickname index: track nicknames and their owners
+      // Users can read any nickname doc, but can only write/delete if it contains their own userId
+      match /public/nicknameIndex/{nickname} {
+        allow get, list: if isAdmin() || (folderMatchesConfig() && isAuthenticated());
+        allow create: if isAdmin() || (
+          folderMatchesConfig() &&
+          isAuthenticated() &&
+          request.resource.data.userId == request.auth.uid &&
+          request.resource.data.userId is string
+        );
+        allow update: if isAdmin() || (
+          folderMatchesConfig() &&
+          isAuthenticated() &&
+          resource.data.userId == request.auth.uid &&
+          request.resource.data.userId == request.auth.uid &&
+          request.resource.data.userId is string
+        );
+        allow delete: if isAdmin() || (
+          folderMatchesConfig() &&
+          isAuthenticated() &&
+          resource.data.userId == request.auth.uid
+        );
       }
 
       // Actual user data lives in collections under the folder doc
