@@ -187,13 +187,8 @@ service cloud.firestore {
 
       // collection helpers --------------------------------------------
       function getLengthLimit(field) {
-        if (field == 'collection.name') {
-          return 100;
-        }
-        if (field == 'collection.description') {
-          return 500;
-        }
-        return 0;
+        return (field == 'collection.name') ? 100 :
+               (field == 'collection.description') ? 500 : 0;
       }
       function createCollectionKeys() {
         return ['name', 'userId', 'createdAt', 'description', 'visibility'];
