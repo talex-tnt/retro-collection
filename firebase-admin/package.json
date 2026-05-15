@@ -9,8 +9,12 @@
     "set-admin": "node set-admin.mjs",
     "list:indexes": "dotenv -e .env -- sh -c 'firebase firestore:indexes --project=$ENV'",
     "test:rules": "node --test tests/firestore.rules.test.mjs",
-    "test:rules:emulator": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/firestore.rules.test.mjs'",
-    "test:rules:live": "RULES_TARGET=live ENV=dev node --test tests/firestore.rules.test.mjs"
+    "test:rules:emulator:all": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/firestore.rules.*.test.mjs'",
+    "test:rules:emulator:users": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/firestore.rules.users.test.mjs'",
+    "test:rules:emulator:collections": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/firestore.rules.collections.test.mjs'",
+    "test:rules:live:all": "RULES_TARGET=live ENV=dev node --test tests/firestore.rules.*.test.mjs",
+    "test:rules:live:users": "RULES_TARGET=live ENV=dev node --test tests/firestore.rules.users.test.mjs",
+    "test:rules:live:collections": "RULES_TARGET=live ENV=dev node --test tests/firestore.rules.collections.test.mjs"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
