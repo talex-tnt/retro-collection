@@ -21,7 +21,7 @@ import admin from 'firebase-admin';
  * CREATE - Access Control
  * [x] 2.1 Owner can create own collection
  * [x] 2.2 Non-owner cannot create collection for another user
- * [] 2.3 Unauthenticated cannot create collection
+ * [x] 2.3 Unauthenticated cannot create collection
  * [] 2.4 Admin can bypass all validation
  * 
  * CREATE - Data Validation
@@ -401,21 +401,21 @@ test(`[2.2 CREATE] non-owner cannot create collection for another user on ${RULE
   }
 });
 
-// test(`[2.3 CREATE] unauthenticated cannot create collection on ${RULES_TARGET}`, async () => {
-//   const collectionPath = getCollectionPath('new-collection-3');
-//   const context = await buildUnauthenticatedClientContext();
+test(`[2.3 CREATE] unauthenticated cannot create collection on ${RULES_TARGET}`, async () => {
+  const collectionPath = getCollectionPath('new-collection-3');
+  const context = await buildUnauthenticatedClientContext();
 
-//   try {
-//     await expectPermissionDenied(
-//       setDoc(doc(context.db, collectionPath), {
-//         ...validCollection,
-//         userId: 'any-user',
-//       })
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await expectPermissionDenied(
+      setDoc(doc(context.db, collectionPath), {
+        ...validCollection,
+        userId: 'any-user',
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
 // test(`[2.4 CREATE] admin can bypass all validation on ${RULES_TARGET}`, async () => {
 //   const collectionPath = getCollectionPath('new-collection-admin');
