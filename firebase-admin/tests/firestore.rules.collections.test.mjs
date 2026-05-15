@@ -40,7 +40,7 @@ import admin from 'firebase-admin';
  * [x] 4.2 Non-owner cannot update collection
  * 
  * UPDATE - Data Validation
- * [] 5.1 Rejects missing required updatedAt
+ * [x] 5.1 Rejects missing required updatedAt
  * [] 5.2 Accepts optional name field
  * [] 5.3 Accepts optional description field
  * [] 5.4 Accepts optional visibility field
@@ -696,35 +696,38 @@ test(`[4.2 UPDATE] non-owner cannot update collection on ${RULES_TARGET}`, async
   }
 });
 
-// test(`[5.1 UPDATE] updatedAt is required on ${RULES_TARGET}`, async () => {
-//   const userId = 'update-owner';
-//   const collectionPath = getCollectionPath('update-missing-timestamp');
+test(`[5.1 UPDATE] updatedAt is required on ${RULES_TARGET}`, async () => {
+  const userId = 'update-owner';
+  const collectionPath = getCollectionPath('update-missing-timestamp');
 
-//   // Setup
-//   await setDoc(doc(getAdminDb(), collectionPath), {
-//     ...validCollection,
-//     userId,
-//   });
+  // Setup
+  await getAdminDb().doc(collectionPath).set({
+    name: 'Test Collection',
+    userId,
+    createdAt: admin.firestore.Timestamp.now(),
+    description: 'A test collection',
+    visibility: { public: false },
+  });
 
-//   const context = await buildClientContext({
-//     uid: userId,
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: userId,
+    claims: { admin: false },
+  });
 
-//   try {
-//     await expectPermissionDenied(
-//       setDoc(
-//         doc(context.db, collectionPath),
-//         {
-//           name: 'Updated Name',
-//         },
-//         { merge: true }
-//       )
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await expectPermissionDenied(
+      setDoc(
+        doc(context.db, collectionPath),
+        {
+          name: 'Updated Name',
+        },
+        { merge: true }
+      )
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
 // test(`[5.2 UPDATE] name is optional in updates on ${RULES_TARGET}`, async () => {
 //   const userId = 'update-owner';
