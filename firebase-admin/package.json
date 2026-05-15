@@ -8,7 +8,7 @@
     "init:main": "dotenv -e .env -- node init-main-db.mjs",
     "set-admin": "node set-admin.mjs",
     "list:indexes": "dotenv -e .env -- sh -c 'firebase firestore:indexes --project=$ENV'",
-    "test:rules": "node --test tests/firestore.rules.test.mjs",
+    "test:rules": "node --test tests/firestore.rules.*.test.mjs",
     "test:rules:emulator:all": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/firestore.rules.*.test.mjs'",
     "test:rules:emulator:users": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/firestore.rules.users.test.mjs'",
     "test:rules:emulator:collections": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/firestore.rules.collections.test.mjs'",
