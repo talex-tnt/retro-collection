@@ -16,7 +16,7 @@ import admin from 'firebase-admin';
  * [x] 1. Admin can read any collection
  * [x] 2. Owner can read own collection
  * [] 3. Non-owner cannot read private collection
- * [] 4. Anyone can read public collection
+ * [x] 4. Anyone can read public collection
  * 
  * CREATE - Access Control
  * [] 5. Owner can create own collection
@@ -64,6 +64,7 @@ import {
   connectFirestoreEmulator,
   doc,
   getDoc,
+  getDocFromServer,
   getFirestore,
   setDoc,
   terminate,
@@ -293,11 +294,15 @@ test(`[GET] owner can read own collection on ${RULES_TARGET}`, async () => {
 //   const collectionPath = getCollectionPath('collection-3');
 
 //   // Setup: write private collection
-//   await setDoc(doc(getAdminDb(), collectionPath), {
+//   await getAdminDb().doc(collectionPath).set({
 //     ...validCollection,
 //     userId: ownerId,
 //     visibility: { public: false },
+//     createdAt: admin.firestore.Timestamp.now(),
 //   });
+
+//   const setupSnap = await getAdminDb().doc(collectionPath).get();
+//   assert.equal(setupSnap.exists, true);
 
 //   const context = await buildClientContext({
 //     uid: 'other-user',
@@ -305,32 +310,35 @@ test(`[GET] owner can read own collection on ${RULES_TARGET}`, async () => {
 //   });
 
 //   try {
-//     await expectPermissionDenied(getDoc(doc(context.db, collectionPath)));
+//     await expectPermissionDenied(
+//       getDocFromServer(doc(context.db, collectionPath))
+//     );
 //   } finally {
 //     await context.cleanup();
 //   }
 // });
 
-// test(`[GET] anyone can read public collection on ${RULES_TARGET}`, async () => {
-//   const collectionPath = getCollectionPath('collection-4');
+test(`[GET] anyone can read public collection on ${RULES_TARGET}`, async () => {
+  const collectionPath = getCollectionPath('collection-4');
 
-//   // Setup: write public collection
-//   await setDoc(doc(getAdminDb(), collectionPath), {
-//     ...validCollection,
-//     visibility: { public: true },
-//   });
+  // Setup: write public collection
+  await getAdminDb().doc(collectionPath).set({
+    ...validCollection,
+    visibility: { public: true },
+    createdAt: admin.firestore.Timestamp.now(),
+  });
 
-//   const context = await buildClientContext({
-//     uid: 'random-user',
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: 'random-user',
+    claims: { admin: false },
+  });
 
-//   try {
-//     await assert.doesNotReject(getDoc(doc(context.db, collectionPath)));
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await assert.doesNotReject(getDoc(doc(context.db, collectionPath)));
+  } finally {
+    await context.cleanup();
+  }
+});
 
 // // ============================================================================
 // // CREATE TESTS
