@@ -14,7 +14,7 @@ import admin from 'firebase-admin';
  * 
  * GET TESTS
  * [x] 1. Admin can read any collection
- * [] 2. Owner can read own collection
+ * [x] 2. Owner can read own collection
  * [] 3. Non-owner cannot read private collection
  * [] 4. Anyone can read public collection
  * 
@@ -265,27 +265,28 @@ test(`[GET] admin can read any collection on ${RULES_TARGET}`, async () => {
   }
 });
 
-// test(`[GET] owner can read own collection on ${RULES_TARGET}`, async () => {
-//   const userId = 'collection-owner';
-//   const collectionPath = getCollectionPath('collection-2');
+test(`[GET] owner can read own collection on ${RULES_TARGET}`, async () => {
+  const userId = 'collection-owner';
+  const collectionPath = getCollectionPath('collection-2');
 
-//   // Setup: write collection as admin
-//   await setDoc(doc(getAdminDb(), collectionPath), {
-//     ...validCollection,
-//     userId,
-//   });
+  // Setup: write collection as admin
+  await getAdminDb().doc(collectionPath).set({
+    ...validCollection,
+    userId,
+    createdAt: admin.firestore.Timestamp.now(),
+  });
 
-//   const context = await buildClientContext({
-//     uid: userId,
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: userId,
+    claims: { admin: false },
+  });
 
-//   try {
-//     await assert.doesNotReject(getDoc(doc(context.db, collectionPath)));
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await assert.doesNotReject(getDoc(doc(context.db, collectionPath)));
+  } finally {
+    await context.cleanup();
+  }
+});
 
 // test(`[GET] non-owner cannot read private collection on ${RULES_TARGET}`, async () => {
 //   const ownerId = 'owner-user';
