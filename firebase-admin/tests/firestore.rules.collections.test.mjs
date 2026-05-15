@@ -48,9 +48,9 @@ import admin from 'firebase-admin';
  * [ ] 5.6 Rejects description exceeding 500 characters on update (NOT IN CURRENT FILE - ADD THIS)
  * 
  * DELETE
- * [] 6.1 Owner can delete own collection
- * [] 6.2 Non-owner cannot delete collection
- * [] 6.3 Admin can delete any collection
+ * [x] 6.1 Owner can delete own collection
+ * [x] 6.2 Non-owner cannot delete collection
+ * [x] 6.3 Admin can delete any collection
  */
 
 // AI task: implement the above test cases in the file, following the patterns established in the existing tests. 
@@ -68,6 +68,7 @@ import {
 import {
   connectFirestoreEmulator,
   collection,
+  deleteDoc,
   documentId,
   doc,
   getDoc,
@@ -864,77 +865,86 @@ test(`[5.5 UPDATE] name cannot exceed 100 characters on ${RULES_TARGET}`, async 
   }
 });
 
-// // ============================================================================
-// // DELETE TESTS
-// // ============================================================================
+// ============================================================================
+// DELETE TESTS
+// ============================================================================
 
-// test(`[6.1 DELETE] owner can delete own collection on ${RULES_TARGET}`, async () => {
-//   const userId = 'delete-owner';
-//   const collectionPath = getCollectionPath('delete-collection-1');
+test(`[6.1 DELETE] owner can delete own collection on ${RULES_TARGET}`, async () => {
+  const userId = 'delete-owner';
+  const collectionPath = getCollectionPath('delete-collection-1');
 
-//   // Setup
-//   await setDoc(doc(getAdminDb(), collectionPath), {
-//     ...validCollection,
-//     userId,
-//   });
+  // Setup
+  await getAdminDb().doc(collectionPath).set({
+    name: 'Test Collection',
+    userId,
+    createdAt: admin.firestore.Timestamp.now(),
+    description: 'A test collection',
+    visibility: { public: false },
+  });
 
-//   const context = await buildClientContext({
-//     uid: userId,
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: userId,
+    claims: { admin: false },
+  });
 
-//   try {
-//     await assert.doesNotReject(
-//       doc(context.db, collectionPath).delete()
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await assert.doesNotReject(
+      deleteDoc(doc(context.db, collectionPath))
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
-// test(`[6.2 DELETE] non-owner cannot delete collection on ${RULES_TARGET}`, async () => {
-//   const ownerId = 'delete-owner';
-//   const collectionPath = getCollectionPath('delete-collection-2');
+test(`[6.2 DELETE] non-owner cannot delete collection on ${RULES_TARGET}`, async () => {
+  const ownerId = 'delete-owner';
+  const collectionPath = getCollectionPath('delete-collection-2');
 
-//   // Setup
-//   await setDoc(doc(getAdminDb(), collectionPath), {
-//     ...validCollection,
-//     userId: ownerId,
-//   });
+  // Setup
+  await getAdminDb().doc(collectionPath).set({
+    name: 'Test Collection',
+    userId: ownerId,
+    createdAt: admin.firestore.Timestamp.now(),
+    description: 'A test collection',
+    visibility: { public: false },
+  });
 
-//   const context = await buildClientContext({
-//     uid: 'other-user',
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: 'other-user',
+    claims: { admin: false },
+  });
 
-//   try {
-//     await expectPermissionDenied(
-//       doc(context.db, collectionPath).delete()
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await expectPermissionDenied(
+      deleteDoc(doc(context.db, collectionPath))
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
-// test(`[6.3 DELETE] admin can delete any collection on ${RULES_TARGET}`, async () => {
-//   const collectionPath = getCollectionPath('delete-collection-admin');
+test(`[6.3 DELETE] admin can delete any collection on ${RULES_TARGET}`, async () => {
+  const collectionPath = getCollectionPath('delete-collection-admin');
 
-//   // Setup
-//   await setDoc(doc(getAdminDb(), collectionPath), {
-//     ...validCollection,
-//     userId: 'some-owner',
-//   });
+  // Setup
+  await getAdminDb().doc(collectionPath).set({
+    name: 'Test Collection',
+    userId: 'some-owner',
+    createdAt: admin.firestore.Timestamp.now(),
+    description: 'A test collection',
+    visibility: { public: false },
+  });
 
-//   const adminContext = await buildClientContext({
-//     uid: 'admin-user',
-//     claims: { admin: true },
-//   });
+  const adminContext = await buildClientContext({
+    uid: 'admin-user',
+    claims: { admin: true },
+  });
 
-//   try {
-//     await assert.doesNotReject(
-//       doc(adminContext.db, collectionPath).delete()
-//     );
-//   } finally {
-//     await adminContext.cleanup();
-//   }
-// });
+  try {
+    await assert.doesNotReject(
+      deleteDoc(doc(adminContext.db, collectionPath))
+    );
+  } finally {
+    await adminContext.cleanup();
+  }
+});
