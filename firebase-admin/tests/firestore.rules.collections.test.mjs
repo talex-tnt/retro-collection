@@ -36,8 +36,8 @@ import admin from 'firebase-admin';
  * [x] 3.9 Rejects non-timestamp createdAt
  * 
  * UPDATE - Access Control
- * [] 4.1 Owner can update own collection
- * [] 4.2 Non-owner cannot update collection
+ * [x] 4.1 Owner can update own collection
+ * [x] 4.2 Non-owner cannot update collection
  * 
  * UPDATE - Data Validation
  * [] 5.1 Rejects missing required updatedAt
@@ -662,36 +662,39 @@ test(`[4.1 UPDATE] owner can update own collection on ${RULES_TARGET}`, async ()
   }
 });
 
-// test(`[4.2 UPDATE] non-owner cannot update collection on ${RULES_TARGET}`, async () => {
-//   const ownerId = 'update-owner';
-//   const collectionPath = getCollectionPath('update-collection-2');
+test(`[4.2 UPDATE] non-owner cannot update collection on ${RULES_TARGET}`, async () => {
+  const ownerId = 'update-owner';
+  const collectionPath = getCollectionPath('update-collection-2');
 
-//   // Setup
-//   await setDoc(doc(getAdminDb(), collectionPath), {
-//     ...validCollection,
-//     userId: ownerId,
-//   });
+  // Setup
+  await getAdminDb().doc(collectionPath).set({
+    name: 'Test Collection',
+    userId: ownerId,
+    createdAt: admin.firestore.Timestamp.now(),
+    description: 'A test collection',
+    visibility: { public: false },
+  });
 
-//   const context = await buildClientContext({
-//     uid: 'other-user',
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: 'other-user',
+    claims: { admin: false },
+  });
 
-//   try {
-//     await expectPermissionDenied(
-//       setDoc(
-//         doc(context.db, collectionPath),
-//         {
-//           name: 'Updated Name',
-//           updatedAt: Timestamp.now(),
-//         },
-//         { merge: true }
-//       )
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await expectPermissionDenied(
+      setDoc(
+        doc(context.db, collectionPath),
+        {
+          name: 'Updated Name',
+          updatedAt: Timestamp.now(),
+        },
+        { merge: true }
+      )
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
 // test(`[5.1 UPDATE] updatedAt is required on ${RULES_TARGET}`, async () => {
 //   const userId = 'update-owner';
