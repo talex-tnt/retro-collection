@@ -26,7 +26,7 @@ import admin from 'firebase-admin';
  * 
  * CREATE - Data Validation
  * [x] 3.1 Rejects missing required name
- * [] 3.2 Rejects missing required createdAt
+ * [x] 3.2 Rejects missing required createdAt
  * [ ] 3.3 Rejects missing required userId (NOT IN CURRENT FILE - ADD THIS)
  * [] 3.4 Rejects missing required visibility
  * [] 3.5 Rejects name exceeding 100 characters
@@ -464,27 +464,27 @@ test(`[3.1 CREATE] rejects missing required name field on ${RULES_TARGET}`, asyn
   }
 });
 
-// test(`[3.2 CREATE] rejects missing required createdAt on ${RULES_TARGET}`, async () => {
-//   const userId = 'creator-user';
-//   const collectionPath = getCollectionPath('missing-createdat');
+test(`[3.2 CREATE] rejects missing required createdAt on ${RULES_TARGET}`, async () => {
+  const userId = 'creator-user';
+  const collectionPath = getCollectionPath('missing-createdat');
 
-//   const context = await buildClientContext({
-//     uid: userId,
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: userId,
+    claims: { admin: false },
+  });
 
-//   try {
-//     await expectPermissionDenied(
-//       setDoc(doc(context.db, collectionPath), {
-//         name: 'Collection',
-//         userId,
-//         visibility: { public: false },
-//       })
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await expectPermissionDenied(
+      setDoc(doc(context.db, collectionPath), {
+        name: 'Collection',
+        userId,
+        visibility: { public: false },
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
 // test(`[3.4 CREATE] rejects missing required visibility on ${RULES_TARGET}`, async () => {
 //   const userId = 'creator-user';
