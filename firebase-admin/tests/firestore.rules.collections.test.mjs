@@ -27,13 +27,13 @@ import admin from 'firebase-admin';
  * CREATE - Data Validation
  * [x] 3.1 Rejects missing required name
  * [x] 3.2 Rejects missing required createdAt
- * [ ] 3.3 Rejects missing required userId (NOT IN CURRENT FILE - ADD THIS)
- * [] 3.4 Rejects missing required visibility
- * [] 3.5 Rejects name exceeding 100 characters
- * [] 3.6 Rejects description exceeding 500 characters
- * [] 3.7 Accepts valid optional description
- * [] 3.8 Rejects invalid visibility map
- * [] 3.9 Rejects non-timestamp createdAt
+ * [x] 3.3 Rejects missing required userId (NOT IN CURRENT FILE - ADD THIS)
+ * [x] 3.4 Rejects missing required visibility
+ * [x] 3.5 Rejects name exceeding 100 characters
+ * [x] 3.6 Rejects description exceeding 500 characters
+ * [x] 3.7 Accepts valid optional description
+ * [x] 3.8 Rejects invalid visibility map
+ * [x] 3.9 Rejects non-timestamp createdAt
  * 
  * UPDATE - Access Control
  * [] 4.1 Owner can update own collection
@@ -486,147 +486,147 @@ test(`[3.2 CREATE] rejects missing required createdAt on ${RULES_TARGET}`, async
   }
 });
 
-// test(`[3.4 CREATE] rejects missing required visibility on ${RULES_TARGET}`, async () => {
-//   const userId = 'creator-user';
-//   const collectionPath = getCollectionPath('missing-visibility');
+test(`[3.4 CREATE] rejects missing required visibility on ${RULES_TARGET}`, async () => {
+  const userId = 'creator-user';
+  const collectionPath = getCollectionPath('missing-visibility');
 
-//   const context = await buildClientContext({
-//     uid: userId,
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: userId,
+    claims: { admin: false },
+  });
 
-//   try {
-//     await expectPermissionDenied(
-//       setDoc(doc(context.db, collectionPath), {
-//         name: 'Collection',
-//         userId,
-//         createdAt: Timestamp.now(),
-//       })
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await expectPermissionDenied(
+      setDoc(doc(context.db, collectionPath), {
+        name: 'Collection',
+        userId,
+        createdAt: Timestamp.now(),
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
-// test(`[3.5 CREATE] name cannot exceed 100 characters on ${RULES_TARGET}`, async () => {
-//   const userId = 'creator-user';
-//   const collectionPath = getCollectionPath('name-too-long');
+test(`[3.5 CREATE] name cannot exceed 100 characters on ${RULES_TARGET}`, async () => {
+  const userId = 'creator-user';
+  const collectionPath = getCollectionPath('name-too-long');
 
-//   const context = await buildClientContext({
-//     uid: userId,
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: userId,
+    claims: { admin: false },
+  });
 
-//   try {
-//     await expectPermissionDenied(
-//       setDoc(doc(context.db, collectionPath), {
-//         name: 'x'.repeat(101),
-//         userId,
-//         createdAt: Timestamp.now(),
-//         visibility: { public: false },
-//       })
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await expectPermissionDenied(
+      setDoc(doc(context.db, collectionPath), {
+        name: 'x'.repeat(101),
+        userId,
+        createdAt: Timestamp.now(),
+        visibility: { public: false },
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
-// test(`[3.6 CREATE] description cannot exceed 500 characters on ${RULES_TARGET}`, async () => {
-//   const userId = 'creator-user';
-//   const collectionPath = getCollectionPath('desc-too-long');
+test(`[3.6 CREATE] description cannot exceed 500 characters on ${RULES_TARGET}`, async () => {
+  const userId = 'creator-user';
+  const collectionPath = getCollectionPath('desc-too-long');
 
-//   const context = await buildClientContext({
-//     uid: userId,
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: userId,
+    claims: { admin: false },
+  });
 
-//   try {
-//     await expectPermissionDenied(
-//       setDoc(doc(context.db, collectionPath), {
-//         name: 'Valid Name',
-//         userId,
-//         createdAt: Timestamp.now(),
-//         visibility: { public: false },
-//         description: 'x'.repeat(501),
-//       })
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await expectPermissionDenied(
+      setDoc(doc(context.db, collectionPath), {
+        name: 'Valid Name',
+        userId,
+        createdAt: Timestamp.now(),
+        visibility: { public: false },
+        description: 'x'.repeat(501),
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
-// test(`[3.7 CREATE] description is optional on ${RULES_TARGET}`, async () => {
-//   const userId = 'creator-user';
-//   const collectionPath = getCollectionPath('no-description');
+test(`[3.7 CREATE] description is optional on ${RULES_TARGET}`, async () => {
+  const userId = 'creator-user';
+  const collectionPath = getCollectionPath('no-description');
 
-//   const context = await buildClientContext({
-//     uid: userId,
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: userId,
+    claims: { admin: false },
+  });
 
-//   try {
-//     await assert.doesNotReject(
-//       setDoc(doc(context.db, collectionPath), {
-//         name: 'Collection',
-//         userId,
-//         createdAt: Timestamp.now(),
-//         visibility: { public: false },
-//       })
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await assert.doesNotReject(
+      setDoc(doc(context.db, collectionPath), {
+        name: 'Collection',
+        userId,
+        createdAt: Timestamp.now(),
+        visibility: { public: false },
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
-// test(`[3.8 CREATE] rejects invalid visibility map on ${RULES_TARGET}`, async () => {
-//   const userId = 'creator-user';
-//   const collectionPath = getCollectionPath('invalid-visibility');
+test(`[3.8 CREATE] rejects invalid visibility map on ${RULES_TARGET}`, async () => {
+  const userId = 'creator-user';
+  const collectionPath = getCollectionPath('invalid-visibility');
 
-//   const context = await buildClientContext({
-//     uid: userId,
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: userId,
+    claims: { admin: false },
+  });
 
-//   try {
-//     await expectPermissionDenied(
-//       setDoc(doc(context.db, collectionPath), {
-//         name: 'Collection',
-//         userId,
-//         createdAt: Timestamp.now(),
-//         visibility: { public: false, extra: 'field' },
-//       })
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await expectPermissionDenied(
+      setDoc(doc(context.db, collectionPath), {
+        name: 'Collection',
+        userId,
+        createdAt: Timestamp.now(),
+        visibility: { public: false, extra: 'field' },
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
-// test(`[3.9 CREATE] rejects non-timestamp createdAt on ${RULES_TARGET}`, async () => {
-//   const userId = 'creator-user';
-//   const collectionPath = getCollectionPath('invalid-timestamp');
+test(`[3.9 CREATE] rejects non-timestamp createdAt on ${RULES_TARGET}`, async () => {
+  const userId = 'creator-user';
+  const collectionPath = getCollectionPath('invalid-timestamp');
 
-//   const context = await buildClientContext({
-//     uid: userId,
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: userId,
+    claims: { admin: false },
+  });
 
-//   try {
-//     await expectPermissionDenied(
-//       setDoc(doc(context.db, collectionPath), {
-//         name: 'Collection',
-//         userId,
-//         createdAt: '2024-01-01',
-//         visibility: { public: false },
-//       })
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await expectPermissionDenied(
+      setDoc(doc(context.db, collectionPath), {
+        name: 'Collection',
+        userId,
+        createdAt: '2024-01-01',
+        visibility: { public: false },
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
-// // ============================================================================
-// // UPDATE TESTS
-// // ============================================================================
+// ============================================================================
+// UPDATE TESTS
+// ============================================================================
 
 // test(`[4.1 UPDATE] owner can update own collection on ${RULES_TARGET}`, async () => {
 //   const userId = 'update-owner';
