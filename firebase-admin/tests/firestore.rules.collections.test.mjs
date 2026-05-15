@@ -13,45 +13,50 @@ import admin from 'firebase-admin';
  * Test Checklist:
  * 
  * GET TESTS
- * [x] 1. Admin can read any collection
- * [x] 2. Owner can read own collection
- * [] 3. Non-owner cannot read private collection
- * [x] 4. Anyone can read public collection
+ * [x] 1.1 Admin can read any collection
+ * [x] 1.2 Owner can read own collection
+ * [x] 1.3 Non-owner cannot read private collection
+ * [x] 1.4 Anyone can read public collection
  * 
  * CREATE - Access Control
- * [x] 5. Owner can create own collection
- * [] 6. Non-owner cannot create collection for another user
- * [] 7. Unauthenticated cannot create collection
- * [] 8. Admin can bypass all validation
+ * [x] 2.1 Owner can create own collection
+ * [x] 2.2 Non-owner cannot create collection for another user
+ * [] 2.3 Unauthenticated cannot create collection
+ * [] 2.4 Admin can bypass all validation
  * 
  * CREATE - Data Validation
- * [] 9. Rejects missing required name
- * [] 10. Rejects missing required createdAt
- * [ ] 11. Rejects missing required userId (NOT IN CURRENT FILE - ADD THIS)
- * [] 12. Rejects missing required visibility
- * [] 13. Rejects name exceeding 100 characters
- * [] 14. Rejects description exceeding 500 characters
- * [] 15. Accepts valid optional description
- * [] 16. Rejects invalid visibility map
- * [] 17. Rejects non-timestamp createdAt
+ * [] 3.1 Rejects missing required name
+ * [] 3.2 Rejects missing required createdAt
+ * [ ] 3.3 Rejects missing required userId (NOT IN CURRENT FILE - ADD THIS)
+ * [] 3.4 Rejects missing required visibility
+ * [] 3.5 Rejects name exceeding 100 characters
+ * [] 3.6 Rejects description exceeding 500 characters
+ * [] 3.7 Accepts valid optional description
+ * [] 3.8 Rejects invalid visibility map
+ * [] 3.9 Rejects non-timestamp createdAt
  * 
  * UPDATE - Access Control
- * [] 18. Owner can update own collection
- * [] 19. Non-owner cannot update collection
+ * [] 4.1 Owner can update own collection
+ * [] 4.2 Non-owner cannot update collection
  * 
  * UPDATE - Data Validation
- * [] 20. Rejects missing required updatedAt
- * [] 21. Accepts optional name field
- * [] 22. Accepts optional description field
- * [] 23. Accepts optional visibility field
- * [] 24. Rejects name exceeding 100 characters on update
- * [ ] 25. Rejects description exceeding 500 characters on update (NOT IN CURRENT FILE - ADD THIS)
+ * [] 5.1 Rejects missing required updatedAt
+ * [] 5.2 Accepts optional name field
+ * [] 5.3 Accepts optional description field
+ * [] 5.4 Accepts optional visibility field
+ * [] 5.5 Rejects name exceeding 100 characters on update
+ * [ ] 5.6 Rejects description exceeding 500 characters on update (NOT IN CURRENT FILE - ADD THIS)
  * 
  * DELETE
- * [] 26. Owner can delete own collection
- * [] 27. Non-owner cannot delete collection
- * [] 28. Admin can delete any collection
+ * [] 6.1 Owner can delete own collection
+ * [] 6.2 Non-owner cannot delete collection
+ * [] 6.3 Admin can delete any collection
  */
+
+// AI task: implement the above test cases in the file, following the patterns established in the existing tests. 
+// Make sure to cover both access control and data validation scenarios for collection documents.
+// Add one test at a time, and ensure that the test setup and assertions are correctly implemented according to the Firestore rules being tested. 
+// Aske me before implementing the next test case, to confirm that the previous one is correctly implemented and to get approval before proceeding.
 
 import { deleteApp, initializeApp as initializeClientApp } from 'firebase/app';
 import {
@@ -248,7 +253,7 @@ test.after(async () => {
 // GET TESTS
 // ============================================================================
 
-test(`[GET] admin can read any collection on ${RULES_TARGET}`, async () => {
+test(`[1.1 GET] admin can read any collection on ${RULES_TARGET}`, async () => {
   const adminContext = await buildClientContext({
     uid: 'admin-user',
     claims: { admin: true },
@@ -274,7 +279,7 @@ test(`[GET] admin can read any collection on ${RULES_TARGET}`, async () => {
   }
 });
 
-test(`[GET] owner can read own collection on ${RULES_TARGET}`, async () => {
+test(`[1.2 GET] owner can read own collection on ${RULES_TARGET}`, async () => {
   const userId = 'collection-owner';
   const collectionPath = getCollectionPath('collection-2');
 
@@ -297,7 +302,7 @@ test(`[GET] owner can read own collection on ${RULES_TARGET}`, async () => {
   }
 });
 
-test(`[GET] non-owner cannot read private collection on ${RULES_TARGET}`, async () => {
+test(`[1.3 GET] non-owner cannot read private collection on ${RULES_TARGET}`, async () => {
   const ownerId = 'owner-user';
   const collectionPath = getCollectionPath('collection-3');
 
@@ -328,7 +333,7 @@ test(`[GET] non-owner cannot read private collection on ${RULES_TARGET}`, async 
   }
 });
 
-test(`[GET] anyone can read public collection on ${RULES_TARGET}`, async () => {
+test(`[1.4 GET] anyone can read public collection on ${RULES_TARGET}`, async () => {
   const collectionPath = getCollectionPath('collection-4');
 
   // Setup: write public collection
@@ -354,7 +359,7 @@ test(`[GET] anyone can read public collection on ${RULES_TARGET}`, async () => {
 // // CREATE TESTS
 // // ============================================================================
 
-test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => {
+test(`[2.1 CREATE] owner can create own collection on ${RULES_TARGET}`, async () => {
   const userId = 'creator-user';
   const collectionPath = getCollectionPath('new-collection-1');
 
@@ -375,28 +380,28 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
   }
 });
 
-// test(`[CREATE] non-owner cannot create collection for another user on ${RULES_TARGET}`, async () => {
-//   const userId = 'creator-user';
-//   const collectionPath = getCollectionPath('new-collection-2');
+test(`[2.2 CREATE] non-owner cannot create collection for another user on ${RULES_TARGET}`, async () => {
+  const userId = 'creator-user';
+  const collectionPath = getCollectionPath('new-collection-2');
 
-//   const context = await buildClientContext({
-//     uid: userId,
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: userId,
+    claims: { admin: false },
+  });
 
-//   try {
-//     await expectPermissionDenied(
-//       setDoc(doc(context.db, collectionPath), {
-//         ...validCollection,
-//         userId: 'someone-else',
-//       })
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await expectPermissionDenied(
+      setDoc(doc(context.db, collectionPath), {
+        ...validCollection,
+        userId: 'someone-else',
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
-// test(`[CREATE] unauthenticated cannot create collection on ${RULES_TARGET}`, async () => {
+// test(`[2.3 CREATE] unauthenticated cannot create collection on ${RULES_TARGET}`, async () => {
 //   const collectionPath = getCollectionPath('new-collection-3');
 //   const context = await buildUnauthenticatedClientContext();
 
@@ -412,7 +417,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 //   }
 // });
 
-// test(`[CREATE] admin can bypass all validation on ${RULES_TARGET}`, async () => {
+// test(`[2.4 CREATE] admin can bypass all validation on ${RULES_TARGET}`, async () => {
 //   const collectionPath = getCollectionPath('new-collection-admin');
 
 //   const adminContext = await buildClientContext({
@@ -437,7 +442,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 
 // // CREATE - Data Validation Tests
 
-// test(`[CREATE] rejects missing required name field on ${RULES_TARGET}`, async () => {
+// test(`[3.1 CREATE] rejects missing required name field on ${RULES_TARGET}`, async () => {
 //   const userId = 'creator-user';
 //   const collectionPath = getCollectionPath('missing-name');
 
@@ -459,7 +464,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 //   }
 // });
 
-// test(`[CREATE] rejects missing required createdAt on ${RULES_TARGET}`, async () => {
+// test(`[3.2 CREATE] rejects missing required createdAt on ${RULES_TARGET}`, async () => {
 //   const userId = 'creator-user';
 //   const collectionPath = getCollectionPath('missing-createdat');
 
@@ -481,7 +486,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 //   }
 // });
 
-// test(`[CREATE] rejects missing required visibility on ${RULES_TARGET}`, async () => {
+// test(`[3.4 CREATE] rejects missing required visibility on ${RULES_TARGET}`, async () => {
 //   const userId = 'creator-user';
 //   const collectionPath = getCollectionPath('missing-visibility');
 
@@ -503,7 +508,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 //   }
 // });
 
-// test(`[CREATE] name cannot exceed 100 characters on ${RULES_TARGET}`, async () => {
+// test(`[3.5 CREATE] name cannot exceed 100 characters on ${RULES_TARGET}`, async () => {
 //   const userId = 'creator-user';
 //   const collectionPath = getCollectionPath('name-too-long');
 
@@ -526,7 +531,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 //   }
 // });
 
-// test(`[CREATE] description cannot exceed 500 characters on ${RULES_TARGET}`, async () => {
+// test(`[3.6 CREATE] description cannot exceed 500 characters on ${RULES_TARGET}`, async () => {
 //   const userId = 'creator-user';
 //   const collectionPath = getCollectionPath('desc-too-long');
 
@@ -550,7 +555,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 //   }
 // });
 
-// test(`[CREATE] description is optional on ${RULES_TARGET}`, async () => {
+// test(`[3.7 CREATE] description is optional on ${RULES_TARGET}`, async () => {
 //   const userId = 'creator-user';
 //   const collectionPath = getCollectionPath('no-description');
 
@@ -573,7 +578,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 //   }
 // });
 
-// test(`[CREATE] rejects invalid visibility map on ${RULES_TARGET}`, async () => {
+// test(`[3.8 CREATE] rejects invalid visibility map on ${RULES_TARGET}`, async () => {
 //   const userId = 'creator-user';
 //   const collectionPath = getCollectionPath('invalid-visibility');
 
@@ -596,7 +601,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 //   }
 // });
 
-// test(`[CREATE] rejects non-timestamp createdAt on ${RULES_TARGET}`, async () => {
+// test(`[3.9 CREATE] rejects non-timestamp createdAt on ${RULES_TARGET}`, async () => {
 //   const userId = 'creator-user';
 //   const collectionPath = getCollectionPath('invalid-timestamp');
 
@@ -623,7 +628,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 // // UPDATE TESTS
 // // ============================================================================
 
-// test(`[UPDATE] owner can update own collection on ${RULES_TARGET}`, async () => {
+// test(`[4.1 UPDATE] owner can update own collection on ${RULES_TARGET}`, async () => {
 //   const userId = 'update-owner';
 //   const collectionPath = getCollectionPath('update-collection-1');
 
@@ -654,7 +659,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 //   }
 // });
 
-// test(`[UPDATE] non-owner cannot update collection on ${RULES_TARGET}`, async () => {
+// test(`[4.2 UPDATE] non-owner cannot update collection on ${RULES_TARGET}`, async () => {
 //   const ownerId = 'update-owner';
 //   const collectionPath = getCollectionPath('update-collection-2');
 
@@ -685,7 +690,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 //   }
 // });
 
-// test(`[UPDATE] updatedAt is required on ${RULES_TARGET}`, async () => {
+// test(`[5.1 UPDATE] updatedAt is required on ${RULES_TARGET}`, async () => {
 //   const userId = 'update-owner';
 //   const collectionPath = getCollectionPath('update-missing-timestamp');
 
@@ -715,7 +720,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 //   }
 // });
 
-// test(`[UPDATE] name is optional in updates on ${RULES_TARGET}`, async () => {
+// test(`[5.2 UPDATE] name is optional in updates on ${RULES_TARGET}`, async () => {
 //   const userId = 'update-owner';
 //   const collectionPath = getCollectionPath('update-no-name');
 
@@ -746,7 +751,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 //   }
 // });
 
-// test(`[UPDATE] description is optional in updates on ${RULES_TARGET}`, async () => {
+// test(`[5.3 UPDATE] description is optional in updates on ${RULES_TARGET}`, async () => {
 //   const userId = 'update-owner';
 //   const collectionPath = getCollectionPath('update-no-description');
 
@@ -776,7 +781,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 //   }
 // });
 
-// test(`[UPDATE] visibility is optional in updates on ${RULES_TARGET}`, async () => {
+// test(`[5.4 UPDATE] visibility is optional in updates on ${RULES_TARGET}`, async () => {
 //   const userId = 'update-owner';
 //   const collectionPath = getCollectionPath('update-no-visibility');
 
@@ -807,7 +812,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 //   }
 // });
 
-// test(`[UPDATE] name cannot exceed 100 characters on ${RULES_TARGET}`, async () => {
+// test(`[5.5 UPDATE] name cannot exceed 100 characters on ${RULES_TARGET}`, async () => {
 //   const userId = 'update-owner';
 //   const collectionPath = getCollectionPath('update-name-too-long');
 
@@ -842,7 +847,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 // // DELETE TESTS
 // // ============================================================================
 
-// test(`[DELETE] owner can delete own collection on ${RULES_TARGET}`, async () => {
+// test(`[6.1 DELETE] owner can delete own collection on ${RULES_TARGET}`, async () => {
 //   const userId = 'delete-owner';
 //   const collectionPath = getCollectionPath('delete-collection-1');
 
@@ -866,7 +871,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 //   }
 // });
 
-// test(`[DELETE] non-owner cannot delete collection on ${RULES_TARGET}`, async () => {
+// test(`[6.2 DELETE] non-owner cannot delete collection on ${RULES_TARGET}`, async () => {
 //   const ownerId = 'delete-owner';
 //   const collectionPath = getCollectionPath('delete-collection-2');
 
@@ -890,7 +895,7 @@ test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => 
 //   }
 // });
 
-// test(`[DELETE] admin can delete any collection on ${RULES_TARGET}`, async () => {
+// test(`[6.3 DELETE] admin can delete any collection on ${RULES_TARGET}`, async () => {
 //   const collectionPath = getCollectionPath('delete-collection-admin');
 
 //   // Setup
