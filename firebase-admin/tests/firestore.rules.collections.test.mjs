@@ -13,7 +13,7 @@ import admin from 'firebase-admin';
  * Test Checklist:
  * 
  * GET TESTS
- * [] 1. Admin can read any collection
+ * [x] 1. Admin can read any collection
  * [] 2. Owner can read own collection
  * [] 3. Non-owner cannot read private collection
  * [] 4. Anyone can read public collection
@@ -250,9 +250,10 @@ test(`[GET] admin can read any collection on ${RULES_TARGET}`, async () => {
 
   try {
     // Admin writes as someone else
-    await setDoc(doc(getAdminDb(), collectionPath), {
+    await getAdminDb().doc(collectionPath).set({
       ...validCollection,
       userId: ownerId,
+      createdAt: admin.firestore.Timestamp.now(),
     });
 
     // Admin reads
