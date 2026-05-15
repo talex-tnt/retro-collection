@@ -19,7 +19,7 @@ import admin from 'firebase-admin';
  * [x] 4. Anyone can read public collection
  * 
  * CREATE - Access Control
- * [] 5. Owner can create own collection
+ * [x] 5. Owner can create own collection
  * [] 6. Non-owner cannot create collection for another user
  * [] 7. Unauthenticated cannot create collection
  * [] 8. Admin can bypass all validation
@@ -292,7 +292,7 @@ test(`[GET] owner can read own collection on ${RULES_TARGET}`, async () => {
 // test(`[GET] non-owner cannot read private collection on ${RULES_TARGET}`, async () => {
 //   const ownerId = 'owner-user';
 //   const collectionPath = getCollectionPath('collection-3');
-
+//
 //   // Setup: write private collection
 //   await getAdminDb().doc(collectionPath).set({
 //     ...validCollection,
@@ -300,15 +300,12 @@ test(`[GET] owner can read own collection on ${RULES_TARGET}`, async () => {
 //     visibility: { public: false },
 //     createdAt: admin.firestore.Timestamp.now(),
 //   });
-
-//   const setupSnap = await getAdminDb().doc(collectionPath).get();
-//   assert.equal(setupSnap.exists, true);
-
+//
 //   const context = await buildClientContext({
 //     uid: 'other-user',
 //     claims: { admin: false },
 //   });
-
+//
 //   try {
 //     await expectPermissionDenied(
 //       getDocFromServer(doc(context.db, collectionPath))
@@ -344,26 +341,26 @@ test(`[GET] anyone can read public collection on ${RULES_TARGET}`, async () => {
 // // CREATE TESTS
 // // ============================================================================
 
-// test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => {
-//   const userId = 'creator-user';
-//   const collectionPath = getCollectionPath('new-collection-1');
+test(`[CREATE] owner can create own collection on ${RULES_TARGET}`, async () => {
+  const userId = 'creator-user';
+  const collectionPath = getCollectionPath('new-collection-1');
 
-//   const context = await buildClientContext({
-//     uid: userId,
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: userId,
+    claims: { admin: false },
+  });
 
-//   try {
-//     await assert.doesNotReject(
-//       setDoc(doc(context.db, collectionPath), {
-//         ...validCollection,
-//         userId,
-//       })
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await assert.doesNotReject(
+      setDoc(doc(context.db, collectionPath), {
+        ...validCollection,
+        userId,
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
 // test(`[CREATE] non-owner cannot create collection for another user on ${RULES_TARGET}`, async () => {
 //   const userId = 'creator-user';
