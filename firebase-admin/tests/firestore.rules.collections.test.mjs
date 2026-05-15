@@ -25,7 +25,7 @@ import admin from 'firebase-admin';
  * [x] 2.4 Admin can bypass all validation
  * 
  * CREATE - Data Validation
- * [] 3.1 Rejects missing required name
+ * [x] 3.1 Rejects missing required name
  * [] 3.2 Rejects missing required createdAt
  * [ ] 3.3 Rejects missing required userId (NOT IN CURRENT FILE - ADD THIS)
  * [] 3.4 Rejects missing required visibility
@@ -442,27 +442,27 @@ test(`[2.4 CREATE] admin can bypass all validation on ${RULES_TARGET}`, async ()
 
 // // CREATE - Data Validation Tests
 
-// test(`[3.1 CREATE] rejects missing required name field on ${RULES_TARGET}`, async () => {
-//   const userId = 'creator-user';
-//   const collectionPath = getCollectionPath('missing-name');
+test(`[3.1 CREATE] rejects missing required name field on ${RULES_TARGET}`, async () => {
+  const userId = 'creator-user';
+  const collectionPath = getCollectionPath('missing-name');
 
-//   const context = await buildClientContext({
-//     uid: userId,
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: userId,
+    claims: { admin: false },
+  });
 
-//   try {
-//     await expectPermissionDenied(
-//       setDoc(doc(context.db, collectionPath), {
-//         userId,
-//         createdAt: Timestamp.now(),
-//         visibility: { public: false },
-//       })
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await expectPermissionDenied(
+      setDoc(doc(context.db, collectionPath), {
+        userId,
+        createdAt: Timestamp.now(),
+        visibility: { public: false },
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
 // test(`[3.2 CREATE] rejects missing required createdAt on ${RULES_TARGET}`, async () => {
 //   const userId = 'creator-user';
