@@ -42,9 +42,9 @@ import admin from 'firebase-admin';
  * UPDATE - Data Validation
  * [x] 5.1 Rejects missing required updatedAt
  * [x] 5.2 Accepts optional name field
- * [] 5.3 Accepts optional description field
- * [] 5.4 Accepts optional visibility field
- * [] 5.5 Rejects name exceeding 100 characters on update
+ * [x] 5.3 Accepts optional description field
+ * [x] 5.4 Accepts optional visibility field
+ * [x] 5.5 Rejects name exceeding 100 characters on update
  * [ ] 5.6 Rejects description exceeding 500 characters on update (NOT IN CURRENT FILE - ADD THIS)
  * 
  * DELETE
@@ -763,97 +763,106 @@ test(`[5.2 UPDATE] name is optional in updates on ${RULES_TARGET}`, async () => 
   }
 });
 
-// test(`[5.3 UPDATE] description is optional in updates on ${RULES_TARGET}`, async () => {
-//   const userId = 'update-owner';
-//   const collectionPath = getCollectionPath('update-no-description');
+test(`[5.3 UPDATE] description is optional in updates on ${RULES_TARGET}`, async () => {
+  const userId = 'update-owner';
+  const collectionPath = getCollectionPath('update-no-description');
 
-//   // Setup
-//   await setDoc(doc(getAdminDb(), collectionPath), {
-//     ...validCollection,
-//     userId,
-//   });
+  // Setup
+  await getAdminDb().doc(collectionPath).set({
+    name: 'Test Collection',
+    userId,
+    createdAt: admin.firestore.Timestamp.now(),
+    description: 'A test collection',
+    visibility: { public: false },
+  });
 
-//   const context = await buildClientContext({
-//     uid: userId,
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: userId,
+    claims: { admin: false },
+  });
 
-//   try {
-//     await assert.doesNotReject(
-//       setDoc(
-//         doc(context.db, collectionPath),
-//         {
-//           updatedAt: Timestamp.now(),
-//         },
-//         { merge: true }
-//       )
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await assert.doesNotReject(
+      setDoc(
+        doc(context.db, collectionPath),
+        {
+          updatedAt: Timestamp.now(),
+        },
+        { merge: true }
+      )
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
-// test(`[5.4 UPDATE] visibility is optional in updates on ${RULES_TARGET}`, async () => {
-//   const userId = 'update-owner';
-//   const collectionPath = getCollectionPath('update-no-visibility');
+test(`[5.4 UPDATE] visibility is optional in updates on ${RULES_TARGET}`, async () => {
+  const userId = 'update-owner';
+  const collectionPath = getCollectionPath('update-no-visibility');
 
-//   // Setup
-//   await setDoc(doc(getAdminDb(), collectionPath), {
-//     ...validCollection,
-//     userId,
-//   });
+  // Setup
+  await getAdminDb().doc(collectionPath).set({
+    name: 'Test Collection',
+    userId,
+    createdAt: admin.firestore.Timestamp.now(),
+    description: 'A test collection',
+    visibility: { public: false },
+  });
 
-//   const context = await buildClientContext({
-//     uid: userId,
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: userId,
+    claims: { admin: false },
+  });
 
-//   try {
-//     await assert.doesNotReject(
-//       setDoc(
-//         doc(context.db, collectionPath),
-//         {
-//           updatedAt: Timestamp.now(),
-//           name: 'New Name',
-//         },
-//         { merge: true }
-//       )
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await assert.doesNotReject(
+      setDoc(
+        doc(context.db, collectionPath),
+        {
+          updatedAt: Timestamp.now(),
+          name: 'New Name',
+        },
+        { merge: true }
+      )
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
-// test(`[5.5 UPDATE] name cannot exceed 100 characters on ${RULES_TARGET}`, async () => {
-//   const userId = 'update-owner';
-//   const collectionPath = getCollectionPath('update-name-too-long');
+test(`[5.5 UPDATE] name cannot exceed 100 characters on ${RULES_TARGET}`, async () => {
+  const userId = 'update-owner';
+  const collectionPath = getCollectionPath('update-name-too-long');
 
-//   // Setup
-//   await setDoc(doc(getAdminDb(), collectionPath), {
-//     ...validCollection,
-//     userId,
-//   });
+  // Setup
+  await getAdminDb().doc(collectionPath).set({
+    name: 'Test Collection',
+    userId,
+    createdAt: admin.firestore.Timestamp.now(),
+    description: 'A test collection',
+    visibility: { public: false },
+  });
 
-//   const context = await buildClientContext({
-//     uid: userId,
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: userId,
+    claims: { admin: false },
+  });
 
-//   try {
-//     await expectPermissionDenied(
-//       setDoc(
-//         doc(context.db, collectionPath),
-//         {
-//           name: 'x'.repeat(101),
-//           updatedAt: Timestamp.now(),
-//         },
-//         { merge: true }
-//       )
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await expectPermissionDenied(
+      setDoc(
+        doc(context.db, collectionPath),
+        {
+          name: 'x'.repeat(101),
+          updatedAt: Timestamp.now(),
+        },
+        { merge: true }
+      )
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
 // // ============================================================================
 // // DELETE TESTS
