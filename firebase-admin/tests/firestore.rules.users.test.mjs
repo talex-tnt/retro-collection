@@ -343,7 +343,10 @@ test(`user can write to matched dataFolder on ${RULES_TARGET}`, async () => {
     // Should succeed because dataFolder is 'collections'
     await assert.doesNotReject(
       setDoc(doc(context.db, TEST_COLLECTION_PATH), {
-        testData: 'value',
+        userId: TEST_USER_ID,
+        name: 'Test Collection',
+        visibility: { public: true },
+        createdAt: serverTimestamp(),
       })
     );
   } finally {
@@ -360,8 +363,10 @@ test(`user cannot write to non-matched dataFolder on ${RULES_TARGET}`, async () 
   try {
     // Should fail because dataFolder is 'default', not 'items'
     await expectPermissionDenied(
-      setDoc(doc(context.db, joinPath(TEST_ROOT, 'data', 'items', 'public', 'items', 'test-item-1')), {
-        testData: 'value',
+      setDoc(doc(context.db, joinPath(TEST_ROOT, 'data', 'items', 'public', 'collections', 'test-item-1')), {
+        userId: TEST_USER_ID,
+        visibility: { public: true },
+        createdAt: serverTimestamp(),
       })
     );
   } finally {
@@ -831,7 +836,7 @@ test(`users private: non-owner cannot read or write someone else's doc on ${RULE
 
 test(`authenticated user can read data on ${RULES_TARGET}`, async () => {
   // Admin creates test data
-  await getAdminDb().collection(getPublicResourcePath(TEST_DATA_FOLDER, 'collections')).doc(TEST_COLLECTION_ID).set({ testData: 'value' });
+  await getAdminDb().collection(getPublicResourcePath(TEST_DATA_FOLDER, 'collections')).doc(TEST_COLLECTION_ID).set({ userId: TEST_USER_ID, visibility: { public: true }, createdAt: admin.firestore.Timestamp.now() });
 
   const context = await buildClientContext({
     uid: TEST_USER_ID,
@@ -847,7 +852,7 @@ test(`authenticated user can read data on ${RULES_TARGET}`, async () => {
 });
 
 test(`user can read config public and then read matched dataFolder data on ${RULES_TARGET}`, async () => {
-  await getAdminDb().collection(getPublicResourcePath(TEST_DATA_FOLDER, 'collections')).doc(TEST_COLLECTION_ID).set({ testData: 'value' });
+  await getAdminDb().collection(getPublicResourcePath(TEST_DATA_FOLDER, 'collections')).doc(TEST_COLLECTION_ID).set({ userId: TEST_USER_ID, visibility: { public: true }, createdAt: admin.firestore.Timestamp.now() });
 
   const context = await buildClientContext({
     uid: TEST_USER_ID,
@@ -864,15 +869,16 @@ test(`user can read config public and then read matched dataFolder data on ${RUL
     const matchedPath = getPublicResourceDocPath(dataFolder, 'collections', TEST_COLLECTION_ID);
     const dataSnap = await getDocFromServer(doc(context.db, matchedPath));
     assert.ok(dataSnap.exists(), 'Matched dataFolder data should be readable');
-    assert.equal(dataSnap.data()?.testData, 'value');
+    assert.equal(dataSnap.data()?.userId, TEST_USER_ID);
   } finally {
     await context.cleanup();
   }
 });
 
 test(`user cannot read data from a folder that does not match public config on ${RULES_TARGET}`, async () => {
-  await getAdminDb().collection(getPublicResourcePath(TEST_ALT_DATA_FOLDER_1, 'collections')).doc('test-collection-default1').set({ testData: 'wrong-folder' });
-  await getAdminDb().collection(getPublicResourcePath(TEST_ALT_DATA_FOLDER_2, 'collections')).doc('test-collection-default2').set({ testData: 'matched-folder' });
+  await getAdminDb().collection(getPublicResourcePath(TEST_ALT_DATA_FOLDER_1, 'collections')).doc('test-collection-default1').set({ userId: 'wrong-folder', visibility: { public: true }, createdAt: admin.firestore.Timestamp.now() });
+  await getAdminDb().collection(getPublicResourcePath(TEST_ALT_DATA_FOLDER_2, 'collections')).doc('test-collection-default2').set({ userId: 'matched-folder', visibility: { public: true }, createdAt: admin.firestore.Timestamp.now() });
+
   await getAdminDb().doc(TEST_CONFIG_PATH).set(
     { dataFolder: TEST_ALT_DATA_FOLDER_2 },
     { merge: true }
@@ -909,6 +915,9 @@ test(`collections array is queryable (allowed folder): insert 1 item then query 
   const adminDb = getAdminDb();
   await adminDb.collection(collectionsArrayPath).doc(testDocId).set({
     name: 'test-collection',
+    userId: TEST_USER_ID,
+    visibility: { public: true },
+    createdAt: admin.firestore.Timestamp.now(),
   });
 
   const context = await buildClientContext({

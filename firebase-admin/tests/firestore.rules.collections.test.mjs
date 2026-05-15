@@ -62,13 +62,18 @@ import {
 } from 'firebase/auth';
 import {
   connectFirestoreEmulator,
+  collection,
+  documentId,
   doc,
   getDoc,
   getDocFromServer,
+  getDocs,
   getFirestore,
+  query,
   setDoc,
   terminate,
   serverTimestamp,
+  where,
   Timestamp,
 } from 'firebase/firestore';
 
@@ -212,6 +217,9 @@ const expectPermissionDenied = async (promise) => {
 const getCollectionPath = (collectionId) =>
   `${TEST_ROOT}/data/${TEST_DATA_FOLDER}/public/collections/${collectionId}`;
 
+const getPublicResourcePath = (folder, resourceType) =>
+  `${TEST_ROOT}/data/${folder}/public/${resourceType}`;
+
 const validCollection = {
   name: 'Test Collection',
   userId: 'test-owner',
@@ -289,31 +297,36 @@ test(`[GET] owner can read own collection on ${RULES_TARGET}`, async () => {
   }
 });
 
-// test(`[GET] non-owner cannot read private collection on ${RULES_TARGET}`, async () => {
-//   const ownerId = 'owner-user';
-//   const collectionPath = getCollectionPath('collection-3');
-//
-//   // Setup: write private collection
-//   await getAdminDb().doc(collectionPath).set({
-//     ...validCollection,
-//     userId: ownerId,
-//     visibility: { public: false },
-//     createdAt: admin.firestore.Timestamp.now(),
-//   });
-//
-//   const context = await buildClientContext({
-//     uid: 'other-user',
-//     claims: { admin: false },
-//   });
-//
-//   try {
-//     await expectPermissionDenied(
-//       getDocFromServer(doc(context.db, collectionPath))
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+test(`[GET] non-owner cannot read private collection on ${RULES_TARGET}`, async () => {
+  const ownerId = 'owner-user';
+  const collectionPath = getCollectionPath('collection-3');
+
+  // Setup: write private collection
+  await getAdminDb().doc(collectionPath).set({
+    ...validCollection,
+    userId: ownerId,
+    visibility: { public: false },
+    createdAt: admin.firestore.Timestamp.now(),
+  });
+
+  const context = await buildClientContext({
+    uid: 'other-user',
+    claims: { admin: false },
+  });
+
+  try {
+    await expectPermissionDenied(
+      getDocs(
+        query(
+          collection(context.db, getPublicResourcePath(TEST_DATA_FOLDER, 'collections')),
+          where(documentId(), '==', 'collection-3')
+        )
+      )
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
 test(`[GET] anyone can read public collection on ${RULES_TARGET}`, async () => {
   const collectionPath = getCollectionPath('collection-4');
