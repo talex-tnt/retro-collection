@@ -27,6 +27,12 @@ service cloud.firestore {
       // Ensure that the data contains all required keys
       return data.keys().hasAll(requiredKeys);
     }
+    function hasOnlyAffectedKeys(newData, existingData, validKeys) {
+      return newData.diff(existingData).affectedKeys().hasOnly(validKeys);
+    }
+    function hasAllRequiredAffectedKeys(newData, existingData, requiredKeys) {
+      return newData.diff(existingData).affectedKeys().hasAll(requiredKeys);
+    }
 
     function validString(field, maxLength) {
       return field is string && field.size() > 0 && field.size() <= maxLength;
@@ -214,9 +220,12 @@ service cloud.firestore {
       function validCollectionUpdate(newData, existingData) {
         return isAdmin() ||
           isAuthenticated() &&
-          hasOnlyValidKeys(newData, updateCollectionKeys()) &&
-          hasAllRequiredKeys(newData, updateCollectionRequiredKeys()) &&
+          existingData != null &&
+          hasOnlyAffectedKeys(newData, existingData, updateCollectionKeys()) &&
+          hasAllRequiredAffectedKeys(newData, existingData, updateCollectionRequiredKeys()) &&
           isOwner(existingData.userId) &&
+          newData.userId == existingData.userId &&
+          newData.createdAt == existingData.createdAt &&
           validTimestamp(newData.updatedAt) &&
           hasValidOptionalString(newData, 'name', getLengthLimit('collection.name')) &&
           hasValidOptionalString(newData, 'description', getLengthLimit('collection.description')) &&

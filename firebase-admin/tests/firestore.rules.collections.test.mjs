@@ -628,36 +628,39 @@ test(`[3.9 CREATE] rejects non-timestamp createdAt on ${RULES_TARGET}`, async ()
 // UPDATE TESTS
 // ============================================================================
 
-// test(`[4.1 UPDATE] owner can update own collection on ${RULES_TARGET}`, async () => {
-//   const userId = 'update-owner';
-//   const collectionPath = getCollectionPath('update-collection-1');
+test(`[4.1 UPDATE] owner can update own collection on ${RULES_TARGET}`, async () => {
+  const userId = 'update-owner';
+  const collectionPath = getCollectionPath('update-collection-1');
 
-//   // Setup
-//   await setDoc(doc(getAdminDb(), collectionPath), {
-//     ...validCollection,
-//     userId,
-//   });
+  // Setup
+  await getAdminDb().doc(collectionPath).set({
+    name: 'Test Collection',
+    userId,
+    createdAt: admin.firestore.Timestamp.now(),
+    description: 'A test collection',
+    visibility: { public: false },
+  });
 
-//   const context = await buildClientContext({
-//     uid: userId,
-//     claims: { admin: false },
-//   });
+  const context = await buildClientContext({
+    uid: userId,
+    claims: { admin: false },
+  });
 
-//   try {
-//     await assert.doesNotReject(
-//       setDoc(
-//         doc(context.db, collectionPath),
-//         {
-//           name: 'Updated Name',
-//           updatedAt: Timestamp.now(),
-//         },
-//         { merge: true }
-//       )
-//     );
-//   } finally {
-//     await context.cleanup();
-//   }
-// });
+  try {
+    await assert.doesNotReject(
+      setDoc(
+        doc(context.db, collectionPath),
+        {
+          name: 'Updated Name',
+          updatedAt: Timestamp.now(),
+        },
+        { merge: true }
+      )
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
 
 // test(`[4.2 UPDATE] non-owner cannot update collection on ${RULES_TARGET}`, async () => {
 //   const ownerId = 'update-owner';
