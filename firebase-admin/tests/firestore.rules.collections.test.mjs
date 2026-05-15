@@ -22,7 +22,7 @@ import admin from 'firebase-admin';
  * [x] 2.1 Owner can create own collection
  * [x] 2.2 Non-owner cannot create collection for another user
  * [x] 2.3 Unauthenticated cannot create collection
- * [] 2.4 Admin can bypass all validation
+ * [x] 2.4 Admin can bypass all validation
  * 
  * CREATE - Data Validation
  * [] 3.1 Rejects missing required name
@@ -417,28 +417,28 @@ test(`[2.3 CREATE] unauthenticated cannot create collection on ${RULES_TARGET}`,
   }
 });
 
-// test(`[2.4 CREATE] admin can bypass all validation on ${RULES_TARGET}`, async () => {
-//   const collectionPath = getCollectionPath('new-collection-admin');
+test(`[2.4 CREATE] admin can bypass all validation on ${RULES_TARGET}`, async () => {
+  const collectionPath = getCollectionPath('new-collection-admin');
 
-//   const adminContext = await buildClientContext({
-//     uid: 'admin-user',
-//     claims: { admin: true },
-//   });
+  const adminContext = await buildClientContext({
+    uid: 'admin-user',
+    claims: { admin: true },
+  });
 
-//   try {
-//     // Admin can create with minimal/invalid data - should pass because of isAdmin bypass
-//     await assert.doesNotReject(
-//       setDoc(doc(adminContext.db, collectionPath), {
-//         name: 'Admin Created',
-//         userId: 'any-user',
-//         createdAt: Timestamp.now(),
-//         visibility: { public: false },
-//       })
-//     );
-//   } finally {
-//     await adminContext.cleanup();
-//   }
-// });
+  try {
+    // Admin can create with minimal/invalid data - should pass because of isAdmin bypass
+    await assert.doesNotReject(
+      setDoc(doc(adminContext.db, collectionPath), {
+        name: 'Admin Created',
+        userId: 'any-user',
+        createdAt: Timestamp.now(),
+        visibility: { public: false },
+      })
+    );
+  } finally {
+    await adminContext.cleanup();
+  }
+});
 
 // // CREATE - Data Validation Tests
 
