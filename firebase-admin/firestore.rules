@@ -19,13 +19,31 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == ownerId;
     }
 
+    function hasOnlyValidKeys(data, validKeys) { 
+      // Ensure that the data contains only the expected keys (no extraneous fields)
+      return data.keys().hasOnly(validKeys);
+    }
+    function hasAllRequiredKeys(data, requiredKeys) {
+      // Ensure that the data contains all required keys
+      return data.keys().hasAll(requiredKeys);
+    }
+
     function validString(field, maxLength) {
       return field is string && field.size() > 0 && field.size() <= maxLength;
     }
 
     function validOptionalString(field, maxLength) {
-      return !(field is string) || field.size() <= maxLength;
+      return field == null || (field is string && field.size() <= maxLength);
     }
+
+    function hasValidOptionalString(data, field, maxLength) {
+      return !(field in data) || data[field] == null || validOptionalString(data[field], maxLength);
+    }
+
+    function hasValidRequiredString(data, field, maxLength) {
+      return (field in data) && validString(data[field], maxLength);
+    }
+
 
     function validTimestamp(field) {
       return field is timestamp && 
@@ -63,7 +81,8 @@ service cloud.firestore {
     function hasValidNickname(data) {
       return ('nickname' in data) && validString(data.nickname, 50);
     }
-      function hasValidOptionalNickname(data) {
+
+    function hasValidOptionalNickname(data) {
       return !('nickname' in data) || data.nickname == null || hasValidNickname(data);
     }
 
@@ -165,6 +184,61 @@ service cloud.firestore {
         );
         allow delete: if isAdmin();
       }
+
+      // collection helpers --------------------------------------------
+      function getLengthLimit(field) {
+        if (field == 'collection.name') {
+          return 100;
+        }
+        if (field == 'collection.description') {
+          return 500;
+        }
+        return 0;
+      }
+      function createCollectionKeys() {
+        return ['name', 'userId', 'createdAt', 'description', 'visibility'];
+      }
+      function createCollectionRequiredKeys() {
+       return ['name', 'userId', 'createdAt', 'visibility'];
+      }
+      function validCollectionCreate(data) {
+        return isAdmin() ||
+          isAuthenticated() &&
+          hasOnlyValidKeys(data, createCollectionKeys()) &&
+          hasAllRequiredKeys(data, createCollectionRequiredKeys()) &&
+          isOwner(data.userId) &&
+          validString(data.name,  getLengthLimit('collection.name')) &&
+          validTimestamp(data.createdAt) &&
+          isValidVisibilityMap(data.visibility) &&
+          hasValidOptionalString(data, 'description', getLengthLimit('collection.description'));
+      }
+      function updateCollectionKeys() {
+        return ['name', 'updatedAt', 'description', 'visibility'];
+      }
+      function updateCollectionRequiredKeys() {
+        return ['updatedAt'];
+      }
+      function validCollectionUpdate(newData, existingData) {
+        return isAdmin() ||
+          isAuthenticated() &&
+          hasOnlyValidKeys(newData, updateCollectionKeys()) &&
+          hasAllRequiredKeys(newData, updateCollectionRequiredKeys()) &&
+          isOwner(existingData.userId) &&
+          validTimestamp(newData.updatedAt) &&
+          hasValidOptionalString(newData, 'name', getLengthLimit('collection.name')) &&
+          hasValidOptionalString(newData, 'description', getLengthLimit('collection.description')) &&
+          isValidVisibilityMapOptional(newData.visibility);
+      }
+
+      match /public/collections/{collectionId} {
+        allow get: if isAdmin() || isOwner(resource.data.userId) || isPubliclyVisible();
+        allow list: if isAdmin() || isOwner(resource.data.userId) || isPubliclyVisible();
+        //
+        allow create: if validCollectionCreate(request.resource.data);
+        allow update: if validCollectionUpdate(request.resource.data, resource.data);
+        allow delete: if isOwner(resource.data.userId) || isAdmin();
+      }
+      // ----------------------------------------------------------------
 
       // Nickname index: track nicknames and their owners
       // Users can read any nickname doc, but can only write/delete if it contains their own userId
@@ -279,20 +353,6 @@ service cloud.firestore {
     //     get(/databases/$(database)/documents/collections/$(request.query.where[0].value)).data.userId == request.auth.uid) ||
     //     request.query.where.size() == 0;
     // }
-
-    // match /authorized-users/{email} {
-    //   allow read: if true;
-    //   allow write: if isAdmin();
-    // }
-
-    // match /users/{userId} {
-    //   allow get: if isOwner(userId) || isAdmin();
-    //   allow list: if isAdmin();
-    //   allow create: if isOwner(userId) || isAdmin();
-    //   allow update: if isOwner(userId) || isAdmin();
-    //   allow delete: if isAdmin();
-    // }
-
    
 
     // match /collections/{collectionId} {
