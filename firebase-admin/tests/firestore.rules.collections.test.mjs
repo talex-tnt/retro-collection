@@ -42,12 +42,10 @@
  * [x] 6.1 Owner can delete own collection
  * [x] 6.2 Non-owner cannot delete collection
  * [x] 6.3 Admin can delete any collection
+ *
+ * QUERY
+ * [x] 7.1 Collections array is queryable (allowed folder)
  */
-
-// AI task: implement the above test cases in the file, following the patterns established in the existing tests.
-// Make sure to cover both access control and data validation scenarios for collection documents.
-// Add one test at a time, and ensure that the test setup and assertions are correctly implemented according to the Firestore rules being tested.
-// Aske me before implementing the next test case, to confirm that the previous one is correctly implemented and to get approval before proceeding.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -840,5 +838,46 @@ test(`[6.3 DELETE] admin can delete any collection on ${RULES_TARGET}`, async ()
     await assert.doesNotReject(deleteDoc(doc(adminContext.db, collectionPath)));
   } finally {
     await adminContext.cleanup();
+  }
+});
+
+test(`[7.1 QUERY] collections array is queryable (allowed folder): insert 1 item then query it on ${RULES_TARGET}`, async () => {
+  const collectionsArrayPath = getPublicResourcePath(
+    TEST_DATA_FOLDER,
+    'collections'
+  );
+  const testDocId = `test-collection-${Date.now()}`;
+  const TEST_USER_ID = 'rules-regular-user';
+
+  // Insert exactly one document for this test run
+  const adminDb = getAdminDb();
+  await adminDb
+    .collection(collectionsArrayPath)
+    .doc(testDocId)
+    .set({
+      name: 'test-collection',
+      userId: TEST_USER_ID,
+      visibility: { public: true },
+      createdAt: admin.firestore.Timestamp.now(),
+    });
+
+  const context = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    const q = query(
+      collection(context.db, collectionsArrayPath),
+      where(documentId(), '==', testDocId)
+    );
+    const snapshot = await getDocs(q);
+
+    assert.equal(snapshot.size, 1, 'Query should return exactly 1 document');
+    assert.equal(snapshot.docs[0].id, testDocId);
+    assert.equal(snapshot.docs[0].data().name, 'test-collection');
+  } finally {
+    await adminDb.collection(collectionsArrayPath).doc(testDocId).delete();
+    await context.cleanup();
   }
 });
