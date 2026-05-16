@@ -57,9 +57,21 @@ const getPrivateResourceDocPath = (folder, resourceType, docId) =>
 const getAuthorizedUsersPath = (folder) =>
   getPrivateResourcePath(folder, 'authorized-users');
 
-const TEST_COLLECTION_PATH = getPublicResourceDocPath(TEST_DATA_FOLDER, 'collections', TEST_COLLECTION_ID);
-const TEST_ALT_COLLECTION_PATH_1 = getPublicResourceDocPath(TEST_ALT_DATA_FOLDER_1, 'collections', 'test-collection-default1');
-const TEST_ALT_COLLECTION_PATH_2 = getPublicResourceDocPath(TEST_ALT_DATA_FOLDER_2, 'collections', 'test-collection-default2');
+const TEST_COLLECTION_PATH = getPublicResourceDocPath(
+  TEST_DATA_FOLDER,
+  'collections',
+  TEST_COLLECTION_ID
+);
+const TEST_ALT_COLLECTION_PATH_1 = getPublicResourceDocPath(
+  TEST_ALT_DATA_FOLDER_1,
+  'collections',
+  'test-collection-default1'
+);
+const TEST_ALT_COLLECTION_PATH_2 = getPublicResourceDocPath(
+  TEST_ALT_DATA_FOLDER_2,
+  'collections',
+  'test-collection-default2'
+);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 
@@ -250,10 +262,9 @@ test.beforeEach(async () => {
 
   // Initialize config with dataFolder value AFTER cleanup
   const adminDb = getAdminDb();
-  await adminDb.doc(TEST_CONFIG_PATH).set(
-    { dataFolder: TEST_DATA_FOLDER },
-    { merge: true }
-  );
+  await adminDb
+    .doc(TEST_CONFIG_PATH)
+    .set({ dataFolder: TEST_DATA_FOLDER }, { merge: true });
 });
 
 test.after(async () => {
@@ -363,11 +374,24 @@ test(`user cannot write to non-matched dataFolder on ${RULES_TARGET}`, async () 
   try {
     // Should fail because dataFolder is 'default', not 'items'
     await expectPermissionDenied(
-      setDoc(doc(context.db, joinPath(TEST_ROOT, 'data', 'items', 'public', 'collections', 'test-item-1')), {
-        userId: TEST_USER_ID,
-        visibility: { public: true },
-        createdAt: serverTimestamp(),
-      })
+      setDoc(
+        doc(
+          context.db,
+          joinPath(
+            TEST_ROOT,
+            'data',
+            'items',
+            'public',
+            'collections',
+            'test-item-1'
+          )
+        ),
+        {
+          userId: TEST_USER_ID,
+          visibility: { public: true },
+          createdAt: serverTimestamp(),
+        }
+      )
     );
   } finally {
     await context.cleanup();
@@ -386,7 +410,14 @@ test(`user cannot write to unknown resourceType on ${RULES_TARGET}`, async () =>
       setDoc(
         doc(
           context.db,
-          joinPath(TEST_ROOT, 'data', TEST_DATA_FOLDER, 'public', 'unknown-type', 'doc-1')
+          joinPath(
+            TEST_ROOT,
+            'data',
+            TEST_DATA_FOLDER,
+            'public',
+            'unknown-type',
+            'doc-1'
+          )
         ),
         {
           testData: 'value',
@@ -401,8 +432,14 @@ test(`user cannot write to unknown resourceType on ${RULES_TARGET}`, async () =>
 test(`authorized-users is admin-only read/write on ${RULES_TARGET}`, async () => {
   const ownEmail = 'self@example.com';
   const otherEmail = 'other@example.com';
-  const ownDocPath = joinPath(getAuthorizedUsersPath(TEST_DATA_FOLDER), ownEmail);
-  const otherDocPath = joinPath(getAuthorizedUsersPath(TEST_DATA_FOLDER), otherEmail);
+  const ownDocPath = joinPath(
+    getAuthorizedUsersPath(TEST_DATA_FOLDER),
+    ownEmail
+  );
+  const otherDocPath = joinPath(
+    getAuthorizedUsersPath(TEST_DATA_FOLDER),
+    otherEmail
+  );
 
   // Seed both docs
   await getAdminDb().doc(ownDocPath).set({ allowed: true });
@@ -424,11 +461,18 @@ test(`authorized-users is admin-only read/write on ${RULES_TARGET}`, async () =>
 
   try {
     const ownSnap = await getDocFromServer(doc(nonAdmin.db, ownDocPath));
-    assert.ok(ownSnap.exists(), 'Non-admin should be able to read own authorized-users doc');
+    assert.ok(
+      ownSnap.exists(),
+      'Non-admin should be able to read own authorized-users doc'
+    );
 
-    await expectPermissionDenied(getDocFromServer(doc(nonAdmin.db, otherDocPath)));
+    await expectPermissionDenied(
+      getDocFromServer(doc(nonAdmin.db, otherDocPath))
+    );
 
-    await expectPermissionDenied(setDoc(doc(nonAdmin.db, ownDocPath), { allowed: true }));
+    await expectPermissionDenied(
+      setDoc(doc(nonAdmin.db, ownDocPath), { allowed: true })
+    );
   } finally {
     await nonAdmin.cleanup();
   }
@@ -440,9 +484,14 @@ test(`authorized-users is admin-only read/write on ${RULES_TARGET}`, async () =>
   });
 
   try {
-    await assert.doesNotReject(setDoc(doc(adminUser.db, ownDocPath), { allowed: true }));
+    await assert.doesNotReject(
+      setDoc(doc(adminUser.db, ownDocPath), { allowed: true })
+    );
     const snap = await getDocFromServer(doc(adminUser.db, ownDocPath));
-    assert.ok(snap.exists(), 'Admin should be able to read authorized-users doc');
+    assert.ok(
+      snap.exists(),
+      'Admin should be able to read authorized-users doc'
+    );
     assert.equal(snap.data()?.allowed, true);
   } finally {
     await adminUser.cleanup();
@@ -467,13 +516,16 @@ test(`authorized-users: legacy root collection query is denied (repro getAuthori
 });
 
 test(`authorized-users: admin can list from canonical docs-root path on ${RULES_TARGET}`, async () => {
-  const authorizedUsersCollectionPath = getAuthorizedUsersPath(TEST_DATA_FOLDER);
+  const authorizedUsersCollectionPath =
+    getAuthorizedUsersPath(TEST_DATA_FOLDER);
 
   const seededEmail = `seeded-${Date.now()}@example.com`;
-  await getAdminDb().doc(joinPath(authorizedUsersCollectionPath, seededEmail)).set({
-    allowed: true,
-    seededAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
+  await getAdminDb()
+    .doc(joinPath(authorizedUsersCollectionPath, seededEmail))
+    .set({
+      allowed: true,
+      seededAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
 
   const adminUser = await buildClientContext({
     uid: 'rules-admin-user',
@@ -481,7 +533,9 @@ test(`authorized-users: admin can list from canonical docs-root path on ${RULES_
   });
 
   try {
-    const snap = await getDocs(collection(adminUser.db, authorizedUsersCollectionPath));
+    const snap = await getDocs(
+      collection(adminUser.db, authorizedUsersCollectionPath)
+    );
     assert.ok(snap.size >= 1, 'Admin should be able to list authorized-users');
     assert.ok(
       snap.docs.some((d) => d.id === seededEmail),
@@ -493,7 +547,11 @@ test(`authorized-users: admin can list from canonical docs-root path on ${RULES_
 });
 
 test(`users public: owner can create/get/update own doc with name and visibility only on ${RULES_TARGET}`, async () => {
-  const userDocPath = getPublicResourceDocPath(TEST_DATA_FOLDER, 'users', TEST_USER_ID);
+  const userDocPath = getPublicResourceDocPath(
+    TEST_DATA_FOLDER,
+    'users',
+    TEST_USER_ID
+  );
 
   const owner = await buildClientContext({
     uid: TEST_USER_ID,
@@ -516,7 +574,7 @@ test(`users public: owner can create/get/update own doc with name and visibility
     await assert.doesNotReject(
       setDoc(
         doc(owner.db, userDocPath),
-        { name: 'Me2', visibility: { public: true, }, nickname: 'Me2Nick' },
+        { name: 'Me2', visibility: { public: true }, nickname: 'Me2Nick' },
         { merge: true }
       )
     );
@@ -543,13 +601,19 @@ test(`users public: owner can create/get/update own doc with name and visibility
 
 test(`users public: non-owner cannot create or update someone else's doc on ${RULES_TARGET}`, async () => {
   const otherUserId = 'someone-else';
-  const otherUserDocPath = getPublicResourceDocPath(TEST_DATA_FOLDER, 'users', otherUserId);
+  const otherUserDocPath = getPublicResourceDocPath(
+    TEST_DATA_FOLDER,
+    'users',
+    otherUserId
+  );
 
   // Seed other user's doc via admin
-  await getAdminDb().doc(otherUserDocPath).set({
-    name: 'Other',
-    visibility: { public: false },
-  });
+  await getAdminDb()
+    .doc(otherUserDocPath)
+    .set({
+      name: 'Other',
+      visibility: { public: false },
+    });
 
   const nonOwner = await buildClientContext({
     uid: TEST_USER_ID,
@@ -557,10 +621,18 @@ test(`users public: non-owner cannot create or update someone else's doc on ${RU
   });
 
   try {
-    await expectPermissionDenied(getDocFromServer(doc(nonOwner.db, otherUserDocPath)));
-    await expectPermissionDenied(setDoc(doc(nonOwner.db, otherUserDocPath), { name: 'Hax' }));
     await expectPermissionDenied(
-      setDoc(doc(nonOwner.db, otherUserDocPath), { name: 'Hax2' }, { merge: true })
+      getDocFromServer(doc(nonOwner.db, otherUserDocPath))
+    );
+    await expectPermissionDenied(
+      setDoc(doc(nonOwner.db, otherUserDocPath), { name: 'Hax' })
+    );
+    await expectPermissionDenied(
+      setDoc(
+        doc(nonOwner.db, otherUserDocPath),
+        { name: 'Hax2' },
+        { merge: true }
+      )
     );
   } finally {
     await nonOwner.cleanup();
@@ -568,13 +640,19 @@ test(`users public: non-owner cannot create or update someone else's doc on ${RU
 });
 
 test(`users public: owner cannot access user doc in non-configured folder on ${RULES_TARGET}`, async () => {
-  const wrongFolderUserDocPath = getPublicResourceDocPath(TEST_ALT_DATA_FOLDER_1, 'users', TEST_USER_ID);
+  const wrongFolderUserDocPath = getPublicResourceDocPath(
+    TEST_ALT_DATA_FOLDER_1,
+    'users',
+    TEST_USER_ID
+  );
 
   // Seed via admin in the wrong folder
-  await getAdminDb().doc(wrongFolderUserDocPath).set({
-    name: 'WrongFolder',
-    visibility: { public: false },
-  });
+  await getAdminDb()
+    .doc(wrongFolderUserDocPath)
+    .set({
+      name: 'WrongFolder',
+      visibility: { public: false },
+    });
 
   const owner = await buildClientContext({
     uid: TEST_USER_ID,
@@ -583,9 +661,15 @@ test(`users public: owner cannot access user doc in non-configured folder on ${R
 
   try {
     // config dataFolder remains 'default', so this should be denied
-    await expectPermissionDenied(getDocFromServer(doc(owner.db, wrongFolderUserDocPath)));
     await expectPermissionDenied(
-      setDoc(doc(owner.db, wrongFolderUserDocPath), { name: 'Nope' }, { merge: true })
+      getDocFromServer(doc(owner.db, wrongFolderUserDocPath))
+    );
+    await expectPermissionDenied(
+      setDoc(
+        doc(owner.db, wrongFolderUserDocPath),
+        { name: 'Nope' },
+        { merge: true }
+      )
     );
   } finally {
     await owner.cleanup();
@@ -595,10 +679,12 @@ test(`users public: owner cannot access user doc in non-configured folder on ${R
 test(`users public: delete is admin-only on ${RULES_TARGET}`, async () => {
   const usersCollectionPath = getPublicResourcePath(TEST_DATA_FOLDER, 'users');
   const userDocPath = joinPath(usersCollectionPath, TEST_USER_ID);
-  await getAdminDb().doc(userDocPath).set({
-    name: 'Seed',
-    visibility: { public: false },
-  });
+  await getAdminDb()
+    .doc(userDocPath)
+    .set({
+      name: 'Seed',
+      visibility: { public: false },
+    });
 
   const nonAdmin = await buildClientContext({
     uid: TEST_USER_ID,
@@ -631,21 +717,29 @@ test(`users public: anyone can get a public user, but not a private one on ${RUL
   const publicUserDocPath = joinPath(usersCollectionPath, publicUserId);
   const privateUserDocPath = joinPath(usersCollectionPath, privateUserId);
 
-  await getAdminDb().doc(publicUserDocPath).set({
-    name: 'Public User',
-    visibility: { public: true },
-  });
-  await getAdminDb().doc(privateUserDocPath).set({
-    name: 'Private User',
-    visibility: { public: false },
-  });
+  await getAdminDb()
+    .doc(publicUserDocPath)
+    .set({
+      name: 'Public User',
+      visibility: { public: true },
+    });
+  await getAdminDb()
+    .doc(privateUserDocPath)
+    .set({
+      name: 'Private User',
+      visibility: { public: false },
+    });
 
   const unauth = await buildUnauthenticatedClientContext();
   try {
-    const publicSnap = await getDocFromServer(doc(unauth.db, publicUserDocPath));
+    const publicSnap = await getDocFromServer(
+      doc(unauth.db, publicUserDocPath)
+    );
     assert.ok(publicSnap.exists(), 'Unauth should be able to read public user');
 
-    await expectPermissionDenied(getDocFromServer(doc(unauth.db, privateUserDocPath)));
+    await expectPermissionDenied(
+      getDocFromServer(doc(unauth.db, privateUserDocPath))
+    );
   } finally {
     await unauth.cleanup();
   }
@@ -656,10 +750,17 @@ test(`users public: anyone can get a public user, but not a private one on ${RUL
   });
 
   try {
-    const publicSnap = await getDocFromServer(doc(nonOwner.db, publicUserDocPath));
-    assert.ok(publicSnap.exists(), 'Non-owner should be able to read public user');
+    const publicSnap = await getDocFromServer(
+      doc(nonOwner.db, publicUserDocPath)
+    );
+    assert.ok(
+      publicSnap.exists(),
+      'Non-owner should be able to read public user'
+    );
 
-    await expectPermissionDenied(getDocFromServer(doc(nonOwner.db, privateUserDocPath)));
+    await expectPermissionDenied(
+      getDocFromServer(doc(nonOwner.db, privateUserDocPath))
+    );
   } finally {
     await nonOwner.cleanup();
   }
@@ -674,14 +775,18 @@ test(`users public: only owner can update own visibility on ${RULES_TARGET}`, as
   const otherDocPath = joinPath(usersCollectionPath, otherId);
 
   // Seed both docs
-  await getAdminDb().doc(ownerDocPath).set({
-    name: 'Owner',
-    visibility: { public: false },
-  });
-  await getAdminDb().doc(otherDocPath).set({
-    name: 'Other',
-    visibility: { public: false },
-  });
+  await getAdminDb()
+    .doc(ownerDocPath)
+    .set({
+      name: 'Owner',
+      visibility: { public: false },
+    });
+  await getAdminDb()
+    .doc(otherDocPath)
+    .set({
+      name: 'Other',
+      visibility: { public: false },
+    });
 
   // Owner can update their own visibility
   const owner = await buildClientContext({
@@ -732,19 +837,25 @@ test(`users visibility: can list public users only with explicit filter on ${RUL
 
   const publicUserId = `public-user-${Date.now()}`;
   const privateUserId = `private-user-${Date.now()}`;
-  await getAdminDb().doc(joinPath(usersCollectionPath, publicUserId)).set({
-    name: 'Public User',
-    visibility: { public: true },
-  });
-  await getAdminDb().doc(joinPath(usersCollectionPath, privateUserId)).set({
-    name: 'Private User',
-    visibility: { public: false },
-  });
+  await getAdminDb()
+    .doc(joinPath(usersCollectionPath, publicUserId))
+    .set({
+      name: 'Public User',
+      visibility: { public: true },
+    });
+  await getAdminDb()
+    .doc(joinPath(usersCollectionPath, privateUserId))
+    .set({
+      name: 'Private User',
+      visibility: { public: false },
+    });
 
   const unauth = await buildUnauthenticatedClientContext();
   try {
     // Without explicit filter, list is denied
-    await expectPermissionDenied(getDocs(query(collection(unauth.db, usersCollectionPath))));
+    await expectPermissionDenied(
+      getDocs(query(collection(unauth.db, usersCollectionPath)))
+    );
 
     const snap = await getDocs(
       query(
@@ -768,7 +879,11 @@ test(`users visibility: can list public users only with explicit filter on ${RUL
 });
 
 test(`users private: owner can create/get/update own doc with email and lastLogin only on ${RULES_TARGET}`, async () => {
-  const userDocPath = getPrivateResourceDocPath(TEST_DATA_FOLDER, 'users', TEST_USER_ID);
+  const userDocPath = getPrivateResourceDocPath(
+    TEST_DATA_FOLDER,
+    'users',
+    TEST_USER_ID
+  );
 
   const owner = await buildClientContext({
     uid: TEST_USER_ID,
@@ -784,11 +899,18 @@ test(`users private: owner can create/get/update own doc with email and lastLogi
     );
 
     const snap = await getDocFromServer(doc(owner.db, userDocPath));
-    assert.ok(snap.exists(), 'Owner should be able to get their private user doc');
+    assert.ok(
+      snap.exists(),
+      'Owner should be able to get their private user doc'
+    );
     assert.equal(snap.data()?.email, 'me@example.com');
 
     await assert.doesNotReject(
-      setDoc(doc(owner.db, userDocPath), { email: 'me2@example.com' }, { merge: true })
+      setDoc(
+        doc(owner.db, userDocPath),
+        { email: 'me2@example.com' },
+        { merge: true }
+      )
     );
 
     await expectPermissionDenied(
@@ -809,7 +931,11 @@ test(`users private: owner can create/get/update own doc with email and lastLogi
 
 test(`users private: non-owner cannot read or write someone else's doc on ${RULES_TARGET}`, async () => {
   const otherUserId = 'private-someone-else';
-  const otherUserDocPath = getPrivateResourceDocPath(TEST_DATA_FOLDER, 'users', otherUserId);
+  const otherUserDocPath = getPrivateResourceDocPath(
+    TEST_DATA_FOLDER,
+    'users',
+    otherUserId
+  );
 
   await getAdminDb().doc(otherUserDocPath).set({
     email: 'other@example.com',
@@ -822,12 +948,22 @@ test(`users private: non-owner cannot read or write someone else's doc on ${RULE
   });
 
   try {
-    await expectPermissionDenied(getDocFromServer(doc(nonOwner.db, otherUserDocPath)));
     await expectPermissionDenied(
-      setDoc(doc(nonOwner.db, otherUserDocPath), { email: 'hax@example.com' }, { merge: true })
+      getDocFromServer(doc(nonOwner.db, otherUserDocPath))
     );
     await expectPermissionDenied(
-      setDoc(doc(nonOwner.db, otherUserDocPath), { lastLogin: serverTimestamp() }, { merge: true })
+      setDoc(
+        doc(nonOwner.db, otherUserDocPath),
+        { email: 'hax@example.com' },
+        { merge: true }
+      )
+    );
+    await expectPermissionDenied(
+      setDoc(
+        doc(nonOwner.db, otherUserDocPath),
+        { lastLogin: serverTimestamp() },
+        { merge: true }
+      )
     );
   } finally {
     await nonOwner.cleanup();
@@ -836,7 +972,14 @@ test(`users private: non-owner cannot read or write someone else's doc on ${RULE
 
 test(`authenticated user can read data on ${RULES_TARGET}`, async () => {
   // Admin creates test data
-  await getAdminDb().collection(getPublicResourcePath(TEST_DATA_FOLDER, 'collections')).doc(TEST_COLLECTION_ID).set({ userId: TEST_USER_ID, visibility: { public: true }, createdAt: admin.firestore.Timestamp.now() });
+  await getAdminDb()
+    .collection(getPublicResourcePath(TEST_DATA_FOLDER, 'collections'))
+    .doc(TEST_COLLECTION_ID)
+    .set({
+      userId: TEST_USER_ID,
+      visibility: { public: true },
+      createdAt: admin.firestore.Timestamp.now(),
+    });
 
   const context = await buildClientContext({
     uid: TEST_USER_ID,
@@ -852,7 +995,14 @@ test(`authenticated user can read data on ${RULES_TARGET}`, async () => {
 });
 
 test(`user can read config public and then read matched dataFolder data on ${RULES_TARGET}`, async () => {
-  await getAdminDb().collection(getPublicResourcePath(TEST_DATA_FOLDER, 'collections')).doc(TEST_COLLECTION_ID).set({ userId: TEST_USER_ID, visibility: { public: true }, createdAt: admin.firestore.Timestamp.now() });
+  await getAdminDb()
+    .collection(getPublicResourcePath(TEST_DATA_FOLDER, 'collections'))
+    .doc(TEST_COLLECTION_ID)
+    .set({
+      userId: TEST_USER_ID,
+      visibility: { public: true },
+      createdAt: admin.firestore.Timestamp.now(),
+    });
 
   const context = await buildClientContext({
     uid: TEST_USER_ID,
@@ -860,13 +1010,19 @@ test(`user can read config public and then read matched dataFolder data on ${RUL
   });
 
   try {
-    const configSnap = await getDocFromServer(doc(context.db, TEST_CONFIG_PATH));
+    const configSnap = await getDocFromServer(
+      doc(context.db, TEST_CONFIG_PATH)
+    );
     assert.ok(configSnap.exists(), 'Public runtime config should be readable');
 
     const dataFolder = configSnap.data()?.dataFolder;
     assert.equal(dataFolder, TEST_DATA_FOLDER);
 
-    const matchedPath = getPublicResourceDocPath(dataFolder, 'collections', TEST_COLLECTION_ID);
+    const matchedPath = getPublicResourceDocPath(
+      dataFolder,
+      'collections',
+      TEST_COLLECTION_ID
+    );
     const dataSnap = await getDocFromServer(doc(context.db, matchedPath));
     assert.ok(dataSnap.exists(), 'Matched dataFolder data should be readable');
     assert.equal(dataSnap.data()?.userId, TEST_USER_ID);
@@ -876,13 +1032,26 @@ test(`user can read config public and then read matched dataFolder data on ${RUL
 });
 
 test(`user cannot read data from a folder that does not match public config on ${RULES_TARGET}`, async () => {
-  await getAdminDb().collection(getPublicResourcePath(TEST_ALT_DATA_FOLDER_1, 'collections')).doc('test-collection-default1').set({ userId: 'wrong-folder', visibility: { public: true }, createdAt: admin.firestore.Timestamp.now() });
-  await getAdminDb().collection(getPublicResourcePath(TEST_ALT_DATA_FOLDER_2, 'collections')).doc('test-collection-default2').set({ userId: 'matched-folder', visibility: { public: true }, createdAt: admin.firestore.Timestamp.now() });
+  await getAdminDb()
+    .collection(getPublicResourcePath(TEST_ALT_DATA_FOLDER_1, 'collections'))
+    .doc('test-collection-default1')
+    .set({
+      userId: 'wrong-folder',
+      visibility: { public: true },
+      createdAt: admin.firestore.Timestamp.now(),
+    });
+  await getAdminDb()
+    .collection(getPublicResourcePath(TEST_ALT_DATA_FOLDER_2, 'collections'))
+    .doc('test-collection-default2')
+    .set({
+      userId: 'matched-folder',
+      visibility: { public: true },
+      createdAt: admin.firestore.Timestamp.now(),
+    });
 
-  await getAdminDb().doc(TEST_CONFIG_PATH).set(
-    { dataFolder: TEST_ALT_DATA_FOLDER_2 },
-    { merge: true }
-  );
+  await getAdminDb()
+    .doc(TEST_CONFIG_PATH)
+    .set({ dataFolder: TEST_ALT_DATA_FOLDER_2 }, { merge: true });
 
   const context = await buildClientContext({
     uid: TEST_USER_ID,
@@ -890,7 +1059,9 @@ test(`user cannot read data from a folder that does not match public config on $
   });
 
   try {
-    const configSnap = await getDocFromServer(doc(context.db, TEST_CONFIG_PATH));
+    const configSnap = await getDocFromServer(
+      doc(context.db, TEST_CONFIG_PATH)
+    );
     assert.ok(configSnap.exists(), 'Public runtime config should be readable');
     assert.equal(configSnap.data()?.dataFolder, TEST_ALT_DATA_FOLDER_2);
 
@@ -899,26 +1070,42 @@ test(`user cannot read data from a folder that does not match public config on $
     );
 
     const matchedSnap = await getDocFromServer(
-      doc(context.db, getPublicResourceDocPath(TEST_ALT_DATA_FOLDER_2, 'collections', 'test-collection-default2'))
+      doc(
+        context.db,
+        getPublicResourceDocPath(
+          TEST_ALT_DATA_FOLDER_2,
+          'collections',
+          'test-collection-default2'
+        )
+      )
     );
-    assert.ok(matchedSnap.exists(), 'Configured folder data should stay readable');
+    assert.ok(
+      matchedSnap.exists(),
+      'Configured folder data should stay readable'
+    );
   } finally {
     await context.cleanup();
   }
 });
 
 test(`collections array is queryable (allowed folder): insert 1 item then query it`, async () => {
-  const collectionsArrayPath = getPublicResourcePath(TEST_DATA_FOLDER, 'collections');
+  const collectionsArrayPath = getPublicResourcePath(
+    TEST_DATA_FOLDER,
+    'collections'
+  );
   const testDocId = `test-collection-${Date.now()}`;
 
   // Insert exactly one document for this test run
   const adminDb = getAdminDb();
-  await adminDb.collection(collectionsArrayPath).doc(testDocId).set({
-    name: 'test-collection',
-    userId: TEST_USER_ID,
-    visibility: { public: true },
-    createdAt: admin.firestore.Timestamp.now(),
-  });
+  await adminDb
+    .collection(collectionsArrayPath)
+    .doc(testDocId)
+    .set({
+      name: 'test-collection',
+      userId: TEST_USER_ID,
+      visibility: { public: true },
+      createdAt: admin.firestore.Timestamp.now(),
+    });
 
   const context = await buildClientContext({
     uid: TEST_USER_ID,
@@ -948,18 +1135,24 @@ test(`items query reproduces the frontend getItems shape on ${RULES_TARGET}`, as
   const secondDocId = `item-b-${Date.now()}`;
   const adminDb = getAdminDb();
 
-  await adminDb.collection(itemsPath).doc(firstDocId).set({
-    name: 'First item',
-    userId: TEST_USER_ID,
-    collectionId: testCollectionId,
-    createdAt: admin.firestore.Timestamp.fromMillis(1_700_000_000_000),
-  });
-  await adminDb.collection(itemsPath).doc(secondDocId).set({
-    name: 'Second item',
-    userId: TEST_USER_ID,
-    collectionId: testCollectionId,
-    createdAt: admin.firestore.Timestamp.fromMillis(1_700_000_001_000),
-  });
+  await adminDb
+    .collection(itemsPath)
+    .doc(firstDocId)
+    .set({
+      name: 'First item',
+      userId: TEST_USER_ID,
+      collectionId: testCollectionId,
+      createdAt: admin.firestore.Timestamp.fromMillis(1_700_000_000_000),
+    });
+  await adminDb
+    .collection(itemsPath)
+    .doc(secondDocId)
+    .set({
+      name: 'Second item',
+      userId: TEST_USER_ID,
+      collectionId: testCollectionId,
+      createdAt: admin.firestore.Timestamp.fromMillis(1_700_000_001_000),
+    });
 
   const context = await buildClientContext({
     uid: TEST_USER_ID,
@@ -980,16 +1173,31 @@ test(`items query reproduces the frontend getItems shape on ${RULES_TARGET}`, as
     }
 
     const snapshot = await getDocs(q);
-    assert.equal(snapshot.size, 2, 'Emulator should allow the getItems query shape');
+    assert.equal(
+      snapshot.size,
+      2,
+      'Emulator should allow the getItems query shape'
+    );
   } finally {
-    await adminDb.collection(itemsPath).doc(firstDocId).delete().catch(() => undefined);
-    await adminDb.collection(itemsPath).doc(secondDocId).delete().catch(() => undefined);
+    await adminDb
+      .collection(itemsPath)
+      .doc(firstDocId)
+      .delete()
+      .catch(() => undefined);
+    await adminDb
+      .collection(itemsPath)
+      .doc(secondDocId)
+      .delete()
+      .catch(() => undefined);
     await context.cleanup();
   }
 });
 
 test(`collections array is not queryable (wrong folder): query should be denied`, async () => {
-  const wrongCollectionsArrayPath = getPublicResourcePath(TEST_ALT_DATA_FOLDER_1, 'collections');
+  const wrongCollectionsArrayPath = getPublicResourcePath(
+    TEST_ALT_DATA_FOLDER_1,
+    'collections'
+  );
   const testDocId = `test-collection-${Date.now()}`;
 
   // Create a doc in the wrong folder; config still points at TEST_DATA_FOLDER ('default')
@@ -1016,7 +1224,11 @@ test(`collections array is not queryable (wrong folder): query should be denied`
 });
 
 test(`users public: owner can set and update nickname field on ${RULES_TARGET}`, async () => {
-  const userDocPath = getPublicResourceDocPath(TEST_DATA_FOLDER, 'users', TEST_USER_ID);
+  const userDocPath = getPublicResourceDocPath(
+    TEST_DATA_FOLDER,
+    'users',
+    TEST_USER_ID
+  );
 
   const owner = await buildClientContext({
     uid: TEST_USER_ID,
@@ -1034,7 +1246,11 @@ test(`users public: owner can set and update nickname field on ${RULES_TARGET}`,
     );
 
     const snap1 = await getDocFromServer(doc(owner.db, userDocPath));
-    assert.equal(snap1.data()?.nickname, 'alice_cool', 'Owner should be able to set nickname');
+    assert.equal(
+      snap1.data()?.nickname,
+      'alice_cool',
+      'Owner should be able to set nickname'
+    );
 
     // Update nickname
     await assert.doesNotReject(
@@ -1046,26 +1262,34 @@ test(`users public: owner can set and update nickname field on ${RULES_TARGET}`,
     );
 
     const snap2 = await getDocFromServer(doc(owner.db, userDocPath));
-    assert.equal(snap2.data()?.nickname, 'alice_awesome', 'Owner should be able to update nickname');
+    assert.equal(
+      snap2.data()?.nickname,
+      'alice_awesome',
+      'Owner should be able to update nickname'
+    );
 
     // Remove nickname
     await assert.doesNotReject(
-      setDoc(
-        doc(owner.db, userDocPath),
-        { nickname: null },
-        { merge: true }
-      )
+      setDoc(doc(owner.db, userDocPath), { nickname: null }, { merge: true })
     );
 
     const snap3 = await getDocFromServer(doc(owner.db, userDocPath));
-    assert.equal(snap3.data()?.nickname, null, 'Owner should be able to remove nickname');
+    assert.equal(
+      snap3.data()?.nickname,
+      null,
+      'Owner should be able to remove nickname'
+    );
   } finally {
     await owner.cleanup();
   }
 });
 
 test(`users public: owner cannot set empty nickname on ${RULES_TARGET}`, async () => {
-  const userDocPath = getPublicResourceDocPath(TEST_DATA_FOLDER, 'users', TEST_USER_ID);
+  const userDocPath = getPublicResourceDocPath(
+    TEST_DATA_FOLDER,
+    'users',
+    TEST_USER_ID
+  );
 
   const owner = await buildClientContext({
     uid: TEST_USER_ID,
@@ -1082,11 +1306,7 @@ test(`users public: owner cannot set empty nickname on ${RULES_TARGET}`, async (
 
     // Try to set empty nickname
     await expectPermissionDenied(
-      setDoc(
-        doc(owner.db, userDocPath),
-        { nickname: '' },
-        { merge: true }
-      )
+      setDoc(doc(owner.db, userDocPath), { nickname: '' }, { merge: true })
     );
   } finally {
     await owner.cleanup();
@@ -1095,14 +1315,20 @@ test(`users public: owner cannot set empty nickname on ${RULES_TARGET}`, async (
 
 test(`users public: non-owner cannot set or modify someone else's nickname on ${RULES_TARGET}`, async () => {
   const otherUserId = 'someone-else-nickname';
-  const otherUserDocPath = getPublicResourceDocPath(TEST_DATA_FOLDER, 'users', otherUserId);
+  const otherUserDocPath = getPublicResourceDocPath(
+    TEST_DATA_FOLDER,
+    'users',
+    otherUserId
+  );
 
   // Seed other user's doc via admin
-  await getAdminDb().doc(otherUserDocPath).set({
-    name: 'Other',
-    nickname: 'other_cool',
-    visibility: { public: false },
-  });
+  await getAdminDb()
+    .doc(otherUserDocPath)
+    .set({
+      name: 'Other',
+      nickname: 'other_cool',
+      visibility: { public: false },
+    });
 
   const nonOwner = await buildClientContext({
     uid: TEST_USER_ID,
@@ -1123,7 +1349,10 @@ test(`users public: non-owner cannot set or modify someone else's nickname on ${
 });
 
 test(`nicknameIndex: authenticated user can read any nickname entry on ${RULES_TARGET}`, async () => {
-  const nicknameIndexPath = getPublicResourcePath(TEST_DATA_FOLDER, 'nicknameIndex');
+  const nicknameIndexPath = getPublicResourcePath(
+    TEST_DATA_FOLDER,
+    'nicknameIndex'
+  );
   const nicknamePath = joinPath(nicknameIndexPath, 'alice_cool');
 
   // Seed via admin
@@ -1136,7 +1365,10 @@ test(`nicknameIndex: authenticated user can read any nickname entry on ${RULES_T
 
   try {
     const snap = await getDocFromServer(doc(context.db, nicknamePath));
-    assert.ok(snap.exists(), 'Authenticated user should be able to read nickname entry');
+    assert.ok(
+      snap.exists(),
+      'Authenticated user should be able to read nickname entry'
+    );
     assert.equal(snap.data()?.userId, 'user-alice');
   } finally {
     await context.cleanup();
@@ -1144,7 +1376,10 @@ test(`nicknameIndex: authenticated user can read any nickname entry on ${RULES_T
 });
 
 test(`nicknameIndex: owner can create nickname entry only if it contains their own userId on ${RULES_TARGET}`, async () => {
-  const nicknameIndexPath = getPublicResourcePath(TEST_DATA_FOLDER, 'nicknameIndex');
+  const nicknameIndexPath = getPublicResourcePath(
+    TEST_DATA_FOLDER,
+    'nicknameIndex'
+  );
   const ownNicknamePath = joinPath(nicknameIndexPath, 'alice_cool');
   const otherNicknamePath = joinPath(nicknameIndexPath, 'bob_cool');
 
@@ -1174,7 +1409,10 @@ test(`nicknameIndex: owner can create nickname entry only if it contains their o
 });
 
 test(`nicknameIndex: owner can only delete nickname entry if they own it on ${RULES_TARGET}`, async () => {
-  const nicknameIndexPath = getPublicResourcePath(TEST_DATA_FOLDER, 'nicknameIndex');
+  const nicknameIndexPath = getPublicResourcePath(
+    TEST_DATA_FOLDER,
+    'nicknameIndex'
+  );
   const ownNicknamePath = joinPath(nicknameIndexPath, 'alice_cool');
   const otherNicknamePath = joinPath(nicknameIndexPath, 'bob_cool');
 
@@ -1199,7 +1437,10 @@ test(`nicknameIndex: owner can only delete nickname entry if they own it on ${RU
 });
 
 test(`nicknameIndex: non-owner cannot read or modify nicknameIndex from non-configured folder on ${RULES_TARGET}`, async () => {
-  const nicknameIndexPath = getPublicResourcePath(TEST_ALT_DATA_FOLDER_1, 'nicknameIndex');
+  const nicknameIndexPath = getPublicResourcePath(
+    TEST_ALT_DATA_FOLDER_1,
+    'nicknameIndex'
+  );
   const nicknamePath = joinPath(nicknameIndexPath, 'alice_cool');
 
   // Seed via admin in the non-configured folder
@@ -1212,9 +1453,15 @@ test(`nicknameIndex: non-owner cannot read or modify nicknameIndex from non-conf
 
   try {
     // config dataFolder remains 'default', so this should be denied
-    await expectPermissionDenied(getDocFromServer(doc(context.db, nicknamePath)));
     await expectPermissionDenied(
-      setDoc(doc(context.db, nicknamePath), { userId: TEST_USER_ID }, { merge: true })
+      getDocFromServer(doc(context.db, nicknamePath))
+    );
+    await expectPermissionDenied(
+      setDoc(
+        doc(context.db, nicknamePath),
+        { userId: TEST_USER_ID },
+        { merge: true }
+      )
     );
   } finally {
     await context.cleanup();
@@ -1222,14 +1469,20 @@ test(`nicknameIndex: non-owner cannot read or modify nicknameIndex from non-conf
 });
 
 test(`users public: owner can set visibility to private without nickname on ${RULES_TARGET}`, async () => {
-  const userDocPath = getPublicResourceDocPath(TEST_DATA_FOLDER, 'users', TEST_USER_ID);
+  const userDocPath = getPublicResourceDocPath(
+    TEST_DATA_FOLDER,
+    'users',
+    TEST_USER_ID
+  );
 
   // Seed user with public visibility and nickname via admin
-  await getAdminDb().doc(userDocPath).set({
-    name: 'Public User',
-    visibility: { public: true },
-    nickname: 'alice_cool',
-  });
+  await getAdminDb()
+    .doc(userDocPath)
+    .set({
+      name: 'Public User',
+      visibility: { public: true },
+      nickname: 'alice_cool',
+    });
 
   const owner = await buildClientContext({
     uid: TEST_USER_ID,
@@ -1247,7 +1500,11 @@ test(`users public: owner can set visibility to private without nickname on ${RU
     );
 
     const snap = await getDocFromServer(doc(owner.db, userDocPath));
-    assert.equal(snap.data()?.visibility?.public, false, 'Should be able to set private');
+    assert.equal(
+      snap.data()?.visibility?.public,
+      false,
+      'Should be able to set private'
+    );
     assert.equal(snap.data()?.nickname, 'alice_cool', 'Nickname should remain');
   } finally {
     await owner.cleanup();
@@ -1255,7 +1512,10 @@ test(`users public: owner can set visibility to private without nickname on ${RU
 });
 
 test(`nicknameIndex: admin can create/read/update/delete any nickname entry on ${RULES_TARGET}`, async () => {
-  const nicknameIndexPath = getPublicResourcePath(TEST_DATA_FOLDER, 'nicknameIndex');
+  const nicknameIndexPath = getPublicResourcePath(
+    TEST_DATA_FOLDER,
+    'nicknameIndex'
+  );
   const nicknamePath = joinPath(nicknameIndexPath, 'admin_nickname');
 
   const admin = await buildClientContext({
@@ -1275,7 +1535,11 @@ test(`nicknameIndex: admin can create/read/update/delete any nickname entry on $
 
     // Admin can update
     await assert.doesNotReject(
-      setDoc(doc(admin.db, nicknamePath), { userId: 'other-user' }, { merge: true })
+      setDoc(
+        doc(admin.db, nicknamePath),
+        { userId: 'other-user' },
+        { merge: true }
+      )
     );
 
     // Admin can delete

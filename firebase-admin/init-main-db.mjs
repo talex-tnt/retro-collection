@@ -42,8 +42,14 @@ if (typeof db.recursiveDelete === 'function') {
 } else {
   // Fallback: delete only the known docs we used previously.
   // (Full recursive delete requires Firestore recursiveDelete support.)
-  await configCol.doc('runtime').delete().catch(() => undefined);
-  await dataCol.doc('public').delete().catch(() => undefined);
+  await configCol
+    .doc('runtime')
+    .delete()
+    .catch(() => undefined);
+  await dataCol
+    .doc('public')
+    .delete()
+    .catch(() => undefined);
 }
 
 // Runtime config doc (admin writable, authenticated readable in rules)

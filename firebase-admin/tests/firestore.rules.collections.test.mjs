@@ -1,20 +1,20 @@
 /**
  * COLLECTIONS CRUD TEST SUITE
- * 
+ *
  * Test Checklist:
- * 
+ *
  * GET TESTS
  * [x] 1.1 Admin can read any collection
  * [x] 1.2 Owner can read own collection
  * [x] 1.3 Non-owner cannot read private collection
  * [x] 1.4 Anyone can read public collection
- * 
+ *
  * CREATE - Access Control
  * [x] 2.1 Owner can create own collection
  * [x] 2.2 Non-owner cannot create collection for another user
  * [x] 2.3 Unauthenticated cannot create collection
  * [x] 2.4 Admin can bypass all validation
- * 
+ *
  * CREATE - Data Validation
  * [x] 3.1 Rejects missing required name
  * [x] 3.2 Rejects missing required createdAt
@@ -25,11 +25,11 @@
  * [x] 3.7 Accepts valid optional description
  * [x] 3.8 Rejects invalid visibility map
  * [x] 3.9 Rejects non-timestamp createdAt
- * 
+ *
  * UPDATE - Access Control
  * [x] 4.1 Owner can update own collection
  * [x] 4.2 Non-owner cannot update collection
- * 
+ *
  * UPDATE - Data Validation
  * [x] 5.1 Rejects missing required updatedAt
  * [x] 5.2 Accepts optional name field
@@ -37,28 +37,28 @@
  * [x] 5.4 Accepts optional visibility field
  * [x] 5.5 Rejects name exceeding 100 characters on update
  * [ ] 5.6 Rejects description exceeding 500 characters on update (NOT IN CURRENT FILE - ADD THIS)
- * 
+ *
  * DELETE
  * [x] 6.1 Owner can delete own collection
  * [x] 6.2 Non-owner cannot delete collection
  * [x] 6.3 Admin can delete any collection
  */
 
-// AI task: implement the above test cases in the file, following the patterns established in the existing tests. 
+// AI task: implement the above test cases in the file, following the patterns established in the existing tests.
 // Make sure to cover both access control and data validation scenarios for collection documents.
-// Add one test at a time, and ensure that the test setup and assertions are correctly implemented according to the Firestore rules being tested. 
+// Add one test at a time, and ensure that the test setup and assertions are correctly implemented according to the Firestore rules being tested.
 // Aske me before implementing the next test case, to confirm that the previous one is correctly implemented and to get approval before proceeding.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import admin from 'firebase-admin';
 
-import { 
-  getAdminDb, 
-  cleanupTestDocs, 
+import {
+  getAdminDb,
+  cleanupTestDocs,
   buildClientContext,
   buildUnauthenticatedClientContext,
-  expectPermissionDenied, 
+  expectPermissionDenied,
   RULES_TARGET,
   TEST_CONFIG_PATH,
   TEST_DATA_FOLDER,
@@ -87,7 +87,6 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 
-
 const getCollectionPath = (collectionId) =>
   `${TEST_ROOT}/data/${TEST_DATA_FOLDER}/public/collections/${collectionId}`;
 
@@ -102,10 +101,9 @@ const validCollection = {
 test.beforeEach(async () => {
   await cleanupTestDocs();
   const adminDb = getAdminDb();
-  await adminDb.doc(TEST_CONFIG_PATH).set(
-    { dataFolder: TEST_DATA_FOLDER },
-    { merge: true }
-  );
+  await adminDb
+    .doc(TEST_CONFIG_PATH)
+    .set({ dataFolder: TEST_DATA_FOLDER }, { merge: true });
 });
 
 test.after(async () => {
@@ -130,16 +128,16 @@ test(`[1.1 GET] admin can read any collection on ${RULES_TARGET}`, async () => {
 
   try {
     // Admin writes as someone else
-    await getAdminDb().doc(collectionPath).set({
-      ...validCollection,
-      userId: ownerId,
-      createdAt: admin.firestore.Timestamp.now(),
-    });
+    await getAdminDb()
+      .doc(collectionPath)
+      .set({
+        ...validCollection,
+        userId: ownerId,
+        createdAt: admin.firestore.Timestamp.now(),
+      });
 
     // Admin reads
-    await assert.doesNotReject(
-      getDoc(doc(adminContext.db, collectionPath))
-    );
+    await assert.doesNotReject(getDoc(doc(adminContext.db, collectionPath)));
   } finally {
     await adminContext.cleanup();
   }
@@ -150,11 +148,13 @@ test(`[1.2 GET] owner can read own collection on ${RULES_TARGET}`, async () => {
   const collectionPath = getCollectionPath('collection-2');
 
   // Setup: write collection as admin
-  await getAdminDb().doc(collectionPath).set({
-    ...validCollection,
-    userId,
-    createdAt: admin.firestore.Timestamp.now(),
-  });
+  await getAdminDb()
+    .doc(collectionPath)
+    .set({
+      ...validCollection,
+      userId,
+      createdAt: admin.firestore.Timestamp.now(),
+    });
 
   const context = await buildClientContext({
     uid: userId,
@@ -173,12 +173,14 @@ test(`[1.3 GET] non-owner cannot read private collection on ${RULES_TARGET}`, as
   const collectionPath = getCollectionPath('collection-3');
 
   // Setup: write private collection
-  await getAdminDb().doc(collectionPath).set({
-    ...validCollection,
-    userId: ownerId,
-    visibility: { public: false },
-    createdAt: admin.firestore.Timestamp.now(),
-  });
+  await getAdminDb()
+    .doc(collectionPath)
+    .set({
+      ...validCollection,
+      userId: ownerId,
+      visibility: { public: false },
+      createdAt: admin.firestore.Timestamp.now(),
+    });
 
   const context = await buildClientContext({
     uid: 'other-user',
@@ -189,7 +191,10 @@ test(`[1.3 GET] non-owner cannot read private collection on ${RULES_TARGET}`, as
     await expectPermissionDenied(
       getDocs(
         query(
-          collection(context.db, getPublicResourcePath(TEST_DATA_FOLDER, 'collections')),
+          collection(
+            context.db,
+            getPublicResourcePath(TEST_DATA_FOLDER, 'collections')
+          ),
           where(documentId(), '==', 'collection-3')
         )
       )
@@ -203,11 +208,13 @@ test(`[1.4 GET] anyone can read public collection on ${RULES_TARGET}`, async () 
   const collectionPath = getCollectionPath('collection-4');
 
   // Setup: write public collection
-  await getAdminDb().doc(collectionPath).set({
-    ...validCollection,
-    visibility: { public: true },
-    createdAt: admin.firestore.Timestamp.now(),
-  });
+  await getAdminDb()
+    .doc(collectionPath)
+    .set({
+      ...validCollection,
+      visibility: { public: true },
+      createdAt: admin.firestore.Timestamp.now(),
+    });
 
   const context = await buildClientContext({
     uid: 'random-user',
@@ -499,13 +506,15 @@ test(`[4.1 UPDATE] owner can update own collection on ${RULES_TARGET}`, async ()
   const collectionPath = getCollectionPath('update-collection-1');
 
   // Setup
-  await getAdminDb().doc(collectionPath).set({
-    name: 'Test Collection',
-    userId,
-    createdAt: admin.firestore.Timestamp.now(),
-    description: 'A test collection',
-    visibility: { public: false },
-  });
+  await getAdminDb()
+    .doc(collectionPath)
+    .set({
+      name: 'Test Collection',
+      userId,
+      createdAt: admin.firestore.Timestamp.now(),
+      description: 'A test collection',
+      visibility: { public: false },
+    });
 
   const context = await buildClientContext({
     uid: userId,
@@ -533,13 +542,15 @@ test(`[4.2 UPDATE] non-owner cannot update collection on ${RULES_TARGET}`, async
   const collectionPath = getCollectionPath('update-collection-2');
 
   // Setup
-  await getAdminDb().doc(collectionPath).set({
-    name: 'Test Collection',
-    userId: ownerId,
-    createdAt: admin.firestore.Timestamp.now(),
-    description: 'A test collection',
-    visibility: { public: false },
-  });
+  await getAdminDb()
+    .doc(collectionPath)
+    .set({
+      name: 'Test Collection',
+      userId: ownerId,
+      createdAt: admin.firestore.Timestamp.now(),
+      description: 'A test collection',
+      visibility: { public: false },
+    });
 
   const context = await buildClientContext({
     uid: 'other-user',
@@ -567,13 +578,15 @@ test(`[5.1 UPDATE] updatedAt is required on ${RULES_TARGET}`, async () => {
   const collectionPath = getCollectionPath('update-missing-timestamp');
 
   // Setup
-  await getAdminDb().doc(collectionPath).set({
-    name: 'Test Collection',
-    userId,
-    createdAt: admin.firestore.Timestamp.now(),
-    description: 'A test collection',
-    visibility: { public: false },
-  });
+  await getAdminDb()
+    .doc(collectionPath)
+    .set({
+      name: 'Test Collection',
+      userId,
+      createdAt: admin.firestore.Timestamp.now(),
+      description: 'A test collection',
+      visibility: { public: false },
+    });
 
   const context = await buildClientContext({
     uid: userId,
@@ -600,13 +613,15 @@ test(`[5.2 UPDATE] name is optional in updates on ${RULES_TARGET}`, async () => 
   const collectionPath = getCollectionPath('update-no-name');
 
   // Setup
-  await getAdminDb().doc(collectionPath).set({
-    name: 'Test Collection',
-    userId,
-    createdAt: admin.firestore.Timestamp.now(),
-    description: 'A test collection',
-    visibility: { public: false },
-  });
+  await getAdminDb()
+    .doc(collectionPath)
+    .set({
+      name: 'Test Collection',
+      userId,
+      createdAt: admin.firestore.Timestamp.now(),
+      description: 'A test collection',
+      visibility: { public: false },
+    });
 
   const context = await buildClientContext({
     uid: userId,
@@ -634,13 +649,15 @@ test(`[5.3 UPDATE] description is optional in updates on ${RULES_TARGET}`, async
   const collectionPath = getCollectionPath('update-no-description');
 
   // Setup
-  await getAdminDb().doc(collectionPath).set({
-    name: 'Test Collection',
-    userId,
-    createdAt: admin.firestore.Timestamp.now(),
-    description: 'A test collection',
-    visibility: { public: false },
-  });
+  await getAdminDb()
+    .doc(collectionPath)
+    .set({
+      name: 'Test Collection',
+      userId,
+      createdAt: admin.firestore.Timestamp.now(),
+      description: 'A test collection',
+      visibility: { public: false },
+    });
 
   const context = await buildClientContext({
     uid: userId,
@@ -667,13 +684,15 @@ test(`[5.4 UPDATE] visibility is optional in updates on ${RULES_TARGET}`, async 
   const collectionPath = getCollectionPath('update-no-visibility');
 
   // Setup
-  await getAdminDb().doc(collectionPath).set({
-    name: 'Test Collection',
-    userId,
-    createdAt: admin.firestore.Timestamp.now(),
-    description: 'A test collection',
-    visibility: { public: false },
-  });
+  await getAdminDb()
+    .doc(collectionPath)
+    .set({
+      name: 'Test Collection',
+      userId,
+      createdAt: admin.firestore.Timestamp.now(),
+      description: 'A test collection',
+      visibility: { public: false },
+    });
 
   const context = await buildClientContext({
     uid: userId,
@@ -701,13 +720,15 @@ test(`[5.5 UPDATE] name cannot exceed 100 characters on ${RULES_TARGET}`, async 
   const collectionPath = getCollectionPath('update-name-too-long');
 
   // Setup
-  await getAdminDb().doc(collectionPath).set({
-    name: 'Test Collection',
-    userId,
-    createdAt: admin.firestore.Timestamp.now(),
-    description: 'A test collection',
-    visibility: { public: false },
-  });
+  await getAdminDb()
+    .doc(collectionPath)
+    .set({
+      name: 'Test Collection',
+      userId,
+      createdAt: admin.firestore.Timestamp.now(),
+      description: 'A test collection',
+      visibility: { public: false },
+    });
 
   const context = await buildClientContext({
     uid: userId,
@@ -739,13 +760,15 @@ test(`[6.1 DELETE] owner can delete own collection on ${RULES_TARGET}`, async ()
   const collectionPath = getCollectionPath('delete-collection-1');
 
   // Setup
-  await getAdminDb().doc(collectionPath).set({
-    name: 'Test Collection',
-    userId,
-    createdAt: admin.firestore.Timestamp.now(),
-    description: 'A test collection',
-    visibility: { public: false },
-  });
+  await getAdminDb()
+    .doc(collectionPath)
+    .set({
+      name: 'Test Collection',
+      userId,
+      createdAt: admin.firestore.Timestamp.now(),
+      description: 'A test collection',
+      visibility: { public: false },
+    });
 
   const context = await buildClientContext({
     uid: userId,
@@ -753,9 +776,7 @@ test(`[6.1 DELETE] owner can delete own collection on ${RULES_TARGET}`, async ()
   });
 
   try {
-    await assert.doesNotReject(
-      deleteDoc(doc(context.db, collectionPath))
-    );
+    await assert.doesNotReject(deleteDoc(doc(context.db, collectionPath)));
   } finally {
     await context.cleanup();
   }
@@ -766,13 +787,15 @@ test(`[6.2 DELETE] non-owner cannot delete collection on ${RULES_TARGET}`, async
   const collectionPath = getCollectionPath('delete-collection-2');
 
   // Setup
-  await getAdminDb().doc(collectionPath).set({
-    name: 'Test Collection',
-    userId: ownerId,
-    createdAt: admin.firestore.Timestamp.now(),
-    description: 'A test collection',
-    visibility: { public: false },
-  });
+  await getAdminDb()
+    .doc(collectionPath)
+    .set({
+      name: 'Test Collection',
+      userId: ownerId,
+      createdAt: admin.firestore.Timestamp.now(),
+      description: 'A test collection',
+      visibility: { public: false },
+    });
 
   const context = await buildClientContext({
     uid: 'other-user',
@@ -780,9 +803,7 @@ test(`[6.2 DELETE] non-owner cannot delete collection on ${RULES_TARGET}`, async
   });
 
   try {
-    await expectPermissionDenied(
-      deleteDoc(doc(context.db, collectionPath))
-    );
+    await expectPermissionDenied(deleteDoc(doc(context.db, collectionPath)));
   } finally {
     await context.cleanup();
   }
@@ -792,13 +813,15 @@ test(`[6.3 DELETE] admin can delete any collection on ${RULES_TARGET}`, async ()
   const collectionPath = getCollectionPath('delete-collection-admin');
 
   // Setup
-  await getAdminDb().doc(collectionPath).set({
-    name: 'Test Collection',
-    userId: 'some-owner',
-    createdAt: admin.firestore.Timestamp.now(),
-    description: 'A test collection',
-    visibility: { public: false },
-  });
+  await getAdminDb()
+    .doc(collectionPath)
+    .set({
+      name: 'Test Collection',
+      userId: 'some-owner',
+      createdAt: admin.firestore.Timestamp.now(),
+      description: 'A test collection',
+      visibility: { public: false },
+    });
 
   const adminContext = await buildClientContext({
     uid: 'admin-user',
@@ -806,9 +829,7 @@ test(`[6.3 DELETE] admin can delete any collection on ${RULES_TARGET}`, async ()
   });
 
   try {
-    await assert.doesNotReject(
-      deleteDoc(doc(adminContext.db, collectionPath))
-    );
+    await assert.doesNotReject(deleteDoc(doc(adminContext.db, collectionPath)));
   } finally {
     await adminContext.cleanup();
   }
