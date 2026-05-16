@@ -4,10 +4,14 @@
     "deploy:firestore": "dotenv -e .env -- sh -c 'firebase deploy --only firestore --project=$ENV'",
     "deploy:indexes": "dotenv -e .env -- sh -c 'firebase deploy --only firestore:indexes --project=$ENV'",
     "deploy": "dotenv -e .env -- sh -c 'echo $ENV && firebase deploy --project=$ENV'",
-    "deploy:ci" : "firebase deploy --project $ENV",
+    "deploy:ci": "firebase deploy --project $ENV",
     "init:main": "dotenv -e .env -- node init-main-db.mjs",
     "set-admin": "node set-admin.mjs",
     "list:indexes": "dotenv -e .env -- sh -c 'firebase firestore:indexes --project=$ENV'",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test:rules": "node --test tests/firestore.rules.*.test.mjs",
     "test:rules:emulator:all": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/firestore.rules.*.test.mjs'",
     "test:rules:emulator:misc": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/firestore.rules.misc.test.mjs'",
@@ -23,6 +27,12 @@
     "firebase-tools": "^15.17.0"
   },
   "devDependencies": {
-    "dotenv-cli": "^11.0.0"
+    "@eslint/js": "^10.0.1",
+    "dotenv-cli": "^11.0.0",
+    "eslint": "^10.4.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^17.6.0",
+    "prettier": "^3.8.3"
   }
 }
