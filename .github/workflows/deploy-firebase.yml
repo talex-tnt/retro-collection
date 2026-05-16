@@ -57,8 +57,7 @@ jobs:
         env:
           ENV: dev
         run: |
-          npm run test:rules:emulator:misc
-          npm run test:rules:emulator:collections
+          npm run test:rules:emulator:all
 
       - name: Deploy Firebase
         working-directory: firebase-admin
