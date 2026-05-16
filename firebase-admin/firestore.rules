@@ -180,17 +180,19 @@ service cloud.firestore {
     }
 
     function isValidPublicUserData(data) {
-      return data.keys().hasOnly(['name', 'visibility', 'nickname']) &&
-        validString(data.name, 100) &&
-        isValidVisibilityMapOptional(data) &&
-        hasValidOptionalNickname(data) &&
-        (!isPublicVisibilityEnabled(data) || hasValidNickname(data));
+      return 
+        data.keys().hasOnly(['name', 'visibility', 'nickname']) && // Tests 5.1.1, 5.1.2: Only allowed fields
+        validString(data.name, 100) && // Test 5.1.1: Name required and max 100
+        isValidVisibilityMapOptional(data) && // Tests 5.1.1, 5.2.2: Visibility validation
+        hasValidOptionalNickname(data) && // Tests 5.4.1, 5.4.2: Nickname optional but valid if present
+        (!isPublicVisibilityEnabled(data) || hasValidNickname(data)); // Test 5.4.4: Nickname required if public
     }
 
     function isValidPrivateUserData(data) {
-      return data.keys().hasOnly(['email', 'lastLogin']) &&
-        validOptionalString(data.email, 100) &&
-        validTimestamp(data.lastLogin);
+      return 
+        data.keys().hasOnly(['email', 'lastLogin']) && // Test 5.3.1: Only allowed fields
+        validOptionalString(data.email, 100) && // Test 5.3.1: Email optional, max 100
+        validTimestamp(data.lastLogin); // Test 5.3.1: LastLogin must be valid timestamp
     }
 
 
@@ -315,15 +317,18 @@ service cloud.firestore {
        return ['name', 'userId', 'createdAt', 'visibility'];
       }
       function validCollectionCreate(data) {
-        return isAdmin() ||
-          isAuthenticated() &&
-          hasOnlyValidKeys(data, createCollectionKeys()) &&
-          hasAllRequiredKeys(data, createCollectionRequiredKeys()) &&
-          isOwner(data.userId) &&
-          validString(data.name,  getLengthLimit('collection.name')) &&
-          validTimestamp(data.createdAt) &&
-          isValidVisibilityMap(data.visibility) &&
-          hasValidOptionalString(data, 'description', getLengthLimit('collection.description'));
+        return 
+          isAdmin() || // Test 1.2.4: Admin bypass
+          (
+            isAuthenticated() && // Test 1.2.3: Unauthenticated denied
+            hasOnlyValidKeys(data, createCollectionKeys()) && // Tests 1.3.7, 1.3.8: No extra fields
+            hasAllRequiredKeys(data, createCollectionRequiredKeys()) && // Tests 1.3.1, 1.3.2, 1.3.3: All required
+            isOwner(data.userId) && // Test 1.2.2: Non-owner denied
+            validString(data.name, getLengthLimit('collection.name')) && // Tests 1.3.1, 1.3.4: Name validation
+            validTimestamp(data.createdAt) && // Tests 1.3.2, 1.3.9: CreatedAt validation
+            isValidVisibilityMap(data.visibility) && // Tests 1.3.3, 1.3.8: Visibility validation
+            hasValidOptionalString(data, 'description', getLengthLimit('collection.description')) // Tests 1.3.5, 1.3.6: Optional description
+          );
       }
       function updateCollectionKeys() {
         return ['name', 'updatedAt', 'description', 'visibility'];
@@ -332,18 +337,21 @@ service cloud.firestore {
         return ['updatedAt'];
       }
       function validCollectionUpdate(newData, existingData) {
-        return isAdmin() ||
-          isAuthenticated() &&
-          existingData != null &&
-          hasOnlyAffectedKeys(newData, existingData, updateCollectionKeys()) &&
-          hasAllRequiredAffectedKeys(newData, existingData, updateCollectionRequiredKeys()) &&
-          isOwner(existingData.userId) &&
-          newData.userId == existingData.userId &&
-          newData.createdAt == existingData.createdAt &&
-          validTimestamp(newData.updatedAt) &&
-          hasValidOptionalString(newData, 'name', getLengthLimit('collection.name')) &&
-          hasValidOptionalString(newData, 'description', getLengthLimit('collection.description')) &&
-          isValidVisibilityMapOptional(newData.visibility);
+        return 
+          isAdmin() || // Test 1.4.1: Admin bypass
+          (
+            isAuthenticated() && // Test 1.4.2: Non-owner denied
+            existingData != null && // Immutability check
+            hasOnlyAffectedKeys(newData, existingData, updateCollectionKeys()) && // Tests 1.5.2-1.5.4: Optional fields only
+            hasAllRequiredAffectedKeys(newData, existingData, updateCollectionRequiredKeys()) && // Test 1.5.1: UpdatedAt required
+            isOwner(existingData.userId) && // Test 1.4.2: Non-owner denied
+            newData.userId == existingData.userId && // Immutability: userId fixed
+            newData.createdAt == existingData.createdAt && // Immutability: createdAt fixed
+            validTimestamp(newData.updatedAt) && // Test 1.5.1: UpdatedAt required and valid
+            hasValidOptionalString(newData, 'name', getLengthLimit('collection.name')) && // Tests 1.5.2, 1.5.5: Optional name with length
+            hasValidOptionalString(newData, 'description', getLengthLimit('collection.description')) && // Tests 1.5.3: Optional description
+            isValidVisibilityMapOptional(newData.visibility) // Test 1.5.4: Optional visibility
+          );
       }
 
       match /public/collections/{collectionId} {
