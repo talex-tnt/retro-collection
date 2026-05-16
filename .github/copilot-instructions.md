@@ -2,6 +2,14 @@
 
 This file tracks implementation requirements and coding guidelines for the retro-collections project.
 
+## AI Expected General Behavior Guidelines
+- When generating code, ensure it adheres to the project's coding style and conventions.
+- For Firestore rules, ensure that the generated rules are secure and follow best practices for access control.
+- When generating tests, ensure they cover both positive and negative cases for the rules being tested.
+- For documentation, ensure it is clear, concise, and provides sufficient context for understanding the implementation requirements and guidelines.
+- Before considering a task complete, ALWAYS (unless explicitly stated otherwise) ensure that all related tests are passing and that the implementation meets the specified requirements.
+
+
 ## Project Overview
 - **Frontend**: retro-collections-web (React + TypeScript + Vite)
 - **Backend**: firebase-admin (Firebase/Firestore)

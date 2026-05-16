@@ -12,7 +12,6 @@
     "test:rules:emulator:all": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/firestore.rules.*.test.mjs'",
     "test:rules:emulator:misc": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/firestore.rules.misc.test.mjs'",
     "test:rules:emulator:collections": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/firestore.rules.collections.test.mjs'",
-    "test:rules:emulator:private": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/firestore.rules.private-collection.test.mjs'",
     "test:rules:live:all": "RULES_TARGET=live ENV=dev node --test tests/firestore.rules.*.test.mjs",
     "test:rules:live:misc": "RULES_TARGET=live ENV=dev node --test tests/firestore.rules.misc.test.mjs",
     "test:rules:live:collections": "RULES_TARGET=live ENV=dev node --test tests/firestore.rules.collections.test.mjs"
