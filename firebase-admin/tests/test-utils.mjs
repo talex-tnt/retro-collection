@@ -39,6 +39,23 @@ export const TEST_ROOT = 'test';
 export const TEST_DATA_FOLDER = 'default';
 export const TEST_CONFIG_PATH = `${TEST_ROOT}/config/public/runtime`;
 
+export const joinPath = (...segments) => segments.filter(Boolean).join('/');
+
+export const getPublicResourcePath = (folder, resourceType) =>
+  joinPath(TEST_ROOT, 'data', folder, 'public', resourceType);
+
+export const getPublicResourceDocPath = (folder, resourceType, docId) =>
+  joinPath(getPublicResourcePath(folder, resourceType), docId);
+
+export const getPrivateResourcePath = (folder, resourceType) =>
+  joinPath(TEST_ROOT, 'data', folder, 'private', resourceType);
+
+export const getPrivateResourceDocPath = (folder, resourceType, docId) =>
+  joinPath(getPrivateResourcePath(folder, resourceType), docId);
+
+export const getAuthorizedUsersPath = (folder) =>
+  getPrivateResourcePath(folder, 'authorized-users');
+
 const FIREBASE_WEB_CONFIGS = {
   dev: {
     apiKey: 'AIzaSyB4YnIk0kbBTKDiHOgXpVOaYIxLdchItzQ',
@@ -48,10 +65,19 @@ const FIREBASE_WEB_CONFIGS = {
     messagingSenderId: '473822754233',
     appId: '1:473822754233:web:0de2e6930818d3a2ea7268',
   },
+  prod: {
+    apiKey: 'AIzaSyCD8zIM4SOBkLIzzLpZuagq688BwXfohDg',
+    authDomain: 'retro-collections-prod.firebaseapp.com',
+    projectId: 'retro-collections-prod',
+    storageBucket: 'retro-collections-prod.firebasestorage.app',
+    messagingSenderId: '509856353620',
+    appId: '1:509856353620:web:6bac6b42759eb94a4e0cc1',
+  },
 };
 
 const SERVICE_ACCOUNT_FILES = {
   dev: 'retro-collections-dev.json',
+  prod: 'retro-collections-prod.json',
 };
 
 const firebaseConfig = FIREBASE_WEB_CONFIGS[ENV];
@@ -137,7 +163,20 @@ export const buildUnauthenticatedClientContext = async () => {
   };
 };
 
-export const cleanupTestDocs = async () => {
+export const expectFailedPrecondition = async (promise) => {
+  await assert.rejects(promise, (error) => {
+    const message = String(error?.message ?? '');
+    const code = String(error?.code ?? '');
+
+    return (
+      code.includes('failed-precondition') ||
+      message.includes('failed-precondition') ||
+      message.includes('The query requires an index')
+    );
+  });
+};
+
+export const cleanupTestDocs = async (extraDocPaths = []) => {
   if (RULES_TARGET === 'emulator') {
     const response = await fetch(
       `http://127.0.0.1:8080/emulator/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents`,
@@ -155,6 +194,14 @@ export const cleanupTestDocs = async () => {
   } catch (e) {
     // Ignore
   }
+
+  for (const docPath of extraDocPaths) {
+    try {
+      await getAdminDb().doc(docPath).delete();
+    } catch (e) {
+      // Ignore missing paths in live cleanup
+    }
+  }
 };
 
 export const expectPermissionDenied = async (promise) => {
@@ -169,6 +216,3 @@ export const expectPermissionDenied = async (promise) => {
     );
   });
 };
-
-export const getPublicResourcePath = (folder, resourceType) =>
-  `${TEST_ROOT}/data/${folder}/public/${resourceType}`;

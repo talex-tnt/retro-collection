@@ -42,7 +42,10 @@ jobs:
 
       - name: Test Firestore rules (emulator)
         working-directory: firebase-admin
-        run: npm run test:rules:emulator:all
+        run: |
+          npm run test:rules:emulator:misc
+          npm run test:rules:emulator:collections
+
 
       - name: Deploy Firebase
         working-directory: firebase-admin
