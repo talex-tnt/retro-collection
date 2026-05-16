@@ -1,3 +1,22 @@
+/**
+ * SUITE 5: USERS (PUBLIC & PRIVATE PROFILES)
+ *
+ * Test Checklist:
+ * [x] 5.1.1 - owner can create/get/update own doc with name and visibility only
+ * [x] 5.1.2 - non-owner cannot create or update someone else's doc
+ * [x] 5.1.3 - owner cannot access user doc in non-configured folder
+ * [x] 5.1.4 - delete is admin-only
+ * [x] 5.2.1 - anyone can get a public user, but not a private one
+ * [x] 5.2.2 - only owner can update own visibility
+ * [x] 5.2.3 - can list public users only with explicit filter
+ * [x] 5.3.1 - owner can create/get/update own doc with email and lastLogin only
+ * [x] 5.3.2 - non-owner cannot read or write someone else's doc
+ * [x] 5.4.1 - owner can set and update nickname field
+ * [x] 5.4.2 - owner cannot set empty nickname
+ * [x] 5.4.3 - non-owner cannot set or modify someone else's nickname
+ * [x] 5.4.4 - owner can set visibility to private without nickname
+ */
+
 import 'dotenv/config';
 
 import test from 'node:test';
@@ -129,7 +148,7 @@ test.after(async () => {
   releaseSuiteLock();
 });
 
-test(`users public: owner can create/get/update own doc with name and visibility only on ${RULES_TARGET}`, async () => {
+test(`[5.1.1] owner can create/get/update own doc with name and visibility only on ${RULES_TARGET}`, async () => {
   const owner = await buildClientContext({
     uid: TEST_USER_ID,
     claims: { admin: false },
@@ -178,7 +197,7 @@ test(`users public: owner can create/get/update own doc with name and visibility
   }
 });
 
-test(`users public: non-owner cannot create or update someone else's doc on ${RULES_TARGET}`, async () => {
+test(`[5.1.2] non-owner cannot create or update someone else's doc on ${RULES_TARGET}`, async () => {
   await getAdminDb()
     .doc(OTHER_PUBLIC_USER_DOC_PATH)
     .set({
@@ -210,7 +229,7 @@ test(`users public: non-owner cannot create or update someone else's doc on ${RU
   }
 });
 
-test(`users public: owner cannot access user doc in non-configured folder on ${RULES_TARGET}`, async () => {
+test(`[5.1.3] owner cannot access user doc in non-configured folder on ${RULES_TARGET}`, async () => {
   await getAdminDb()
     .doc(WRONG_FOLDER_USER_DOC_PATH)
     .set({
@@ -239,7 +258,7 @@ test(`users public: owner cannot access user doc in non-configured folder on ${R
   }
 });
 
-test(`users public: delete is admin-only on ${RULES_TARGET}`, async () => {
+test(`[5.1.4] delete is admin-only on ${RULES_TARGET}`, async () => {
   await getAdminDb()
     .doc(OWN_PUBLIC_USER_DOC_PATH)
     .set({
@@ -274,7 +293,7 @@ test(`users public: delete is admin-only on ${RULES_TARGET}`, async () => {
   }
 });
 
-test(`users public: anyone can get a public user, but not a private one on ${RULES_TARGET}`, async () => {
+test(`[5.2.1] anyone can get a public user, but not a private one on ${RULES_TARGET}`, async () => {
   await getAdminDb()
     .doc(PUBLIC_USER_DOC_PATH)
     .set({
@@ -324,7 +343,7 @@ test(`users public: anyone can get a public user, but not a private one on ${RUL
   }
 });
 
-test(`users public: only owner can update own visibility on ${RULES_TARGET}`, async () => {
+test(`[5.2.2] only owner can update own visibility on ${RULES_TARGET}`, async () => {
   await getAdminDb()
     .doc(OWNER_VISIBILITY_DOC_PATH)
     .set({
@@ -382,7 +401,7 @@ test(`users public: only owner can update own visibility on ${RULES_TARGET}`, as
   }
 });
 
-test(`users visibility: can list public users only with explicit filter on ${RULES_TARGET}`, async () => {
+test(`[5.2.3] can list public users only with explicit filter on ${RULES_TARGET}`, async () => {
   const usersCollectionPath = getPublicResourcePath(TEST_DATA_FOLDER, 'users');
 
   await getAdminDb()
@@ -425,7 +444,7 @@ test(`users visibility: can list public users only with explicit filter on ${RUL
   }
 });
 
-test(`users private: owner can create/get/update own doc with email and lastLogin only on ${RULES_TARGET}`, async () => {
+test(`[5.3.1] owner can create/get/update own doc with email and lastLogin only on ${RULES_TARGET}`, async () => {
   const owner = await buildClientContext({
     uid: TEST_USER_ID,
     claims: { admin: false },
@@ -476,7 +495,7 @@ test(`users private: owner can create/get/update own doc with email and lastLogi
   }
 });
 
-test(`users private: non-owner cannot read or write someone else's doc on ${RULES_TARGET}`, async () => {
+test(`[5.3.2] non-owner cannot read or write someone else's doc on ${RULES_TARGET}`, async () => {
   await getAdminDb().doc(PRIVATE_OTHER_USER_DOC_PATH).set({
     email: 'other@example.com',
     lastLogin: admin.firestore.FieldValue.serverTimestamp(),
@@ -510,7 +529,7 @@ test(`users private: non-owner cannot read or write someone else's doc on ${RULE
   }
 });
 
-test(`users public: owner can set and update nickname field on ${RULES_TARGET}`, async () => {
+test(`[5.4.1] owner can set and update nickname field on ${RULES_TARGET}`, async () => {
   const owner = await buildClientContext({
     uid: TEST_USER_ID,
     claims: { admin: false },
@@ -572,7 +591,7 @@ test(`users public: owner can set and update nickname field on ${RULES_TARGET}`,
   }
 });
 
-test(`users public: owner cannot set empty nickname on ${RULES_TARGET}`, async () => {
+test(`[5.4.2] owner cannot set empty nickname on ${RULES_TARGET}`, async () => {
   const owner = await buildClientContext({
     uid: TEST_USER_ID,
     claims: { admin: false },
@@ -597,7 +616,7 @@ test(`users public: owner cannot set empty nickname on ${RULES_TARGET}`, async (
   }
 });
 
-test(`users public: non-owner cannot set or modify someone else's nickname on ${RULES_TARGET}`, async () => {
+test(`[5.4.3] non-owner cannot set or modify someone else's nickname on ${RULES_TARGET}`, async () => {
   await getAdminDb()
     .doc(NICKNAME_OTHER_USER_DOC_PATH)
     .set({
@@ -624,7 +643,7 @@ test(`users public: non-owner cannot set or modify someone else's nickname on ${
   }
 });
 
-test(`users public: owner can set visibility to private without nickname on ${RULES_TARGET}`, async () => {
+test(`[5.4.4] owner can set visibility to private without nickname on ${RULES_TARGET}`, async () => {
   await getAdminDb()
     .doc(OWN_PUBLIC_USER_DOC_PATH)
     .set({

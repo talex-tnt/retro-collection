@@ -1,27 +1,17 @@
 /**
- * INFRASTRUCTURE & CROSS-CUTTING RULES TEST SUITE
+ * SUITE 3: INFRASTRUCTURE & CROSS-CUTTING RULES
  *
  * Test Checklist:
- * ADMIN & CONFIG PATHS
- * [x] 1.1 Admin can write to test/testData/rulesSmoke (admin-only)
- * [x] 1.2 Non-admin cannot write to test data path
- * [x] 1.3 Admin can write to test/config/public/runtime
- * [x] 1.4 Non-admin cannot write to test config path
- *
- * DATAFOLDER VALIDATION
- * [x] 2.1 User can write to matched dataFolder
- * [x] 2.2 User cannot write to non-matched dataFolder
- * [x] 2.3 User cannot write to unknown resourceType
- *
- * DATA READING (Cross-cutting)
- * [x] 3.1 Authenticated user can read data
- * [x] 3.2 User can read config public and then read matched dataFolder data
- * [x] 3.3 User cannot read data from folder that does not match public config
- *
- * NOTE: Authorized-users and Users collection tests have been moved to their
- * dedicated test files (firestore.rules.authorized-users.test.mjs and
- * firestore.rules.users.test.mjs). Collections-specific tests are in
- * firestore.rules.collections.test.mjs.
+ * [x] 3.1.1 - admin can write to test/testData/rulesSmoke
+ * [x] 3.1.2 - non-admin cannot write to test data path
+ * [x] 3.1.3 - admin can write to test/config/public/runtime
+ * [x] 3.1.4 - non-admin cannot write to test config path
+ * [x] 3.2.1 - user can write to matched dataFolder
+ * [x] 3.2.2 - user cannot write to non-matched dataFolder
+ * [x] 3.2.3 - user cannot write to unknown resourceType
+ * [x] 3.3.1 - authenticated user can read data
+ * [x] 3.3.2 - user can read config public and then read matched dataFolder data
+ * [x] 3.3.3 - user cannot read data from folder that does not match public config
  */
 
 import 'dotenv/config';
@@ -116,7 +106,7 @@ test.after(async () => {
   releaseSuiteLock();
 });
 
-test(`[1.1 Admin & Config] admin can write into ${TEST_DATA_TEST_PATH} on ${RULES_TARGET}`, async () => {
+test(`[3.1.1] admin can write into ${TEST_DATA_TEST_PATH} on ${RULES_TARGET}`, async () => {
   const context = await buildClientContext({
     uid: 'rules-admin-user',
     claims: { admin: true },
@@ -133,7 +123,7 @@ test(`[1.1 Admin & Config] admin can write into ${TEST_DATA_TEST_PATH} on ${RULE
     await context.cleanup();
   }
 });
-test(`[1.2 Admin & Config] non-admin cannot write into ${TEST_DATA_TEST_PATH} on ${RULES_TARGET}`, async () => {
+test(`[3.1.2] non-admin cannot write into ${TEST_DATA_TEST_PATH} on ${RULES_TARGET}`, async () => {
   const context = await buildClientContext({
     uid: 'rules-regular-user',
     claims: { admin: false },
@@ -151,7 +141,7 @@ test(`[1.2 Admin & Config] non-admin cannot write into ${TEST_DATA_TEST_PATH} on
   }
 });
 
-test(`[1.3 Admin & Config] admin can write into ${TEST_CONFIG_PATH} on ${RULES_TARGET}`, async () => {
+test(`[3.1.3] admin can write into ${TEST_CONFIG_PATH} on ${RULES_TARGET}`, async () => {
   const context = await buildClientContext({
     uid: 'rules-admin-user',
     claims: { admin: true },
@@ -168,7 +158,7 @@ test(`[1.3 Admin & Config] admin can write into ${TEST_CONFIG_PATH} on ${RULES_T
   }
 });
 
-test(`[1.4 Admin & Config] non-admin cannot write into ${TEST_CONFIG_PATH} on ${RULES_TARGET}`, async () => {
+test(`[3.1.4] non-admin cannot write into ${TEST_CONFIG_PATH} on ${RULES_TARGET}`, async () => {
   const context = await buildClientContext({
     uid: 'rules-regular-user',
     claims: { admin: false },
@@ -185,7 +175,7 @@ test(`[1.4 Admin & Config] non-admin cannot write into ${TEST_CONFIG_PATH} on ${
   }
 });
 
-test(`[2.1 DataFolder Validation] user can write to matched dataFolder on ${RULES_TARGET}`, async () => {
+test(`[3.2.1] user can write to matched dataFolder on ${RULES_TARGET}`, async () => {
   const context = await buildClientContext({
     uid: TEST_USER_ID,
     claims: { admin: false },
@@ -206,7 +196,7 @@ test(`[2.1 DataFolder Validation] user can write to matched dataFolder on ${RULE
   }
 });
 
-test(`[2.2 DataFolder Validation] user cannot write to non-matched dataFolder on ${RULES_TARGET}`, async () => {
+test(`[3.2.2] user cannot write to non-matched dataFolder on ${RULES_TARGET}`, async () => {
   const context = await buildClientContext({
     uid: TEST_USER_ID,
     claims: { admin: false },
@@ -239,7 +229,7 @@ test(`[2.2 DataFolder Validation] user cannot write to non-matched dataFolder on
   }
 });
 
-test(`[2.3 DataFolder Validation] user cannot write to unknown resourceType on ${RULES_TARGET}`, async () => {
+test(`[3.2.3] user cannot write to unknown resourceType on ${RULES_TARGET}`, async () => {
   const context = await buildClientContext({
     uid: TEST_USER_ID,
     claims: { admin: false },
@@ -270,7 +260,7 @@ test(`[2.3 DataFolder Validation] user cannot write to unknown resourceType on $
   }
 });
 
-test(`[3.1 Data Reading] authenticated user can read data on ${RULES_TARGET}`, async () => {
+test(`[3.3.1] authenticated user can read data on ${RULES_TARGET}`, async () => {
   // Admin creates test data
   await getAdminDb()
     .collection(getPublicResourcePath(TEST_DATA_FOLDER, 'collections'))
@@ -294,7 +284,7 @@ test(`[3.1 Data Reading] authenticated user can read data on ${RULES_TARGET}`, a
   }
 });
 
-test(`[3.2 Data Reading] user can read config public and then read matched dataFolder data on ${RULES_TARGET}`, async () => {
+test(`[3.3.2] user can read config public and then read matched dataFolder data on ${RULES_TARGET}`, async () => {
   await getAdminDb()
     .collection(getPublicResourcePath(TEST_DATA_FOLDER, 'collections'))
     .doc(TEST_COLLECTION_ID)
@@ -331,7 +321,7 @@ test(`[3.2 Data Reading] user can read config public and then read matched dataF
   }
 });
 
-test(`[3.3 Data Reading] user cannot read data from folder that does not match public config on ${RULES_TARGET}`, async () => {
+test(`[3.3.3] user cannot read data from folder that does not match public config on ${RULES_TARGET}`, async () => {
   await getAdminDb()
     .collection(getPublicResourcePath(TEST_ALT_DATA_FOLDER_1, 'collections'))
     .doc('test-collection-default1')

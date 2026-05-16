@@ -1,3 +1,12 @@
+/**
+ * SUITE 0: AUTHORIZED-USERS ACCESS CONTROL
+ *
+ * Test Checklist:
+ * [x] 0.1.1 - admin-only read/write
+ * [x] 0.1.2 - legacy root collection query is denied
+ * [x] 0.1.3 - admin can list from canonical docs-root path
+ */
+
 import 'dotenv/config';
 
 import test from 'node:test';
@@ -58,7 +67,7 @@ test.after(async () => {
   releaseSuiteLock();
 });
 
-test(`authorized-users is admin-only read/write on ${RULES_TARGET}`, async () => {
+test(`[0.1.1] authorized-users is admin-only read/write on ${RULES_TARGET}`, async () => {
   await getAdminDb().doc(OWN_DOC_PATH).set({ allowed: true });
   await getAdminDb().doc(OTHER_DOC_PATH).set({ allowed: true });
 
@@ -115,7 +124,7 @@ test(`authorized-users is admin-only read/write on ${RULES_TARGET}`, async () =>
   }
 });
 
-test(`authorized-users: legacy root collection query is denied (repro getAuthorizedUsers error) on ${RULES_TARGET}`, async () => {
+test(`[0.1.2] authorized-users: legacy root collection query is denied (repro getAuthorizedUsers error) on ${RULES_TARGET}`, async () => {
   const adminUser = await buildClientContext({
     uid: 'rules-admin-user',
     claims: { admin: true },
@@ -130,7 +139,7 @@ test(`authorized-users: legacy root collection query is denied (repro getAuthori
   }
 });
 
-test(`authorized-users: admin can list from canonical docs-root path on ${RULES_TARGET}`, async () => {
+test(`[0.1.3] authorized-users: admin can list from canonical docs-root path on ${RULES_TARGET}`, async () => {
   const seededEmail = `seeded-${Date.now()}@example.com`;
   const seededDocPath = joinPath(AUTHORIZED_USERS_COLLECTION_PATH, seededEmail);
 

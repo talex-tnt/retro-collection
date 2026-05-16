@@ -1,3 +1,14 @@
+/**
+ * SUITE 4: NICKNAME INDEX
+ *
+ * Test Checklist:
+ * [x] 4.1.1 - authenticated user can read any nickname entry
+ * [x] 4.1.2 - owner can create nickname entry only if it contains their own userId
+ * [x] 4.1.3 - owner can only delete nickname entry if they own it
+ * [x] 4.1.4 - non-owner cannot read or modify nicknameIndex from non-configured folder
+ * [x] 4.1.5 - admin can create/read/update/delete any nickname entry
+ */
+
 import 'dotenv/config';
 
 import test from 'node:test';
@@ -64,7 +75,7 @@ test.after(async () => {
   releaseSuiteLock();
 });
 
-test(`nicknameIndex: authenticated user can read any nickname entry on ${RULES_TARGET}`, async () => {
+test(`[4.1.1] authenticated user can read any nickname entry on ${RULES_TARGET}`, async () => {
   await getAdminDb().doc(OWN_NICKNAME_PATH).set({ userId: 'user-alice' });
 
   const context = await buildClientContext({
@@ -84,7 +95,7 @@ test(`nicknameIndex: authenticated user can read any nickname entry on ${RULES_T
   }
 });
 
-test(`nicknameIndex: owner can create nickname entry only if it contains their own userId on ${RULES_TARGET}`, async () => {
+test(`[4.1.2] owner can create nickname entry only if it contains their own userId on ${RULES_TARGET}`, async () => {
   const owner = await buildClientContext({
     uid: TEST_USER_ID,
     claims: { admin: false },
@@ -107,7 +118,7 @@ test(`nicknameIndex: owner can create nickname entry only if it contains their o
   }
 });
 
-test(`nicknameIndex: owner can only delete nickname entry if they own it on ${RULES_TARGET}`, async () => {
+test(`[4.1.3] owner can only delete nickname entry if they own it on ${RULES_TARGET}`, async () => {
   await getAdminDb().doc(OWN_NICKNAME_PATH).set({ userId: TEST_USER_ID });
   await getAdminDb().doc(OTHER_NICKNAME_PATH).set({ userId: 'someone-else' });
 
@@ -124,7 +135,7 @@ test(`nicknameIndex: owner can only delete nickname entry if they own it on ${RU
   }
 });
 
-test(`nicknameIndex: non-owner cannot read or modify nicknameIndex from non-configured folder on ${RULES_TARGET}`, async () => {
+test(`[4.1.4] non-owner cannot read or modify nicknameIndex from non-configured folder on ${RULES_TARGET}`, async () => {
   await getAdminDb().doc(ALT_NICKNAME_PATH).set({ userId: TEST_USER_ID });
 
   const context = await buildClientContext({
@@ -148,7 +159,7 @@ test(`nicknameIndex: non-owner cannot read or modify nicknameIndex from non-conf
   }
 });
 
-test(`nicknameIndex: admin can create/read/update/delete any nickname entry on ${RULES_TARGET}`, async () => {
+test(`[4.1.5] admin can create/read/update/delete any nickname entry on ${RULES_TARGET}`, async () => {
   const adminUser = await buildClientContext({
     uid: 'rules-admin-user',
     claims: { admin: true },

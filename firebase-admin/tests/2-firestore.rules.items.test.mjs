@@ -1,3 +1,10 @@
+/**
+ * SUITE 2: ITEMS QUERIES
+ *
+ * Test Checklist:
+ * [x] 2.1.1 - items query reproduces the frontend getItems shape
+ */
+
 import 'dotenv/config';
 
 import test from 'node:test';
@@ -52,7 +59,7 @@ test.after(async () => {
   releaseSuiteLock();
 });
 
-test(`items query reproduces the frontend getItems shape on ${RULES_TARGET}`, async () => {
+test(`[2.1.1] items query reproduces the frontend getItems shape on ${RULES_TARGET}`, async () => {
   const adminDb = getAdminDb();
 
   await adminDb
