@@ -84,60 +84,65 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Used indirectly by tests: All test suites (0-5) - fundamental auth check
     function isAuthenticated() {
       return request.auth != null;
     }
 
+    // Used indirectly by tests: 0.x.x, 1.x.x, 2.x.x, 3.x.x, 4.x.x, 5.x.x (admin operations throughout)
     function isAdmin() {
       return isAuthenticated() && request.auth.token.admin == true;
     }
 
-    function isAllowedResourceType(resourceType) {
-      return resourceType in ['collections', 'items'];
-    }
-
+    // Used indirectly by tests: 0.x.x, 1.x.x, 3.x.x, 4.x.x, 5.x.x (owner checks throughout)
     function isOwner(ownerId) {
       return isAuthenticated() && request.auth.uid == ownerId;
     }
 
+    // Used indirectly by tests: 1.3.7-1.3.8 (collection field validation)
     function hasOnlyValidKeys(data, validKeys) { 
-      // Ensure that the data contains only the expected keys (no extraneous fields)
       return data.keys().hasOnly(validKeys);
     }
+    // Used indirectly by tests: 1.3.1-1.3.3 (collection required fields), 5.1.1, 5.3.1 (user fields)
     function hasAllRequiredKeys(data, requiredKeys) {
-      // Ensure that the data contains all required keys
       return data.keys().hasAll(requiredKeys);
     }
+    // Used indirectly by tests: 1.5.2-1.5.4 (collection optional fields on update)
     function hasOnlyAffectedKeys(newData, existingData, validKeys) {
       return newData.diff(existingData).affectedKeys().hasOnly(validKeys);
     }
+    // Used indirectly by tests: 1.5.1 (collection updatedAt required on update)
     function hasAllRequiredAffectedKeys(newData, existingData, requiredKeys) {
       return newData.diff(existingData).affectedKeys().hasAll(requiredKeys);
     }
 
+    // Used indirectly by tests: 1.3.1, 1.3.4 (collection name), 1.3.5, 1.5.2-1.5.5 (description),
+    // 5.1.1 (user name), 5.4.1-5.4.2 (nickname)
     function validString(field, maxLength) {
       return field is string && field.size() > 0 && field.size() <= maxLength;
     }
 
+    // Used indirectly by tests: 5.3.1 (user email - optional)
     function validOptionalString(field, maxLength) {
       return field == null || (field is string && field.size() <= maxLength);
     }
 
+    // Used indirectly by tests: 1.3.5-1.3.6, 1.5.2-1.5.3 (collection description),
+    // 5.1.1 (user name), 5.3.1 (user email)
     function hasValidOptionalString(data, field, maxLength) {
       return !(field in data) || data[field] == null || validOptionalString(data[field], maxLength);
     }
 
-    function hasValidRequiredString(data, field, maxLength) {
-      return (field in data) && validString(data[field], maxLength);
-    }
 
-
+    // Used indirectly by tests: 0.1.x (authorized-users), 1.1.x-1.7.x (collections),
+    // 3.x.x (infrastructure), 4.x.x (nickname), 5.x.x (users)
     function validTimestamp(field) {
       return field is timestamp && 
         field.toMillis() > 0 &&
         field.toMillis() < request.time.toMillis() + 60000; // Allow up to 60 seconds in the future for clock skew
     }
 
+    // Used indirectly by tests: 0.1.1 (authorized-users email matching)
     function tokenEmail() {
       return (isAuthenticated() && ('email' in request.auth.token) && request.auth.token.email is string)
         ? request.auth.token.email
@@ -146,6 +151,7 @@ service cloud.firestore {
           : null;
     }
 
+    // Used indirectly by tests: 1.1.4 (public collections), 1.7.1 (query), 5.2.1 (public users), 5.2.3 (user list)
     function isPubliclyVisible() {
       return resource != null &&
         resource.data != null &&
@@ -155,24 +161,29 @@ service cloud.firestore {
         resource.data.visibility.public == true;
     }
 
+    // Used indirectly by tests: 1.3.3, 1.3.8 (collection visibility), 1.5.4 (collection update), 5.1.1 (user public)
     function isValidVisibilityMap(data) {
       return (data is map) &&
         data.keys().hasOnly(['public']) &&
         ('public' in data) &&
         data.public is bool;
     }
+    // Used indirectly by tests: 1.3.3 (collection), 5.1.1 (user visibility)
     function isValidVisibilityMapOptional(data) {
       return !('visibility' in data) || data.visibility == null || isValidVisibilityMap(data.visibility);
     }
 
+    // Used indirectly by tests: 5.4.1 (nickname set and update), 5.4.4 (nickname with visibility)
     function hasValidNickname(data) {
       return ('nickname' in data) && validString(data.nickname, 50);
     }
 
+    // Used indirectly by tests: 5.4.1-5.4.2 (user nickname optional/validation), 5.4.4 (visibility without nickname)
     function hasValidOptionalNickname(data) {
       return !('nickname' in data) || data.nickname == null || hasValidNickname(data);
     }
 
+    // Used indirectly by tests: 5.4.4 (nickname required when public)
     function isPublicVisibilityEnabled(data) {
       return ('visibility' in data) &&
         isValidVisibilityMap(data.visibility) &&
