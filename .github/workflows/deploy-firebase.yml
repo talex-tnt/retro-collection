@@ -36,16 +36,29 @@ jobs:
             echo "ENV=dev" >> $GITHUB_ENV
           fi
 
+      - name: Write Firebase dev service account
+        working-directory: firebase-admin
+        env:
+          FIREBASE_SERVICE_ACCOUNT_DEV: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT_DEV" ]; then
+            echo "Missing FIREBASE_SERVICE_ACCOUNT_DEV secret" >&2
+            exit 1
+          fi
+
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_DEV" > retro-collections-dev.json
+
       - name: Install Firebase dependencies
         working-directory: firebase-admin
         run: npm ci
 
       - name: Test Firestore rules (emulator)
         working-directory: firebase-admin
+        env:
+          ENV: dev
         run: |
           npm run test:rules:emulator:misc
           npm run test:rules:emulator:collections
-
 
       - name: Deploy Firebase
         working-directory: firebase-admin

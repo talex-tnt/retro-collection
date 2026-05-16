@@ -54,22 +54,6 @@ import assert from 'node:assert/strict';
 import admin from 'firebase-admin';
 
 import {
-  getAdminDb,
-  cleanupTestDocs,
-  buildClientContext,
-  buildUnauthenticatedClientContext,
-  expectPermissionDenied,
-  RULES_TARGET,
-  TEST_CONFIG_PATH,
-  TEST_DATA_FOLDER,
-  TEST_ROOT,
-  getAdminApp,
-  getPublicResourcePath,
-} from './test-utils.mjs';
-
-const adminApp = getAdminApp();
-
-import {
   connectFirestoreEmulator,
   collection,
   deleteDoc,
@@ -86,6 +70,29 @@ import {
   where,
   Timestamp,
 } from 'firebase/firestore';
+
+import {
+  createAdminApp,
+  getAdminDb as sharedGetAdminDb,
+  cleanupTestDocs as sharedCleanupTestDocs,
+  buildClientContext as sharedBuildClientContext,
+  buildUnauthenticatedClientContext,
+  expectPermissionDenied,
+  acquireSuiteLock,
+  RULES_TARGET,
+  TEST_CONFIG_PATH,
+  TEST_DATA_FOLDER,
+  TEST_ROOT,
+  getPublicResourcePath,
+} from './test-utils.mjs';
+
+const adminApp = createAdminApp('collections');
+const getAdminDb = () => sharedGetAdminDb(adminApp);
+const buildClientContext = (options) =>
+  sharedBuildClientContext(adminApp, options);
+const cleanupTestDocs = (extraDocPaths = []) =>
+  sharedCleanupTestDocs(adminApp, extraDocPaths);
+const releaseSuiteLock = await acquireSuiteLock();
 
 const getCollectionPath = (collectionId) =>
   `${TEST_ROOT}/data/${TEST_DATA_FOLDER}/public/collections/${collectionId}`;
@@ -111,6 +118,7 @@ test.after(async () => {
   if (adminApp) {
     await adminApp.delete();
   }
+  releaseSuiteLock();
 });
 
 // ============================================================================

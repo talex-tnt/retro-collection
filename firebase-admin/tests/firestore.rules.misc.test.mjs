@@ -25,13 +25,14 @@ import {
   TEST_ROOT,
   TEST_DATA_FOLDER,
   TEST_CONFIG_PATH,
-  getAdminApp,
-  getAdminDb,
-  buildClientContext,
+  createAdminApp,
+  getAdminDb as sharedGetAdminDb,
+  buildClientContext as sharedBuildClientContext,
   buildUnauthenticatedClientContext,
-  cleanupTestDocs,
+  cleanupTestDocs as sharedCleanupTestDocs,
   expectPermissionDenied,
   expectFailedPrecondition,
+  acquireSuiteLock,
   joinPath,
   getPublicResourcePath,
   getPublicResourceDocPath,
@@ -68,7 +69,13 @@ const miscCleanupDocPaths = [
   TEST_ALT_COLLECTION_PATH_2,
 ];
 
-const adminApp = getAdminApp();
+const adminApp = createAdminApp('misc');
+const getAdminDb = () => sharedGetAdminDb(adminApp);
+const buildClientContext = (options) =>
+  sharedBuildClientContext(adminApp, options);
+const cleanupTestDocs = (extraDocPaths = []) =>
+  sharedCleanupTestDocs(adminApp, extraDocPaths);
+const releaseSuiteLock = await acquireSuiteLock();
 
 test.beforeEach(async () => {
   await cleanupTestDocs(miscCleanupDocPaths);
@@ -85,6 +92,7 @@ test.after(async () => {
   if (adminApp) {
     await adminApp.delete();
   }
+  releaseSuiteLock();
 });
 
 test(`admin can write into ${TEST_DATA_TEST_PATH} on ${RULES_TARGET}`, async () => {

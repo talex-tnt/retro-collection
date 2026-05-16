@@ -83,12 +83,8 @@ const SERVICE_ACCOUNT_FILES = {
 const firebaseConfig = FIREBASE_WEB_CONFIGS[ENV];
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
-
-let adminApp;
-
-export const getAdminApp = () => {
-  if (adminApp) return adminApp;
-
+const suiteLockPath = path.join(ROOT_DIR, '.rules-test-suite-lock');
+export const createAdminApp = (appNameSuffix = '') => {
   const serviceAccountFile = SERVICE_ACCOUNT_FILES[ENV];
   const serviceAccountPath = path.join(ROOT_DIR, serviceAccountFile);
 
@@ -100,21 +96,19 @@ export const getAdminApp = () => {
     fs.readFileSync(serviceAccountPath, 'utf8')
   );
 
-  adminApp = admin.initializeApp(
+  return admin.initializeApp(
     {
       credential: admin.credential.cert(serviceAccount),
       projectId: firebaseConfig.projectId,
     },
-    `rules-test-collections-admin-${ENV}`
+    `rules-test-admin-${ENV}${appNameSuffix ? `-${appNameSuffix}` : ''}`
   );
-
-  return adminApp;
 };
 
-export const getAdminDb = () => admin.firestore(getAdminApp());
-export const getAdminAuth = () => admin.auth(getAdminApp());
+export const getAdminDb = (adminApp) => admin.firestore(adminApp);
+export const getAdminAuth = (adminApp) => admin.auth(adminApp);
 
-export const buildClientContext = async ({ uid, claims = {} }) => {
+export const buildClientContext = async (adminApp, { uid, claims = {} }) => {
   const appName = `rules-client-collections-${uid}-${Date.now()}-${Math.random()}`;
   const app = initializeClientApp(firebaseConfig, appName);
   const auth = getAuth(app);
@@ -127,7 +121,10 @@ export const buildClientContext = async ({ uid, claims = {} }) => {
     connectFirestoreEmulator(db, '127.0.0.1', 8080);
   }
 
-  const customToken = await getAdminAuth().createCustomToken(uid, claims);
+  const customToken = await getAdminAuth(adminApp).createCustomToken(
+    uid,
+    claims
+  );
   await signInWithCustomToken(auth, customToken);
 
   return {
@@ -176,7 +173,26 @@ export const expectFailedPrecondition = async (promise) => {
   });
 };
 
-export const cleanupTestDocs = async (extraDocPaths = []) => {
+export const acquireSuiteLock = async () => {
+  while (true) {
+    try {
+      fs.mkdirSync(suiteLockPath);
+      break;
+    } catch (error) {
+      if (error?.code !== 'EEXIST') {
+        throw error;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  }
+
+  return () => {
+    fs.rmSync(suiteLockPath, { recursive: true, force: true });
+  };
+};
+
+export const cleanupTestDocs = async (adminApp, extraDocPaths = []) => {
   if (RULES_TARGET === 'emulator') {
     const response = await fetch(
       `http://127.0.0.1:8080/emulator/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents`,
@@ -190,14 +206,14 @@ export const cleanupTestDocs = async (extraDocPaths = []) => {
   }
 
   try {
-    await getAdminDb().doc(TEST_CONFIG_PATH).delete();
+    await getAdminDb(adminApp).doc(TEST_CONFIG_PATH).delete();
   } catch (e) {
     // Ignore
   }
 
   for (const docPath of extraDocPaths) {
     try {
-      await getAdminDb().doc(docPath).delete();
+      await getAdminDb(adminApp).doc(docPath).delete();
     } catch (e) {
       // Ignore missing paths in live cleanup
     }
