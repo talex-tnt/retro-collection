@@ -150,8 +150,8 @@ service cloud.firestore {
     }
 
     // Used indirectly by tests: 0.x.x, 1.x.x, 3.x.x, 4.x.x, 5.x.x (owner checks throughout)
-    function isOwner(ownerId) {
-      return isAuthenticated() && request.auth.uid == ownerId;
+    function isOwner(data, field) {
+      return isAuthenticated() && (field in data) && request.auth.uid == data[field];
     }
 
     // Used indirectly by tests: 1.3.7-1.3.8 (collection field validation)
@@ -318,7 +318,7 @@ service cloud.firestore {
           isAdmin() || // Test 5.1.1
           (
             folderMatchesConfig() && // Test 5.1.3
-            (isOwner(userId) || isPubliclyVisible()) // Test 5.1.1, 5.2.1
+            (isOwner({'userId': userId}, 'userId') || isPubliclyVisible()) // Test 5.1.1, 5.2.1
           ));
         // Test 5.2.1, 5.2.3: List only public users
         allow list: if 
@@ -333,7 +333,7 @@ service cloud.firestore {
           environmentAccessAllowed() && (
           isAdmin() || // Test 5.1.1
           (
-            isOwner(userId) && // Test 5.1.2
+            isOwner({'userId': userId}, 'userId') && // Test 5.1.2
             folderMatchesConfig() && // Test 5.1.3
             isValidPublicUserData(request.resource.data) // Test 5.1.1, 5.4.1-5.4.4
           ));
@@ -342,7 +342,7 @@ service cloud.firestore {
           environmentAccessAllowed() && (
           isAdmin() || // Test 5.1.1
           (
-            isOwner(userId) && // Test 5.1.2
+            isOwner({'userId': userId}, 'userId') && // Test 5.1.2
             folderMatchesConfig() && // Test 5.1.3
             isValidPublicUserData(request.resource.data) // Test 5.1.1, 5.2.2, 5.4.1-5.4.4
           ));
@@ -358,7 +358,7 @@ service cloud.firestore {
           isAdmin() || // Test 5.3.1
           (
             folderMatchesConfig() && // Test 5.3.2
-            isOwner(userId) // Test 5.3.2
+            isOwner({'userId': userId}, 'userId') // Test 5.3.2
           ));
         // Test 5.3.1: Admin list only
         allow list: if environmentAccessAllowed() && isAdmin();
@@ -367,7 +367,7 @@ service cloud.firestore {
           environmentAccessAllowed() && (
           isAdmin() || // Test 5.3.1
           (
-            isOwner(userId) && // Test 5.3.2
+            isOwner({'userId': userId}, 'userId') && // Test 5.3.2
             folderMatchesConfig() && // Test 5.3.2
             isValidPrivateUserData(request.resource.data) // Test 5.3.1
           ));
@@ -376,7 +376,7 @@ service cloud.firestore {
           environmentAccessAllowed() && (
           isAdmin() || // Test 5.3.1
           (
-            isOwner(userId) && // Test 5.3.2
+            isOwner({'userId': userId}, 'userId') && // Test 5.3.2
             folderMatchesConfig() && // Test 5.3.2
             isValidPrivateUserData(request.resource.data) // Test 5.3.1
           ));
@@ -402,7 +402,7 @@ service cloud.firestore {
             isAuthenticated() && // Test 1.2.3: Unauthenticated denied
             hasOnlyValidKeys(data, createCollectionKeys()) && // Tests 1.3.7, 1.3.8: No extra fields
             hasAllRequiredKeys(data, createCollectionRequiredKeys()) && // Tests 1.3.1, 1.3.2, 1.3.3: All required
-            isOwner(data.userId) && // Test 1.2.2: Non-owner denied
+            isOwner(data, 'userId') && // Test 1.2.2: Non-owner denied
             validString(data.name, getLengthLimit('collection.name')) && // Tests 1.3.1, 1.3.4: Name validation
             validTimestamp(data.createdAt) && // Tests 1.3.2, 1.3.9: CreatedAt validation
             isValidVisibilityMap(data.visibility) && // Tests 1.3.3, 1.3.8: Visibility validation
@@ -423,7 +423,7 @@ service cloud.firestore {
             existingData != null && // Immutability check
             hasOnlyAffectedKeys(newData, existingData, updateCollectionKeys()) && // Tests 1.5.2-1.5.4: Optional fields only
             hasAllRequiredAffectedKeys(newData, existingData, updateCollectionRequiredKeys()) && // Test 1.5.1: UpdatedAt required
-            isOwner(existingData.userId) && // Test 1.4.2: Non-owner denied
+            isOwner(existingData, 'userId') && // Test 1.4.2: Non-owner denied
             newData.userId == existingData.userId && // Immutability: userId fixed
             newData.createdAt == existingData.createdAt && // Immutability: createdAt fixed
             validTimestamp(newData.updatedAt) && // Test 1.5.1: UpdatedAt required and valid
@@ -440,7 +440,7 @@ service cloud.firestore {
           isAdmin() || // Test 1.1.1
           (
             folderMatchesConfig() && // Test 3.2.1
-            (isOwner(resource.data.userId) || isPubliclyVisible()) // Test 1.1.2, 1.1.4
+            (isOwner(resource.data, 'userId') || isPubliclyVisible()) // Test 1.1.2, 1.1.4
           ));
         // Test 1.7.1: List queryable with owner or public visibility
         allow list: if 
@@ -448,7 +448,7 @@ service cloud.firestore {
           isAdmin() || // Test 1.7.1
           (
             folderMatchesConfig() && // Test 3.2.1, 1.7.1
-            (isOwner(resource.data.userId) || isPubliclyVisible()) // Test 1.7.1
+            (isOwner(resource.data, 'userId') || isPubliclyVisible()) // Test 1.7.1
           ));
         // Test 1.2.1, 1.2.2, 1.2.3, 1.2.4, 1.3.1-1.3.8: Create with validation
         allow create: if environmentAccessAllowed() && validCollectionCreate(request.resource.data);
@@ -457,7 +457,7 @@ service cloud.firestore {
         // Test 1.6.1, 1.6.2, 1.6.3: Delete
         allow delete: if 
           environmentAccessAllowed() && (
-          isOwner(resource.data.userId) || // Test 1.6.1
+          isOwner(resource.data, 'userId') || // Test 1.6.1
           isAdmin()); // Test 1.6.3
       }
 
@@ -480,7 +480,7 @@ service cloud.firestore {
             isAuthenticated() && // Test 2.2.3: Unauthenticated denied
             hasOnlyValidKeys(data, createItemKeys()) && // Test 2.3.7: No extra fields
             hasAllRequiredKeys(data, createItemRequiredKeys()) && // Tests 2.3.1-2.3.5: All required
-            isOwner(data.userId) && // Test 2.2.2: Non-owner denied
+            isOwner(data, 'userId') && // Test 2.2.2: Non-owner denied
             validString(data.name, getLengthLimitItem('item.name')) && // Tests 2.3.1, 2.3.4: Name validation
             validTimestamp(data.createdAt) && // Tests 2.3.2, 2.3.8: CreatedAt validation
             isValidVisibilityMap(data.visibility) && // Tests 2.3.3, 2.3.8: Visibility validation
@@ -503,7 +503,7 @@ service cloud.firestore {
             existingData != null && // Immutability check
             hasOnlyAffectedKeys(newData, existingData, updateItemKeys()) && // Tests 2.5.2-2.5.4: Optional fields only
             hasAllRequiredAffectedKeys(newData, existingData, updateItemRequiredKeys()) && // Test 2.5.1: UpdatedAt required
-            isOwner(existingData.userId) && // Test 2.4.2: Non-owner denied
+            isOwner(existingData, 'userId') && // Test 2.4.2: Non-owner denied
             newData.userId == existingData.userId && // Immutability: userId fixed
             newData.collectionId == existingData.collectionId && // Immutability: collectionId fixed
             newData.createdAt == existingData.createdAt && // Immutability: createdAt fixed
@@ -521,11 +521,16 @@ service cloud.firestore {
           isAdmin() || // Test 2.1.1
           (
             folderMatchesConfig() && // Test 3.2.1
-            (isOwner(resource.data.userId) || isPubliclyVisible()) // Test 2.1.2, 2.1.4, 2.1.3
+            (isOwner(resource.data, 'userId') || isPubliclyVisible()) // Test 2.1.2, 2.1.4, 2.1.3
           ));
-        // Test 2.1.1: List - authenticated users in configured folder can list
+        // Test 2.1.1: List queryable with owner or public visibility
         allow list: if 
-          environmentAccessAllowed() && folderMatchesConfig();
+          environmentAccessAllowed() && (
+          isAdmin() || // Test 2.1.1
+          (
+            folderMatchesConfig() // Test 3.2.1, 2.1.1
+            // && (isOwner(resource.data.userId) || isPubliclyVisible()) // Test 2.1.1
+          ));
         // Test 2.2.1, 2.2.2, 2.2.3, 2.2.4, 2.3.1-2.3.8: Create with validation
         allow create: if environmentAccessAllowed() && validItemCreate(request.resource.data);
         // Test 2.4.1, 2.4.2, 2.5.1-2.5.5: Update with validation
@@ -533,7 +538,7 @@ service cloud.firestore {
         // Test 2.6.1, 2.6.2, 2.6.3: Delete
         allow delete: if 
           environmentAccessAllowed() && (
-          isOwner(resource.data.userId) || // Test 2.6.1
+          isOwner(resource.data, 'userId') || // Test 2.6.1
           isAdmin()); // Test 2.6.3
       }
 

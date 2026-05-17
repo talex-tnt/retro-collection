@@ -74,8 +74,7 @@ const TEST_COLLECTION_ID_2 = 'test-items-collection-2';
 const FIRST_DOC_ID = 'item-a';
 const SECOND_DOC_ID = 'item-b';
 
-const getItemPath = (itemId) =>
-  `${ITEMS_PATH}/${itemId}`;
+const getItemPath = (itemId) => `${ITEMS_PATH}/${itemId}`;
 
 const validItem = {
   name: 'Test Item',
@@ -901,26 +900,29 @@ test(`[2.1.1] items query reproduces the frontend getItems shape on ${RULES_TARG
   try {
     // Query by documentId to verify public items are readable
     const snapshot1 = await getDoc(doc(context.db, getItemPath(FIRST_DOC_ID)));
-    assert.equal(snapshot1.exists(), true, 'First public item should be readable');
-    
+    assert.equal(
+      snapshot1.exists(),
+      true,
+      'First public item should be readable'
+    );
+
     const snapshot2 = await getDoc(doc(context.db, getItemPath(SECOND_DOC_ID)));
-    assert.equal(snapshot2.exists(), true, 'Second public item should be readable');
+    assert.equal(
+      snapshot2.exists(),
+      true,
+      'Second public item should be readable'
+    );
 
     // Also test the compound query with collectionId and ordering
-    if (RULES_TARGET === 'emulator') {
-      const itemsQuery = query(
-        collection(context.db, ITEMS_PATH),
-        where('collectionId', '==', TEST_COLLECTION_ID),
-        orderBy('createdAt', 'desc'),
-        orderBy('__name__', 'asc')
-      );
-      const querySnapshot = await getDocs(itemsQuery);
-      assert.equal(
-        querySnapshot.size,
-        2,
-        'Query should return 2 public items'
-      );
-    }
+    const itemsQuery = query(
+      collection(context.db, ITEMS_PATH),
+      where('collectionId', '==', TEST_COLLECTION_ID),
+      orderBy('createdAt', 'desc'),
+      orderBy('__name__', 'asc')
+    );
+    const querySnapshot = await getDocs(itemsQuery);
+    assert.equal(querySnapshot.size, 2, 'Query should return 2 public items');
+    
   } finally {
     await adminDb
       .collection(ITEMS_PATH)
