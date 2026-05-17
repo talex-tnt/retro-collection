@@ -15,10 +15,10 @@ When you're implementing or refactoring rules, it's important to focus on improv
 - We also identify two main user roles: `USERS` and `TESTERS`:
   - `TESTERS` are identified by a custom claim in their auth token which is `request.auth.token.tester == true`. `USERS` do not have this claim.
   - The `admin` role is also identified by a custom claim, which is `request.auth.token.admin == true`, and `admins` can access both `/main` and `/test`(if also `TESTERS`) without restrictions. Both `USERS` and `TESTERS` can be admins, but only `TESTERS` can access `/test`.
-- On the DB we have to main folders at the root which are `/main` and `/test`. The rules for these folders are mostly the same, with some differences in access control which are listed below:
-  - For `/main`, we want to ensure that only authenticated `USERS` can read and write their own data, while `admin`s `USERS` have full access in `/main`.
-  - For `/test`, we want to allow read access to every `TESTER` for testing purposes, but restrict write access to authenticated `TESTERS` only.
-- Unauthorized `USERS` and should not have access to either folder, and authenticated `USERS` should not have access to the `/test` folder. `admin`s should have full access to both folders regardless of their `USER` or `TESTER` status.
+- On the DB we have two main folders at the root: `/main` and `/test`. The rules for these folders are mostly the same, with some differences in access control which are listed below:
+  - For `/main`, only authenticated `USERS` can access their own data, while `admin`s have full access in `/main`.
+  - For `/test`, only authenticated `TESTERS` can access the folder; this repo’s test harness defaults most `/test` suite clients to `tester: true`, and only the explicit `USER` vs `TESTER` boundary tests override that default.
+- Unauthorized `USERS` should not have access to either folder, and authenticated `USERS` should not have access to the `/test` folder. `admin`s should have full access to both folders regardless of their `USER` or `TESTER` status.
 - Implement the rules for both folders, ensuring that the access control logic is correctly applied based on the user roles and authentication status.
 
 -- Feature 2: Data Structure Validation
