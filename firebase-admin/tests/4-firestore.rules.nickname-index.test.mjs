@@ -7,6 +7,10 @@
  * [x] 4.1.3 - owner can only delete nickname entry if they own it
  * [x] 4.1.4 - non-owner cannot read or modify nicknameIndex from non-configured folder
  * [x] 4.1.5 - admin can create/read/update/delete any nickname entry
+ * [x] 4.1.6 - non-owner cannot create duplicate nickname entry (ownership enforcement prevents duplicates)
+ * [x] 4.1.7 - owner cannot transfer nickname ownership
+ * [x] 4.1.8 - user cannot modify another user's nickname entry
+ * [x] 4.1.9 - owner can delete own nickname entry and recreate it
  */
 
 import 'dotenv/config';
@@ -186,5 +190,99 @@ test(`[4.1.5] admin can create/read/update/delete any nickname entry on ${RULES_
     );
   } finally {
     await adminUser.cleanup();
+  }
+});
+
+// ============================================================================
+// ADDITIONAL NICKNAME TESTS: UNIQUENESS & OWNERSHIP TRANSITIONS
+// ============================================================================
+
+test(`[4.1.6] non-owner cannot create duplicate nickname entry on ${RULES_TARGET}`, async () => {
+  // Setup: admin creates a nickname entry for user-alice
+  await getAdminDb().doc(OWN_NICKNAME_PATH).set({ userId: 'user-alice' });
+
+  const otherUser = await buildClientContext({
+    uid: 'user-bob',
+    claims: { admin: false },
+  });
+
+  try {
+    // user-bob tries to create an entry for the same nickname as user-alice
+    // This should fail because the document already exists and user-bob doesn't own it
+    await expectPermissionDenied(
+      setDoc(doc(otherUser.db, OWN_NICKNAME_PATH), { userId: 'user-bob' }, { merge: true })
+    );
+  } finally {
+    await otherUser.cleanup();
+  }
+});
+
+test(`[4.1.7] owner cannot transfer nickname ownership on ${RULES_TARGET}`, async () => {
+  // Setup: admin creates a nickname entry for user-alice
+  await getAdminDb().doc(OWN_NICKNAME_PATH).set({ userId: 'user-alice' });
+
+  const owner = await buildClientContext({
+    uid: 'user-alice',
+    claims: { admin: false },
+  });
+
+  try {
+    // Owner (user-alice) tries to change the userId to someone else - should fail
+    await expectPermissionDenied(
+      setDoc(
+        doc(owner.db, OWN_NICKNAME_PATH),
+        { userId: 'user-bob' },
+        { merge: true }
+      )
+    );
+  } finally {
+    await owner.cleanup();
+  }
+});
+
+test(`[4.1.8] user cannot modify another user's nickname entry on ${RULES_TARGET}`, async () => {
+  // Setup: admin creates a nickname entry for user-alice
+  await getAdminDb().doc(OWN_NICKNAME_PATH).set({ userId: 'user-alice', createdAt: new Date() });
+
+  const otherUser = await buildClientContext({
+    uid: 'user-bob',
+    claims: { admin: false },
+  });
+
+  try {
+    // user-bob tries to update user-alice's nickname entry - should fail
+    await expectPermissionDenied(
+      setDoc(
+        doc(otherUser.db, OWN_NICKNAME_PATH),
+        { userId: 'user-bob' },
+        { merge: true }
+      )
+    );
+  } finally {
+    await otherUser.cleanup();
+  }
+});
+
+test(`[4.1.9] owner can delete own nickname entry and recreate it on ${RULES_TARGET}`, async () => {
+  const owner = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    // Create
+    await assert.doesNotReject(
+      setDoc(doc(owner.db, OWN_NICKNAME_PATH), { userId: TEST_USER_ID })
+    );
+
+    // Delete
+    await assert.doesNotReject(deleteDoc(doc(owner.db, OWN_NICKNAME_PATH)));
+
+    // Recreate
+    await assert.doesNotReject(
+      setDoc(doc(owner.db, OWN_NICKNAME_PATH), { userId: TEST_USER_ID })
+    );
+  } finally {
+    await owner.cleanup();
   }
 });
