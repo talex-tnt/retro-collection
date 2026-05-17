@@ -529,7 +529,7 @@ service cloud.firestore {
           isAdmin() || // Test 2.1.1
           (
             folderMatchesConfig() // Test 3.2.1, 2.1.1
-            // && (isOwner(resource.data.userId) || isPubliclyVisible()) // Test 2.1.1
+            && (isOwner(resource.data, 'userId') || isPubliclyVisible()) // Test 2.1.1
           ));
         // Test 2.2.1, 2.2.2, 2.2.3, 2.2.4, 2.3.1-2.3.8: Create with validation
         allow create: if environmentAccessAllowed() && validItemCreate(request.resource.data);

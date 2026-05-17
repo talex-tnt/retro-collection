@@ -866,7 +866,7 @@ test(`[2.6.3] admin can delete any item on ${RULES_TARGET}`, async () => {
 // QUERY TESTS
 // ============================================================================
 
-test(`[2.1.1] items query reproduces the frontend getItems shape on ${RULES_TARGET}`, async () => {
+test(`[2.1.1] public items query reproduces the frontend getItems shape on ${RULES_TARGET}`, async () => {
   const adminDb = getAdminDb();
   const TEST_USER_ID = 'rules-regular-user';
 
@@ -917,12 +917,162 @@ test(`[2.1.1] items query reproduces the frontend getItems shape on ${RULES_TARG
     const itemsQuery = query(
       collection(context.db, ITEMS_PATH),
       where('collectionId', '==', TEST_COLLECTION_ID),
+      where('visibility.public', '==', true),
       orderBy('createdAt', 'desc'),
       orderBy('__name__', 'asc')
     );
     const querySnapshot = await getDocs(itemsQuery);
+    console.warn(
+      'Queried items:',
+      querySnapshot.docs.map((doc) => doc.id)
+    );
     assert.equal(querySnapshot.size, 2, 'Query should return 2 public items');
-    
+  } finally {
+    await adminDb
+      .collection(ITEMS_PATH)
+      .doc(FIRST_DOC_ID)
+      .delete()
+      .catch(() => undefined);
+    await adminDb
+      .collection(ITEMS_PATH)
+      .doc(SECOND_DOC_ID)
+      .delete()
+      .catch(() => undefined);
+    await context.cleanup();
+  }
+});
+
+test(`[2.1.2] owner items query reproduces the frontend getItems shape on ${RULES_TARGET}`, async () => {
+  const adminDb = getAdminDb();
+  const TEST_USER_ID = 'rules-regular-user';
+
+  // Create two public items
+  await adminDb
+    .collection(ITEMS_PATH)
+    .doc(FIRST_DOC_ID)
+    .set({
+      name: 'First item',
+      userId: TEST_USER_ID,
+      collectionId: TEST_COLLECTION_ID,
+      createdAt: admin.firestore.Timestamp.fromMillis(1_700_000_000_000),
+      visibility: { public: false },
+    });
+  await adminDb
+    .collection(ITEMS_PATH)
+    .doc(SECOND_DOC_ID)
+    .set({
+      name: 'Second item',
+      userId: TEST_USER_ID,
+      collectionId: TEST_COLLECTION_ID,
+      createdAt: admin.firestore.Timestamp.fromMillis(1_700_000_001_000),
+      visibility: { public: false },
+    });
+
+  const context = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    // Query by documentId to verify public items are readable
+    const snapshot1 = await getDoc(doc(context.db, getItemPath(FIRST_DOC_ID)));
+    assert.equal(
+      snapshot1.exists(),
+      true,
+      'First public item should be readable'
+    );
+
+    const snapshot2 = await getDoc(doc(context.db, getItemPath(SECOND_DOC_ID)));
+    assert.equal(
+      snapshot2.exists(),
+      true,
+      'Second public item should be readable'
+    );
+
+    // Also test the compound query with collectionId and ordering
+    const itemsQuery = query(
+      collection(context.db, ITEMS_PATH),
+      where('collectionId', '==', TEST_COLLECTION_ID),
+      where('userId', '==', TEST_USER_ID),
+      orderBy('createdAt', 'desc'),
+      orderBy('__name__', 'asc')
+    );
+    const querySnapshot = await getDocs(itemsQuery);
+    console.warn(
+      'Queried items:',
+      querySnapshot.docs.map((doc) => doc.id)
+    );
+    assert.equal(querySnapshot.size, 2, 'Query should return 2 public items');
+  } finally {
+    await adminDb
+      .collection(ITEMS_PATH)
+      .doc(FIRST_DOC_ID)
+      .delete()
+      .catch(() => undefined);
+    await adminDb
+      .collection(ITEMS_PATH)
+      .doc(SECOND_DOC_ID)
+      .delete()
+      .catch(() => undefined);
+    await context.cleanup();
+  }
+});
+
+test(`[2.1.3] misc (owner and public) items cannot be expressed with firestore queries on ${RULES_TARGET}`, async () => {
+  const adminDb = getAdminDb();
+  const TEST_USER_ID = 'rules-regular-user';
+
+  // Create two public items
+  await adminDb
+    .collection(ITEMS_PATH)
+    .doc(FIRST_DOC_ID)
+    .set({
+      name: 'First item',
+      userId: TEST_USER_ID,
+      collectionId: TEST_COLLECTION_ID,
+      createdAt: admin.firestore.Timestamp.fromMillis(1_700_000_000_000),
+      visibility: { public: false },
+    });
+  await adminDb
+    .collection(ITEMS_PATH)
+    .doc(SECOND_DOC_ID)
+    .set({
+      name: 'Second item',
+      userId: 'other-user',
+      collectionId: TEST_COLLECTION_ID,
+      createdAt: admin.firestore.Timestamp.fromMillis(1_700_000_001_000),
+      visibility: { public: true },
+    });
+
+  const context = await buildClientContext({
+    uid: TEST_USER_ID,
+    claims: { admin: false },
+  });
+
+  try {
+    // Query by documentId to verify public items are readable
+    const snapshot1 = await getDoc(doc(context.db, getItemPath(FIRST_DOC_ID)));
+    assert.equal(
+      snapshot1.exists(),
+      true,
+      'First public item should be readable'
+    );
+
+    const snapshot2 = await getDoc(doc(context.db, getItemPath(SECOND_DOC_ID)));
+    assert.equal(
+      snapshot2.exists(),
+      true,
+      'Second public item should be readable'
+    );
+
+    // This query is not allowed by rules, so it should throw permission-denied
+    const itemsQuery = query(
+      collection(context.db, ITEMS_PATH),
+      where('collectionId', '==', TEST_COLLECTION_ID),
+      orderBy('createdAt', 'desc'),
+      orderBy('__name__', 'asc')
+    );
+    await expectPermissionDenied(getDocs(itemsQuery));
   } finally {
     await adminDb
       .collection(ITEMS_PATH)
