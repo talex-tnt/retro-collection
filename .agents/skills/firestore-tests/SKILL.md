@@ -1,15 +1,15 @@
 ---
-name: firestore-tests-refactoring
-description: Update and refactor firestore tests for better maintainability and readability
+name: firestore-tests
+description: Implement and refactor firestore tests for better maintainability and readability
 ---
 
-When you're refactoring tests, it's important to focus on improving the structure, readability, and maintainability of your test code. Here are some steps you can take to achieve this:
+When you're implementing or refactoring tests, it's important to focus on improving the structure, readability, and maintainability of your test code. Here are some steps you can take to achieve this:
 
 ## Phase 1: Verify Tests
 - Make sure all the tests are passing before you start refactoring.
 - If not, inform me about the failing tests and we can work together to fix them before refactoring.
 
-## Phase 2: Refactor Test Code
+## Phase 2: Implement or Refactor Test Code
 - Identify any duplicate code in your tests and extract it into helper functions or setup methods.
 - Use descriptive names for your test functions to clearly indicate what they are testing.
 - Organize your test suites into logical groups, e.g., a group is a CRUD operation or a specific feature, to improve readability.
