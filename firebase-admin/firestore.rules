@@ -261,6 +261,33 @@ service cloud.firestore {
         validTimestamp(data.lastLogin); // Test 5.3.1: LastLogin must be valid timestamp
     }
 
+
+    // WIP:
+    // function getLengthLimitUser(field) {
+    //     return (field == 'name') ? 100 :
+    //            (field == 'description') ? 1000 : 0;
+    // }
+
+    // function createUserKeys() {
+    //     return ['name', 'createdAt', 'visibility', 'nickname'];
+    // }
+    // function createUserRequiredKeys() {
+    //   return ['name', 'createdAt', 'visibility', 'nickname'];
+    // }
+    // function validUserCreate(data) {
+    //   return 
+    //     isAdmin() ||
+    //     (
+    //       isAuthenticated() &&
+    //       hasOnlyValidKeys(data, createUserKeys()) &&
+    //       hasAllRequiredKeys(data, createUserRequiredKeys()) &&
+    //       validString(data.name, getLengthLimitUser('name')) &&
+    //       validTimestamp(data.createdAt) &&
+    //       isValidVisibilityMap(data.visibility) &&
+    //       hasValidOptionalString(data, 'description', getLengthLimitUser('description'))
+    //     );
+    // }
+
     // Public runtime config doc - Tests 3.1.3, 3.1.4
     match /{env}/config/public/runtime {
       allow read: if canAccessEnvironment(env); // Tests 3.1.5-3.1.9: environment gate
@@ -333,8 +360,8 @@ service cloud.firestore {
           environmentAccessAllowed() && (
           isAdmin() || // Test 5.1.1
           (
-            isOwner({'userId': userId}, 'userId') && // Test 5.1.2
             folderMatchesConfig() && // Test 5.1.3
+            isOwner({'userId': userId}, 'userId') && // Test 5.1.2
             isValidPublicUserData(request.resource.data) // Test 5.1.1, 5.4.1-5.4.4
           ));
         // Test 5.1.1, 5.1.2, 5.2.2: Update with validation
@@ -342,8 +369,8 @@ service cloud.firestore {
           environmentAccessAllowed() && (
           isAdmin() || // Test 5.1.1
           (
-            isOwner({'userId': userId}, 'userId') && // Test 5.1.2
             folderMatchesConfig() && // Test 5.1.3
+            isOwner({'userId': userId}, 'userId') && // Test 5.1.2
             isValidPublicUserData(request.resource.data) // Test 5.1.1, 5.2.2, 5.4.1-5.4.4
           ));
         // Test 5.1.4: Delete is admin-only
@@ -384,81 +411,30 @@ service cloud.firestore {
         allow delete: if environmentAccessAllowed() && isAdmin();
       }
 
-      // collection helpers --------------------------------------------
-      function getLengthLimit(field) {
-        return (field == 'collection.name') ? 100 :
-               (field == 'collection.description') ? 500 : 0;
-      }
-      function createCollectionKeys() {
-        return ['name', 'userId', 'createdAt', 'description', 'visibility'];
-      }
-      function createCollectionRequiredKeys() {
-       return ['name', 'userId', 'createdAt', 'visibility'];
-      }
-      function validCollectionCreate(data) {
-        return 
-          isAdmin() || // Test 1.2.4: Admin bypass
-          (
-            isAuthenticated() && // Test 1.2.3: Unauthenticated denied
-            hasOnlyValidKeys(data, createCollectionKeys()) && // Tests 1.3.7, 1.3.8: No extra fields
-            hasAllRequiredKeys(data, createCollectionRequiredKeys()) && // Tests 1.3.1, 1.3.2, 1.3.3: All required
-            isOwner(data, 'userId') && // Test 1.2.2: Non-owner denied
-            validString(data.name, getLengthLimit('collection.name')) && // Tests 1.3.1, 1.3.4: Name validation
-            validTimestamp(data.createdAt) && // Tests 1.3.2, 1.3.9: CreatedAt validation
-            isValidVisibilityMap(data.visibility) && // Tests 1.3.3, 1.3.8: Visibility validation
-            hasValidOptionalString(data, 'description', getLengthLimit('collection.description')) // Tests 1.3.5, 1.3.6: Optional description
-          );
-      }
-      function updateCollectionKeys() {
-        return ['name', 'updatedAt', 'description', 'visibility'];
-      }
-      function updateCollectionRequiredKeys() {
-        return ['updatedAt'];
-      }
-      function validCollectionUpdate(newData, existingData) {
-        return 
-          isAdmin() || // Test 1.4.1: Admin bypass
-          (
-            isAuthenticated() && // Test 1.4.2: Non-owner denied
-            existingData != null && // Immutability check
-            hasOnlyAffectedKeys(newData, existingData, updateCollectionKeys()) && // Tests 1.5.2-1.5.4: Optional fields only
-            hasAllRequiredAffectedKeys(newData, existingData, updateCollectionRequiredKeys()) && // Test 1.5.1: UpdatedAt required
-            isOwner(existingData, 'userId') && // Test 1.4.2: Non-owner denied
-            newData.userId == existingData.userId && // Immutability: userId fixed
-            newData.createdAt == existingData.createdAt && // Immutability: createdAt fixed
-            validTimestamp(newData.updatedAt) && // Test 1.5.1: UpdatedAt required and valid
-            hasValidOptionalString(newData, 'name', getLengthLimit('collection.name')) && // Tests 1.5.2, 1.5.5: Optional name with length
-            hasValidOptionalString(newData, 'description', getLengthLimit('collection.description')) && // Tests 1.5.3: Optional description
-            isValidVisibilityMapOptional(newData.visibility) // Test 1.5.4: Optional visibility
-          );
-      }
 
-      match /public/collections/{collectionId} {
-        // Test 1.1.1, 1.1.2, 1.1.3, 1.1.4: Get (admin, owner, or public)
-        allow get: if 
-          environmentAccessAllowed() && (
-          isAdmin() || // Test 1.1.1
-          (
-            folderMatchesConfig() && // Test 3.2.1
-            (isOwner(resource.data, 'userId') || isPubliclyVisible()) // Test 1.1.2, 1.1.4
-          ));
-        // Test 1.7.1: List queryable with owner or public visibility
-        allow list: if 
-          environmentAccessAllowed() && (
-          isAdmin() || // Test 1.7.1
-          (
-            folderMatchesConfig() && // Test 3.2.1, 1.7.1
-            (isOwner(resource.data, 'userId') || isPubliclyVisible()) // Test 1.7.1
-          ));
-        // Test 1.2.1, 1.2.2, 1.2.3, 1.2.4, 1.3.1-1.3.8: Create with validation
-        allow create: if environmentAccessAllowed() && validCollectionCreate(request.resource.data);
-        // Test 1.4.1, 1.4.2, 1.5.1-1.5.5: Update with validation
-        allow update: if environmentAccessAllowed() && validCollectionUpdate(request.resource.data, resource.data);
-        // Test 1.6.1, 1.6.2, 1.6.3: Delete
-        allow delete: if 
-          environmentAccessAllowed() && (
-          isOwner(resource.data, 'userId') || // Test 1.6.1
-          isAdmin()); // Test 1.6.3
+      // Items are now stored directly under the user document (no collections)
+      match /public/users/{userId}/items/{itemId} {
+        // Admin, owner, or public
+        allow get: if environmentAccessAllowed() && (
+          isAdmin() ||
+          (folderMatchesConfig() && (isOwner({'userId': userId}, 'userId') || isPubliclyVisible()))
+        );
+        allow list: if environmentAccessAllowed() && (
+          isAdmin() ||
+          (folderMatchesConfig() && (isOwner({'userId': userId}, 'userId') || isPubliclyVisible()))
+        );
+        allow create: if environmentAccessAllowed() && (
+          isAdmin() ||
+          (isOwner({'userId': userId}, 'userId') && folderMatchesConfig() && validItemCreate(request.resource.data))
+        );
+        allow update: if environmentAccessAllowed() && (
+          isAdmin() ||
+          (isOwner({'userId': userId}, 'userId') && folderMatchesConfig() && validItemUpdate(request.resource.data, resource.data))
+        );
+        allow delete: if environmentAccessAllowed() && (
+          isAdmin() ||
+          (isOwner({'userId': userId}, 'userId') && folderMatchesConfig())
+        );
       }
 
       // ----------------------------------------------------------------
@@ -468,25 +444,23 @@ service cloud.firestore {
                (field == 'item.description') ? 1000 : 0;
       }
       function createItemKeys() {
-        return ['name', 'userId', 'collectionId', 'createdAt', 'visibility', 'description'];
+        return ['name', 'userId', 'createdAt', 'visibility', 'description'];
       }
       function createItemRequiredKeys() {
-        return ['name', 'userId', 'collectionId', 'createdAt', 'visibility'];
+        return ['name', 'userId', 'createdAt', 'visibility'];
       }
       function validItemCreate(data) {
         return 
-          isAdmin() || // Test 2.2.4: Admin bypass
+          isAdmin() ||
           (
-            isAuthenticated() && // Test 2.2.3: Unauthenticated denied
-            hasOnlyValidKeys(data, createItemKeys()) && // Test 2.3.7: No extra fields
-            hasAllRequiredKeys(data, createItemRequiredKeys()) && // Tests 2.3.1-2.3.5: All required
-            isOwner(data, 'userId') && // Test 2.2.2: Non-owner denied
-            validString(data.name, getLengthLimitItem('item.name')) && // Tests 2.3.1, 2.3.4: Name validation
-            validTimestamp(data.createdAt) && // Tests 2.3.2, 2.3.8: CreatedAt validation
-            isValidVisibilityMap(data.visibility) && // Tests 2.3.3, 2.3.8: Visibility validation
-            data.collectionId is string && // Test 2.3.5: CollectionId is string
-            data.collectionId.size() > 0 && // Test 2.3.5: CollectionId not empty
-            hasValidOptionalString(data, 'description', getLengthLimitItem('item.description')) // Tests 2.3.6: Optional description
+            isAuthenticated() &&
+            hasOnlyValidKeys(data, createItemKeys()) &&
+            hasAllRequiredKeys(data, createItemRequiredKeys()) &&
+            isOwner(data, 'userId') &&
+            validString(data.name, getLengthLimitItem('item.name')) &&
+            validTimestamp(data.createdAt) &&
+            isValidVisibilityMap(data.visibility) &&
+            hasValidOptionalString(data, 'description', getLengthLimitItem('item.description'))
           );
       }
       function updateItemKeys() {
@@ -497,50 +471,22 @@ service cloud.firestore {
       }
       function validItemUpdate(newData, existingData) {
         return 
-          isAdmin() || // Test 2.4.1: Admin bypass
+          isAdmin() ||
           (
-            isAuthenticated() && // Test 2.4.2: Non-owner denied
-            existingData != null && // Immutability check
-            hasOnlyAffectedKeys(newData, existingData, updateItemKeys()) && // Tests 2.5.2-2.5.4: Optional fields only
-            hasAllRequiredAffectedKeys(newData, existingData, updateItemRequiredKeys()) && // Test 2.5.1: UpdatedAt required
-            isOwner(existingData, 'userId') && // Test 2.4.2: Non-owner denied
-            newData.userId == existingData.userId && // Immutability: userId fixed
-            newData.collectionId == existingData.collectionId && // Immutability: collectionId fixed
-            newData.createdAt == existingData.createdAt && // Immutability: createdAt fixed
-            validTimestamp(newData.updatedAt) && // Test 2.5.1: UpdatedAt required and valid
-            hasValidOptionalString(newData, 'name', getLengthLimitItem('item.name')) && // Tests 2.5.2, 2.5.5: Optional name with length
-            hasValidOptionalString(newData, 'description', getLengthLimitItem('item.description')) && // Tests 2.5.3: Optional description
-            isValidVisibilityMapOptional(newData.visibility) // Test 2.5.4: Optional visibility
+            isAuthenticated() &&
+            existingData != null &&
+            hasOnlyAffectedKeys(newData, existingData, updateItemKeys()) &&
+            hasAllRequiredAffectedKeys(newData, existingData, updateItemRequiredKeys()) &&
+            isOwner(existingData, 'userId') &&
+            newData.userId == existingData.userId &&
+            newData.createdAt == existingData.createdAt &&
+            validTimestamp(newData.updatedAt) &&
+            hasValidOptionalString(newData, 'name', getLengthLimitItem('item.name')) &&
+            hasValidOptionalString(newData, 'description', getLengthLimitItem('item.description')) &&
+            isValidVisibilityMapOptional(newData.visibility)
           );
       }
 
-      match /public/items/{itemId} {
-        // Test 2.1.1, 2.1.2, 2.1.3, 2.1.4: Get (admin, owner, or public)
-        allow get: if 
-          environmentAccessAllowed() && (
-          isAdmin() || // Test 2.1.1
-          (
-            folderMatchesConfig() && // Test 3.2.1
-            (isOwner(resource.data, 'userId') || isPubliclyVisible()) // Test 2.1.2, 2.1.4, 2.1.3
-          ));
-        // Test 2.1.1: List queryable with owner or public visibility
-        allow list: if 
-          environmentAccessAllowed() && (
-          isAdmin() || // Test 2.1.1
-          (
-            folderMatchesConfig() // Test 3.2.1, 2.1.1
-            && (isOwner(resource.data, 'userId') || isPubliclyVisible()) // Test 2.1.1
-          ));
-        // Test 2.2.1, 2.2.2, 2.2.3, 2.2.4, 2.3.1-2.3.8: Create with validation
-        allow create: if environmentAccessAllowed() && validItemCreate(request.resource.data);
-        // Test 2.4.1, 2.4.2, 2.5.1-2.5.5: Update with validation
-        allow update: if environmentAccessAllowed() && validItemUpdate(request.resource.data, resource.data);
-        // Test 2.6.1, 2.6.2, 2.6.3: Delete
-        allow delete: if 
-          environmentAccessAllowed() && (
-          isOwner(resource.data, 'userId') || // Test 2.6.1
-          isAdmin()); // Test 2.6.3
-      }
 
       // Nickname index: track nicknames and their owners - Tests 4.1.1-4.1.5
       // Authenticated users can read nickname docs, but can only write/delete if they contain their own userId
@@ -584,134 +530,7 @@ service cloud.firestore {
             resource.data.userId == request.auth.uid // Test 4.1.3
           ));
       }
-
-      // Actual user data lives in collections under the folder doc
-      // match /public/{resourceType}/{document=**} {
-      //   allow read, list, write: if isAdmin() || (
-      //     isAuthenticated() &&
-      //     isAllowedResourceType(resourceType) &&
-      //     folderMatchesConfig()
-      //   );
-      // }
     }
-// #################################################################################################
-// DEBUGGING: lock down all public collection access to verify test behavior when rules are correctly applied.
-    // match /{env}/data/{folder}/public/collections/{document=**} {
-    //       allow read, list: if false;
-    //       allow write: if true;
-    // }
-
-    // match /{env}/data/{folder} {
-    //   allow read, list, write: if isAdmin();
-    //   match /public/collections/{collectionId} {
-    //     allow list: if isAdmin() || (folderMatchesConfig() && (isOwner(resource.data.userId) || isPubliclyVisible()));
-    //     // allow list: if isAdmin() || ((isOwner(resource.data.userId) || isPubliclyVisible()));
-    //     // allow list: if false;
-    //     // allow read, list: if false;
-    //     allow write: if true;
-    //   }
-    // }
-// ######################################################################################################################################
-
-    // function validCollection(data, ownerId) {
-    //   return data.keys().hasAll(['name', 'userId', 'createdAt']) &&
-    //     validString(data.name, 100) &&
-    //     (!('description' in data) || validOptionalString(data.description, 500)) &&
-    //     data.userId == ownerId &&
-    //     (!('visibility' in data) || validVisibility(data.visibility)) &&
-    //     validTimestamp(data.createdAt);
-    // }
-
-    // function validItem(data, ownerId) {
-    //   return data.keys().hasAll(['name', 'userId', 'createdAt']) &&
-    //     validString(data.name, 100) &&
-    //     (!('description' in data) || validOptionalString(data.description, 1000)) &&
-    //     data.userId == ownerId &&
-    //     (!('collectionId' in data) || data.collectionId == null || data.collectionId is string) &&
-    //     (!('visibility' in data) || validVisibility(data.visibility)) &&
-    //     validTimestamp(data.createdAt);
-    // }
-
-    // function hasValidItemCollection(data, ownerId) {
-    //   return !('collectionId' in data) || data.collectionId == null || (
-    //     data.collectionId is string && 
-    //     data.collectionId.size() > 0 &&
-    //     exists(/databases/$(database)/documents/collections/$(data.collectionId)) &&
-    //     get(/databases/$(database)/documents/collections/$(data.collectionId)).data.userId == ownerId
-    //   );
-    // }
-
-    // function normalizedCollectionId(data) {
-    //   return ('collectionId' in data && data.collectionId != null) ? data.collectionId : null;
-    // }
-
-    // function validCollectionUpdate(data, ownerId) {
-    //   return data.userId == ownerId &&
-    //     validString(data.name, 100) &&
-    //     (!('description' in data) || validOptionalString(data.description, 500)) &&
-    //     data.createdAt == resource.data.createdAt &&
-    //     (!('visibility' in data) || validVisibility(data.visibility)) &&
-    //     (!('updatedAt' in data) || validTimestamp(data.updatedAt));
-    // }
-
-    // function validItemUpdate(data, ownerId) {
-    //   return data.userId == resource.data.userId &&
-    //     data.userId == ownerId &&
-    //     data.createdAt == resource.data.createdAt &&
-    //     (
-    //       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['name']) ||
-    //       validString(data.name, 100)
-    //     ) &&
-    //     (
-    //       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['description']) ||
-    //       validOptionalString(data.description, 1000)
-    //     ) &&
-    //     (
-    //       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['collectionId']) ||
-    //       hasValidItemCollection(data, ownerId)
-    //     ) &&
-    //     (
-    //       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['visibility']) ||
-    //       validVisibility(data.visibility)
-    //     ) &&
-    //     (!('updatedAt' in data) || validTimestamp(data.updatedAt));
-    // }
-
-    // function isCollectionQueryForCurrentUser() {
-    //   return (request.query.where.size() == 1 &&
-    //     request.query.where[0].field == 'userId' &&
-    //     request.query.where[0].value == request.auth.uid) ||
-    //     request.query.where.size() == 0;
-    // }
-
-    // function isItemsQueryForOwnedCollection() {
-    //   return (request.query.where.size() == 1 &&
-    //     request.query.where[0].field == 'collectionId' &&
-    //     get(/databases/$(database)/documents/collections/$(request.query.where[0].value)).data.userId == request.auth.uid) ||
-    //     request.query.where.size() == 0;
-    // }
-   
-
-    // match /collections/{collectionId} {
-    //   allow get: if isAdmin() || resource.data.userId == request.auth.uid || ('visibility' in resource.data && resource.data.visibility.public == true);
-    //   allow list: if isAdmin() || isAuthenticated();
-    //   allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
-    //     request.resource.data.keys().hasAll(['name', 'userId', 'createdAt']) && validCollection(request.resource.data, request.auth.uid);
-    //   allow update: if (isOwner(resource.data.userId) && validCollectionUpdate(request.resource.data, request.auth.uid)) || isAdmin();
-    //   allow delete: if isOwner(resource.data.userId) || isAdmin();
-    // }
-
-    // match /items/{itemId} {
-    //   allow get: if isAdmin() || resource.data.userId == request.auth.uid || ('visibility' in resource.data && resource.data.visibility.public == true);
-    //   allow list: if isAdmin() || isAuthenticated();
-    //   allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
-    //     request.resource.data.keys().hasAll(['name', 'userId', 'createdAt']) &&
-    //     validItem(request.resource.data, request.auth.uid) &&
-    //     hasValidItemCollection(request.resource.data, request.auth.uid);
-    //   allow update: if isOwner(resource.data.userId) && validItemUpdate(request.resource.data, request.auth.uid);
-    //   allow delete: if isOwner(resource.data.userId) || isAdmin();
-    // }
-
     match /{document=**} {
       allow read, write: if false;
     }

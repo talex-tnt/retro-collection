@@ -14,12 +14,13 @@
     "format:check": "prettier --check .",
     "test:rules": "node --test tests/*-firestore.rules.*.test.mjs",
     "test:rules:emulator:all": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/*-firestore.rules.*.test.mjs'",
+    "test:rules:emulator:items": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/2-firestore.rules.items.test.mjs'",
     "test:rules:emulator:misc": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/3-firestore.rules.misc.test.mjs'",
-    "test:rules:emulator:collections": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/1-firestore.rules.collections.test.mjs'",
+    "test:rules:emulator:users": "RULES_TARGET=emulator firebase emulators:exec --only auth,firestore 'node --test tests/5-firestore.rules.users.test.mjs'",
     "test:rules:live:all": "RULES_TARGET=live ENV=dev node --test tests/*-firestore.rules.*.test.mjs",
-    "test:rules:emulator:items": "sh -c 'RULES_TARGET=emulator firebase emulators:exec --only auth,firestore \"node --test tests/2-firestore.rules.items.test.mjs $*\"' sh",
+    "test:rules:live:items": "RULES_TARGET=live ENV=dev node --test tests/2-firestore.rules.items.test.mjs",
     "test:rules:live:misc": "RULES_TARGET=live ENV=dev node --test tests/3-firestore.rules.misc.test.mjs",
-    "test:rules:live:collections": "RULES_TARGET=live ENV=dev node --test tests/1-firestore.rules.collections.test.mjs"
+    "test:rules:live:users": "RULES_TARGET=live ENV=dev node --test tests/5-firestore.rules.users.test.mjs"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
