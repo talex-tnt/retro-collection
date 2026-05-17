@@ -6,6 +6,11 @@
  * [x] 3.1.2 - non-admin cannot write to test data path
  * [x] 3.1.3 - admin can write to test/config/public/runtime
  * [x] 3.1.4 - non-admin cannot write to test config path
+ * [x] 3.1.5 - USERS (non-testers) cannot access /test folder
+ * [x] 3.1.6 - TESTERS cannot access /main folder
+ * [x] 3.1.7 - unauthenticated cannot access /main or /test
+ * [x] 3.1.8 - admin with tester claim can access both /main and /test
+ * [x] 3.1.9 - admin without tester claim can access both /main and /test
  * [x] 3.2.1 - user can write to matched dataFolder
  * [x] 3.2.2 - user cannot write to non-matched dataFolder
  * [x] 3.2.3 - user cannot write to unknown resourceType
@@ -56,6 +61,16 @@ const TEST_DATA_TEST_PATH = `${TEST_ROOT}/testData/rulesSmoke/adminOnlyWrite/doc
 const TEST_COLLECTION_ID = 'test-collection-1';
 const TEST_USER_ID = 'rules-regular-user';
 
+const MAIN_CONFIG_PATH = 'main/config/public/runtime';
+const MAIN_COLLECTION_PATH = joinPath(
+  'main',
+  'data',
+  TEST_DATA_FOLDER,
+  'public',
+  'collections',
+  'main-test-collection-1'
+);
+
 const TEST_COLLECTION_PATH = getPublicResourceDocPath(
   TEST_DATA_FOLDER,
   'collections',
@@ -75,6 +90,7 @@ const TEST_ALT_COLLECTION_PATH_2 = getPublicResourceDocPath(
 // Cleanup paths for infrastructure tests only (removed authorized-users and users paths)
 const miscCleanupDocPaths = [
   TEST_DATA_TEST_PATH,
+  MAIN_COLLECTION_PATH,
   TEST_COLLECTION_PATH,
   TEST_ALT_COLLECTION_PATH_1,
   TEST_ALT_COLLECTION_PATH_2,
@@ -95,6 +111,9 @@ test.beforeEach(async () => {
   const adminDb = getAdminDb();
   await adminDb
     .doc(TEST_CONFIG_PATH)
+    .set({ dataFolder: TEST_DATA_FOLDER }, { merge: true });
+  await adminDb
+    .doc(MAIN_CONFIG_PATH)
     .set({ dataFolder: TEST_DATA_FOLDER }, { merge: true });
 });
 
@@ -168,6 +187,144 @@ test(`[3.1.4] non-admin cannot write into ${TEST_CONFIG_PATH} on ${RULES_TARGET}
     await expectPermissionDenied(
       setDoc(doc(context.db, TEST_CONFIG_PATH), {
         dataFolder: 'data',
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
+
+test(`[3.1.5] USERS (non-testers) cannot read/write to /test folder on ${RULES_TARGET}`, async () => {
+  await getAdminDb()
+    .doc(TEST_COLLECTION_PATH)
+    .set({
+      userId: TEST_USER_ID,
+      visibility: { public: true },
+      createdAt: admin.firestore.Timestamp.now(),
+    });
+
+  const context = await buildClientContext({
+    uid: 'rules-user-no-tester',
+    claims: { admin: false, tester: false },
+  });
+
+  try {
+    await expectPermissionDenied(
+      getDocFromServer(doc(context.db, TEST_CONFIG_PATH))
+    );
+
+    await expectPermissionDenied(
+      getDocFromServer(doc(context.db, TEST_COLLECTION_PATH))
+    );
+
+    await expectPermissionDenied(
+      setDoc(doc(context.db, TEST_DATA_TEST_PATH), {
+        createdBy: 'rules-user-no-tester',
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
+
+test(`[3.1.6] TESTERS cannot read/write to /main folder on ${RULES_TARGET}`, async () => {
+  await getAdminDb()
+    .doc(MAIN_COLLECTION_PATH)
+    .set({
+      userId: TEST_USER_ID,
+      visibility: { public: true },
+      createdAt: admin.firestore.Timestamp.now(),
+    });
+
+  const context = await buildClientContext({
+    uid: 'rules-tester-user',
+    claims: { admin: false, tester: true },
+  });
+
+  try {
+    await expectPermissionDenied(
+      getDocFromServer(doc(context.db, MAIN_CONFIG_PATH))
+    );
+
+    await expectPermissionDenied(
+      getDocFromServer(doc(context.db, MAIN_COLLECTION_PATH))
+    );
+
+    await expectPermissionDenied(
+      setDoc(doc(context.db, MAIN_CONFIG_PATH), {
+        dataFolder: 'test',
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
+
+test(`[3.1.7] unauthenticated cannot read/write to /main or /test on ${RULES_TARGET}`, async () => {
+  const context = await buildUnauthenticatedClientContext(adminApp);
+
+  try {
+    // Try to write to /main
+    await expectPermissionDenied(
+      setDoc(doc(context.db, MAIN_CONFIG_PATH), {
+        dataFolder: 'test',
+      })
+    );
+
+    // Try to write to /test
+    await expectPermissionDenied(
+      setDoc(doc(context.db, TEST_DATA_TEST_PATH), {
+        createdBy: 'unauthenticated',
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
+
+test(`[3.1.8] admin with tester claim can read/write to both /main and /test on ${RULES_TARGET}`, async () => {
+  const context = await buildClientContext({
+    uid: 'rules-admin-tester',
+    claims: { admin: true, tester: true },
+  });
+
+  try {
+    // Should succeed for /main
+    await assert.doesNotReject(
+      setDoc(doc(context.db, MAIN_CONFIG_PATH), {
+        dataFolder: 'tested-by-admin-tester',
+      })
+    );
+
+    // Should succeed for /test
+    await assert.doesNotReject(
+      setDoc(doc(context.db, TEST_DATA_TEST_PATH), {
+        createdBy: 'rules-admin-tester',
+      })
+    );
+  } finally {
+    await context.cleanup();
+  }
+});
+
+test(`[3.1.9] admin without tester claim can read/write to both /main and /test on ${RULES_TARGET}`, async () => {
+  const context = await buildClientContext({
+    uid: 'rules-admin-no-tester',
+    claims: { admin: true, tester: false },
+  });
+
+  try {
+    // Should succeed for /main
+    await assert.doesNotReject(
+      setDoc(doc(context.db, MAIN_CONFIG_PATH), {
+        dataFolder: 'tested-by-admin-no-tester',
+      })
+    );
+
+    // Should succeed for /test
+    await assert.doesNotReject(
+      setDoc(doc(context.db, TEST_DATA_TEST_PATH), {
+        createdBy: 'rules-admin-no-tester',
       })
     );
   } finally {

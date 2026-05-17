@@ -2,7 +2,7 @@
  * SUITE 4: NICKNAME INDEX
  *
  * Test Checklist:
- * [x] 4.1.1 - authenticated user can read any nickname entry
+ * [x] 4.1.1 - authenticated user can read nickname entries
  * [x] 4.1.2 - owner can create nickname entry only if it contains their own userId
  * [x] 4.1.3 - owner can only delete nickname entry if they own it
  * [x] 4.1.4 - non-owner cannot read or modify nicknameIndex from non-configured folder
@@ -75,7 +75,7 @@ test.after(async () => {
   releaseSuiteLock();
 });
 
-test(`[4.1.1] authenticated user can read any nickname entry on ${RULES_TARGET}`, async () => {
+test(`[4.1.1] authenticated user can read nickname entries on ${RULES_TARGET}`, async () => {
   await getAdminDb().doc(OWN_NICKNAME_PATH).set({ userId: 'user-alice' });
 
   const context = await buildClientContext({

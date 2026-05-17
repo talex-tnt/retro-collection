@@ -5,7 +5,7 @@
  * [x] 1.1.1 - admin can read any collection
  * [x] 1.1.2 - owner can read own collection
  * [x] 1.1.3 - non-owner cannot read private collection
- * [x] 1.1.4 - anyone can read public collection
+ * [x] 1.1.4 - authenticated non-owner can read public collection
  * [x] 1.2.1 - owner can create own collection
  * [x] 1.2.2 - non-owner cannot create collection for another user
  * [x] 1.2.3 - unauthenticated cannot create collection
@@ -194,7 +194,7 @@ test(`[1.1.3] non-owner cannot read private collection on ${RULES_TARGET}`, asyn
   }
 });
 
-test(`[1.1.4] anyone can read public collection on ${RULES_TARGET}`, async () => {
+test(`[1.1.4] authenticated non-owner can read public collection on ${RULES_TARGET}`, async () => {
   const collectionPath = getCollectionPath('collection-4');
 
   // Setup: write public collection

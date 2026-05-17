@@ -15,7 +15,7 @@
  * 1.1.1 - admin can read any collection
  * 1.1.2 - owner can read own collection
  * 1.1.3 - non-owner cannot read private collection
- * 1.1.4 - anyone can read public collection
+ * 1.1.4 - authenticated non-owner can read public collection
  * 1.2.1 - owner can create own collection
  * 1.2.2 - non-owner cannot create collection for another user
  * 1.2.3 - unauthenticated cannot create collection
@@ -48,6 +48,11 @@
  * 3.1.2 - non-admin cannot write to test data path
  * 3.1.3 - admin can write to test/config/public/runtime
  * 3.1.4 - non-admin cannot write to test config path
+ * 3.1.5 - USERS (non-testers) cannot read/write to /test folder
+ * 3.1.6 - TESTERS cannot read/write to /main folder
+ * 3.1.7 - unauthenticated cannot read/write to /main or /test
+ * 3.1.8 - admin with tester claim can access both /main and /test
+ * 3.1.9 - admin without tester claim can access both /main and /test
  * 3.2.1 - user can write to matched dataFolder
  * 3.2.2 - user cannot write to non-matched dataFolder
  * 3.2.3 - user cannot write to unknown resourceType
@@ -67,9 +72,9 @@
  * 5.1.2 - non-owner cannot create or update someone else's doc
  * 5.1.3 - owner cannot access user doc in non-configured folder
  * 5.1.4 - delete is admin-only
- * 5.2.1 - anyone can get a public user, but not a private one
+ * 5.2.1 - authenticated non-owner can get a public user, but not a private one
  * 5.2.2 - only owner can update own visibility
- * 5.2.3 - can list public users only with explicit filter
+ * 5.2.3 - authenticated non-owner can list public users only with explicit filter
  * 5.3.1 - owner can create/get/update own doc with email and lastLogin only
  * 5.3.2 - non-owner cannot read or write someone else's doc
  * 5.4.1 - owner can set and update nickname field
@@ -92,6 +97,30 @@ service cloud.firestore {
     // Used indirectly by tests: 0.x.x, 1.x.x, 2.x.x, 3.x.x, 4.x.x, 5.x.x (admin operations throughout)
     function isAdmin() {
       return isAuthenticated() && request.auth.token.admin == true;
+    }
+
+    // Used indirectly by tests: 3.1.5, 3.1.8 (role-based environment access)
+    function hasTesterClaim() {
+      return isAuthenticated() &&
+        ('tester' in request.auth.token) &&
+        request.auth.token.tester == true;
+    }
+
+    // Used indirectly by tests: 3.1.5, 3.1.8 (role-based environment access)
+    function isTester() {
+      return isAuthenticated() && !isAdmin() && hasTesterClaim();
+    }
+
+    // Used indirectly by tests: 3.1.6, 3.1.9 (role-based environment access)
+    function isUser() {
+      return isAuthenticated() && !isAdmin() && !hasTesterClaim();
+    }
+
+    // Used indirectly by tests: 3.1.5-3.1.9 (environment access split)
+    function canAccessEnvironment(env) {
+      return isAdmin() ||
+        (env == 'main' && isUser()) ||
+        (env == 'test' && isTester());
     }
 
     // Used indirectly by tests: 0.x.x, 1.x.x, 3.x.x, 4.x.x, 5.x.x (owner checks throughout)
@@ -206,16 +235,15 @@ service cloud.firestore {
         validTimestamp(data.lastLogin); // Test 5.3.1: LastLogin must be valid timestamp
     }
 
-
     // Public runtime config doc - Tests 3.1.3, 3.1.4
     match /{env}/config/public/runtime {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow read: if canAccessEnvironment(env); // Tests 3.1.5-3.1.9: environment gate
+      allow write: if canAccessEnvironment(env) && isAdmin(); // Tests 3.1.3, 3.1.4, 3.1.5-3.1.9
     }
 
     // All other config paths are admin-only - Tests 3.1.3, 3.1.4
     match /{env}/config/{document=**} {
-      allow read, write: if isAdmin();
+      allow read, write: if canAccessEnvironment(env) && isAdmin(); // Tests 3.1.3, 3.1.4, 3.1.5-3.1.9
     }
 
     // Admin-only scratch area for tests and diagnostics - Tests 3.1.1, 3.1.2
@@ -225,7 +253,13 @@ service cloud.firestore {
 
     // Folder documents themselves are not user-writable
     match /{env}/data/{folder} {
-      allow read, list, write: if isAdmin();
+      allow read, list, write: if canAccessEnvironment(env) && isAdmin(); // Tests 3.1.5-3.1.9: env gate; admin-only on folder doc
+
+      // Reused by nested resource rules so environment access stays explicit.
+      // Tests 3.1.5-3.1.9 cover this gate across /main vs /test.
+      function environmentAccessAllowed() {
+        return canAccessEnvironment(env);
+      }
       
       function folderMatchesConfig() {
         return get(/databases/$(database)/documents/$(env)/config/public/runtime).data.dataFolder == folder;
@@ -236,84 +270,92 @@ service cloud.firestore {
         // Test 0.1.1: Allow a signed-in user to check *only their own* authorization doc.
         // Test 0.1.2: This enables a client-side allowlist check without permitting enumeration.
         allow get: if 
+          environmentAccessAllowed() && (
           isAdmin() || // Test 0.1.1
           (
             folderMatchesConfig() && // Test 3.2.1
             isAuthenticated() && // Test 0.1.1
             tokenEmail() != null && // Test 0.1.1
             tokenEmail().lower() == email.lower() // Test 0.1.1
-          );
+          ));
         // Test 0.1.3: Admin can list
-        allow list: if isAdmin();
+        allow list: if environmentAccessAllowed() && isAdmin();
         // Test 0.1.1: Admin-only write
-        allow write: if isAdmin();
+        allow write: if environmentAccessAllowed() && isAdmin();
       }
 
       // users public profile: owner writes only name + visibility.public; others may read only when public - Tests 5.1.1-5.4.4
       match /public/users/{userId} {
         // Test 5.1.1, 5.1.2, 5.2.1: Get (admin, owner, or public)
         allow get: if 
+          environmentAccessAllowed() && (
           isAdmin() || // Test 5.1.1
           (
             folderMatchesConfig() && // Test 5.1.3
             (isOwner(userId) || isPubliclyVisible()) // Test 5.1.1, 5.2.1
-          );
+          ));
         // Test 5.2.1, 5.2.3: List only public users
         allow list: if 
+          environmentAccessAllowed() && (
           isAdmin() || // Test 5.2.3
           (
             folderMatchesConfig() && // Test 5.2.3
             isPubliclyVisible() // Test 5.2.3
-          );
+          ));
         // Test 5.1.1, 5.1.2: Create with validation
         allow create: if 
+          environmentAccessAllowed() && (
           isAdmin() || // Test 5.1.1
           (
             isOwner(userId) && // Test 5.1.2
             folderMatchesConfig() && // Test 5.1.3
             isValidPublicUserData(request.resource.data) // Test 5.1.1, 5.4.1-5.4.4
-          );
+          ));
         // Test 5.1.1, 5.1.2, 5.2.2: Update with validation
         allow update: if 
+          environmentAccessAllowed() && (
           isAdmin() || // Test 5.1.1
           (
             isOwner(userId) && // Test 5.1.2
             folderMatchesConfig() && // Test 5.1.3
             isValidPublicUserData(request.resource.data) // Test 5.1.1, 5.2.2, 5.4.1-5.4.4
-          );
+          ));
         // Test 5.1.4: Delete is admin-only
-        allow delete: if isAdmin();
+        allow delete: if environmentAccessAllowed() && isAdmin();
       }
 
       // users private profile: owner-only read/write for email + lastLogin - Tests 5.3.1, 5.3.2
       match /private/users/{userId} {
         // Test 5.3.1, 5.3.2: Owner-only get
         allow get: if 
+          environmentAccessAllowed() && (
           isAdmin() || // Test 5.3.1
           (
             folderMatchesConfig() && // Test 5.3.2
             isOwner(userId) // Test 5.3.2
-          );
+          ));
         // Test 5.3.1: Admin list only
-        allow list: if isAdmin();
+        allow list: if environmentAccessAllowed() && isAdmin();
         // Test 5.3.1, 5.3.2: Owner-only create with validation
         allow create: if 
+          environmentAccessAllowed() && (
           isAdmin() || // Test 5.3.1
           (
             isOwner(userId) && // Test 5.3.2
             folderMatchesConfig() && // Test 5.3.2
             isValidPrivateUserData(request.resource.data) // Test 5.3.1
-          );
+          ));
         // Test 5.3.1, 5.3.2: Owner-only update with validation
         allow update: if 
+          environmentAccessAllowed() && (
           isAdmin() || // Test 5.3.1
           (
             isOwner(userId) && // Test 5.3.2
             folderMatchesConfig() && // Test 5.3.2
             isValidPrivateUserData(request.resource.data) // Test 5.3.1
-          );
+          ));
         // Test 5.3.1: Admin-only delete
-        allow delete: if isAdmin();
+        allow delete: if environmentAccessAllowed() && isAdmin();
       }
 
       // collection helpers --------------------------------------------
@@ -368,26 +410,29 @@ service cloud.firestore {
       match /public/collections/{collectionId} {
         // Test 1.1.1, 1.1.2, 1.1.3, 1.1.4: Get (admin, owner, or public)
         allow get: if 
+          environmentAccessAllowed() && (
           isAdmin() || // Test 1.1.1
           (
             folderMatchesConfig() && // Test 3.2.1
             (isOwner(resource.data.userId) || isPubliclyVisible()) // Test 1.1.2, 1.1.4
-          );
+          ));
         // Test 1.7.1: List queryable with owner or public visibility
         allow list: if 
+          environmentAccessAllowed() && (
           isAdmin() || // Test 1.7.1
           (
             folderMatchesConfig() && // Test 3.2.1, 1.7.1
             (isOwner(resource.data.userId) || isPubliclyVisible()) // Test 1.7.1
-          );
+          ));
         // Test 1.2.1, 1.2.2, 1.2.3, 1.2.4, 1.3.1-1.3.8: Create with validation
-        allow create: if validCollectionCreate(request.resource.data);
+        allow create: if environmentAccessAllowed() && validCollectionCreate(request.resource.data);
         // Test 1.4.1, 1.4.2, 1.5.1-1.5.5: Update with validation
-        allow update: if validCollectionUpdate(request.resource.data, resource.data);
+        allow update: if environmentAccessAllowed() && validCollectionUpdate(request.resource.data, resource.data);
         // Test 1.6.1, 1.6.2, 1.6.3: Delete
         allow delete: if 
+          environmentAccessAllowed() && (
           isOwner(resource.data.userId) || // Test 1.6.1
-          isAdmin(); // Test 1.6.3
+          isAdmin()); // Test 1.6.3
       }
 
       // ----------------------------------------------------------------
@@ -395,30 +440,33 @@ service cloud.firestore {
 
       match /public/items/{itemId} {
         // Test 2.1.1: Items query reproduces the frontend getItems shape
-        allow get, list, create, update, delete: if true; // fixme: implement item rules
+        allow get, list, create, update, delete: if environmentAccessAllowed(); // fixme: implement item rules
       }
 
       // Nickname index: track nicknames and their owners - Tests 4.1.1-4.1.5
-      // Users can read any nickname doc, but can only write/delete if it contains their own userId
+      // Authenticated users can read nickname docs, but can only write/delete if they contain their own userId
       match /public/nicknameIndex/{nickname} {
-        // Test 4.1.1: Anyone can read
+        // Test 4.1.1: Authenticated users can read
         allow get, list: if 
+          environmentAccessAllowed() && (
           isAdmin() || // Test 4.1.5
           (
             folderMatchesConfig() && // Test 4.1.4
             isAuthenticated() // Test 4.1.1
-          );
+          ));
         // Test 4.1.2: Owner can create with their userId
         allow create: if 
+          environmentAccessAllowed() && (
           isAdmin() || // Test 4.1.5
           (
             folderMatchesConfig() && // Test 4.1.4
             isAuthenticated() && // Test 4.1.2
             request.resource.data.userId == request.auth.uid && // Test 4.1.2
             request.resource.data.userId is string // Test 4.1.2
-          );
+          ));
         // Test 4.1.2, 4.1.3: Owner can update with their userId
         allow update: if 
+          environmentAccessAllowed() && (
           isAdmin() || // Test 4.1.5
           (
             folderMatchesConfig() && // Test 4.1.4
@@ -426,15 +474,16 @@ service cloud.firestore {
             resource.data.userId == request.auth.uid && // Test 4.1.3
             request.resource.data.userId == request.auth.uid && // Test 4.1.3
             request.resource.data.userId is string // Test 4.1.3
-          );
+          ));
         // Test 4.1.3: Owner can delete if they own it
         allow delete: if 
+          environmentAccessAllowed() && (
           isAdmin() || // Test 4.1.5
           (
             folderMatchesConfig() && // Test 4.1.4
             isAuthenticated() && // Test 4.1.3
             resource.data.userId == request.auth.uid // Test 4.1.3
-          );
+          ));
       }
 
       // Actual user data lives in collections under the folder doc

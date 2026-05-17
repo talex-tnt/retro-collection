@@ -6,9 +6,9 @@
  * [x] 5.1.2 - non-owner cannot create or update someone else's doc
  * [x] 5.1.3 - owner cannot access user doc in non-configured folder
  * [x] 5.1.4 - delete is admin-only
- * [x] 5.2.1 - anyone can get a public user, but not a private one
+ * [x] 5.2.1 - authenticated non-owner can get a public user, but not a private one
  * [x] 5.2.2 - only owner can update own visibility
- * [x] 5.2.3 - can list public users only with explicit filter
+ * [x] 5.2.3 - authenticated non-owner can list public users only with explicit filter
  * [x] 5.3.1 - owner can create/get/update own doc with email and lastLogin only
  * [x] 5.3.2 - non-owner cannot read or write someone else's doc
  * [x] 5.4.1 - owner can set and update nickname field
@@ -42,7 +42,6 @@ import {
   createAdminApp,
   getAdminDb as sharedGetAdminDb,
   buildClientContext as sharedBuildClientContext,
-  buildUnauthenticatedClientContext,
   cleanupTestDocs as sharedCleanupTestDocs,
   expectPermissionDenied,
   acquireSuiteLock,
@@ -293,7 +292,7 @@ test(`[5.1.4] delete is admin-only on ${RULES_TARGET}`, async () => {
   }
 });
 
-test(`[5.2.1] anyone can get a public user, but not a private one on ${RULES_TARGET}`, async () => {
+test(`[5.2.1] authenticated non-owner can get a public user, but not a private one on ${RULES_TARGET}`, async () => {
   await getAdminDb()
     .doc(PUBLIC_USER_DOC_PATH)
     .set({
@@ -307,18 +306,24 @@ test(`[5.2.1] anyone can get a public user, but not a private one on ${RULES_TAR
       visibility: { public: false },
     });
 
-  const unauth = await buildUnauthenticatedClientContext();
+  const publicReader = await buildClientContext({
+    uid: 'public-user-reader',
+    claims: { admin: false },
+  });
   try {
     const publicSnap = await getDocFromServer(
-      doc(unauth.db, PUBLIC_USER_DOC_PATH)
+      doc(publicReader.db, PUBLIC_USER_DOC_PATH)
     );
-    assert.ok(publicSnap.exists(), 'Unauth should be able to read public user');
+    assert.ok(
+      publicSnap.exists(),
+      'Authenticated non-owner should be able to read public user'
+    );
 
     await expectPermissionDenied(
-      getDocFromServer(doc(unauth.db, PRIVATE_USER_DOC_PATH))
+      getDocFromServer(doc(publicReader.db, PRIVATE_USER_DOC_PATH))
     );
   } finally {
-    await unauth.cleanup();
+    await publicReader.cleanup();
   }
 
   const nonOwner = await buildClientContext({
@@ -401,7 +406,7 @@ test(`[5.2.2] only owner can update own visibility on ${RULES_TARGET}`, async ()
   }
 });
 
-test(`[5.2.3] can list public users only with explicit filter on ${RULES_TARGET}`, async () => {
+test(`[5.2.3] authenticated non-owner can list public users only with explicit filter on ${RULES_TARGET}`, async () => {
   const usersCollectionPath = getPublicResourcePath(TEST_DATA_FOLDER, 'users');
 
   await getAdminDb()
@@ -417,15 +422,18 @@ test(`[5.2.3] can list public users only with explicit filter on ${RULES_TARGET}
       visibility: { public: false },
     });
 
-  const unauth = await buildUnauthenticatedClientContext();
+  const publicReader = await buildClientContext({
+    uid: 'public-user-list-reader',
+    claims: { admin: false },
+  });
   try {
     await expectPermissionDenied(
-      getDocs(query(collection(unauth.db, usersCollectionPath)))
+      getDocs(query(collection(publicReader.db, usersCollectionPath)))
     );
 
     const snap = await getDocs(
       query(
-        collection(unauth.db, usersCollectionPath),
+        collection(publicReader.db, usersCollectionPath),
         where('visibility.public', '==', true)
       )
     );
@@ -440,7 +448,7 @@ test(`[5.2.3] can list public users only with explicit filter on ${RULES_TARGET}
       'Private user should not be present in results'
     );
   } finally {
-    await unauth.cleanup();
+    await publicReader.cleanup();
   }
 });
 

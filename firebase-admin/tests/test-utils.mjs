@@ -113,6 +113,8 @@ export const buildClientContext = async (adminApp, { uid, claims = {} }) => {
   const app = initializeClientApp(firebaseConfig, appName);
   const auth = getAuth(app);
   const db = getFirestore(app);
+  const defaultClaims = TEST_ROOT === 'test' ? { tester: true } : {};
+  const mergedClaims = { ...defaultClaims, ...claims };
 
   if (RULES_TARGET === 'emulator') {
     connectAuthEmulator(auth, 'http://127.0.0.1:9099', {
@@ -123,7 +125,7 @@ export const buildClientContext = async (adminApp, { uid, claims = {} }) => {
 
   const customToken = await getAdminAuth(adminApp).createCustomToken(
     uid,
-    claims
+    mergedClaims
   );
   await signInWithCustomToken(auth, customToken);
 
