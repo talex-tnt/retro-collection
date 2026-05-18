@@ -60,11 +60,11 @@ service cloud.firestore {
       return !(field in data) || data[field] == null || validOptionalString(data[field], maxLength);
     }
 
-
     function validTimestamp(field) {
-      return field is timestamp && 
-        field.toMillis() > 0 &&
-        field.toMillis() < request.time.toMillis() + 60000; // Allow up to 60 seconds in the future for clock skew
+      return field is timestamp && (
+        field == request.time || 
+        (field.toMillis() > 0 && field.toMillis() < request.time.toMillis() + 60000)
+      );
     }
 
     function tokenEmail() {
@@ -288,14 +288,13 @@ service cloud.firestore {
                 (field == 'item.description') ? 1000 : 0;
         }
         function createItemKeys() {
-          return ['name', 'userId', 'createdAt', 'visibility', 'description'];
+          return ['name', 'userId', 'createdAt', 'updatedAt', 'visibility', 'description'];
         }
         function createItemRequiredKeys() {
           return ['name', 'userId', 'createdAt', 'visibility'];
         }
         function validItemCreate(data) {
           return 
-            isAdmin() ||
             (
               isAuthenticated() &&
               hasOnlyValidKeys(data, createItemKeys()) &&
@@ -315,7 +314,6 @@ service cloud.firestore {
         }
         function validItemUpdate(newData, existingData) {
           return 
-            isAdmin() ||
             (
               isAuthenticated() &&
               existingData != null &&
@@ -332,28 +330,34 @@ service cloud.firestore {
         }
 
         // Admin, owner, or public
-        allow get: if environmentAccessAllowed() && (
-          isAdmin() ||
-          (folderMatchesConfig() && (isUserOwner() || isPubliclyVisible()))
-        );
-        allow list: if environmentAccessAllowed() && (
-          isAdmin() ||
-          (folderMatchesConfig() && (isUserOwner() || isPubliclyVisible()))
-        );
-        allow create: if environmentAccessAllowed() && (
-          isAdmin() ||
-          (isUserOwner() && folderMatchesConfig() && validItemCreate(request.resource.data))
-        );
-        allow update: if environmentAccessAllowed() && (
-          isAdmin() ||
-          (isUserOwner() && folderMatchesConfig() && validItemUpdate(request.resource.data, resource.data))
-        );
-        allow delete: if environmentAccessAllowed() && (
-          isAdmin() ||
-          (isUserOwner() && folderMatchesConfig())
-        );
-      }
+        allow get: if 
+          environmentAccessAllowed() 
+          && folderMatchesConfig() 
+          && (isAdmin() || isUserOwner() || isPubliclyVisible());
+        
+        allow list: if 
+          environmentAccessAllowed() 
+          && folderMatchesConfig() 
+          && (isAdmin() || isUserOwner() || isPubliclyVisible());
+        
+        allow create: if 
+          environmentAccessAllowed() 
+          && folderMatchesConfig() 
+          && validItemCreate(request.resource.data)
+          && (isAdmin() || isUserOwner());
+        
+        allow update: if 
+          environmentAccessAllowed() 
+          && folderMatchesConfig() 
+          && validItemUpdate(request.resource.data, resource.data)
+          && (isAdmin() || isUserOwner());
+        
+        allow delete: if 
+          environmentAccessAllowed() 
+          && folderMatchesConfig()
+          && (isAdmin() || isUserOwner());
 
+      }
 
 
 
