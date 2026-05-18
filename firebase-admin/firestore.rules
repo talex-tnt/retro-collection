@@ -172,11 +172,13 @@ service cloud.firestore {
 
     // Used indirectly by tests: 1.1.1 (authorized-users email matching)
     function tokenEmail() {
-      return (isAuthenticated() && ('email' in request.auth.token) && request.auth.token.email is string)
+      return isAuthenticated() &&
+            request.auth.token.email is string
         ? request.auth.token.email
-        : (isAuthenticated() && ('authEmail' in request.auth.token) && request.auth.token.authEmail is string)
-          ? request.auth.token.authEmail
-          : null;
+        : isAuthenticated() &&
+          request.auth.token.authEmail is string
+        ? request.auth.token.authEmail
+        : null;
     }
 
     // Used indirectly by tests: 1.1.4 (public collections), 1.7.1 (query), 0.2.1 (public users), 0.2.3 (user list)

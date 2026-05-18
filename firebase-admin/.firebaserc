@@ -1,5 +1,6 @@
 {
   "projects": {
+    "default": "retro-collections-dev",
     "dev": "retro-collections-dev",
     "prod": "retro-collections-prod"
   }
