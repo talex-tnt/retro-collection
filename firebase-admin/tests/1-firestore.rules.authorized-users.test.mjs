@@ -166,3 +166,66 @@ test(`[1.1.3] authorized-users: admin can list from canonical docs-root path on 
     await adminUser.cleanup();
   }
 });
+
+test(`[1.1.4] non-admin user with matching email or authEmail claim can read their own authorized-users doc in main env and correct folder`, async () => {
+  const email = 'test@gmail.com';
+  const anotherEmail = 'test2@gmail.com';
+  const docPath = joinPath(getAuthorizedUsersPath(TEST_DATA_FOLDER), email);
+  const anotherEmailDocPath = joinPath(
+    getAuthorizedUsersPath(TEST_DATA_FOLDER),
+    anotherEmail
+  );
+  await getAdminDb().doc(docPath).set({ allowed: true });
+  await getAdminDb().doc(anotherEmailDocPath).set({ allowed: true });
+
+  let passed = false;
+  // Try with 'email' claim
+  const nonAdminEmail = await buildClientContext({
+    uid: 'rules-nonadmin-user-email',
+    claims: { admin: false, email },
+  });
+  try {
+    const snap = await getDocFromServer(doc(nonAdminEmail.db, docPath));
+    if (snap.exists()) {
+      assert.equal(snap.data()?.allowed, true);
+      passed = true;
+    }
+  } catch (e) {
+    // ignore
+  } finally {
+    await nonAdminEmail.cleanup();
+  }
+
+  // Try with 'authEmail' claim
+  const nonAdminAuthEmail = await buildClientContext({
+    uid: 'rules-nonadmin-user-authEmail',
+    claims: { admin: false, authEmail: email },
+  });
+  try {
+    const snap = await getDocFromServer(doc(nonAdminAuthEmail.db, docPath));
+    if (snap.exists()) {
+      assert.equal(snap.data()?.allowed, true);
+      passed = true;
+    }
+  } catch (e) {
+    // ignore
+  } finally {
+    await nonAdminAuthEmail.cleanup();
+  }
+  assert.ok(
+    passed,
+    'Non-admin should be able to read their own authorized-users doc if email or authEmail matches'
+  );
+
+  const forbiddenContext = await buildClientContext({
+    uid: 'rules-nonadmin-user-email',
+    claims: { admin: false, email },
+  });
+  try {
+    await expectPermissionDenied(
+      getDocFromServer(doc(forbiddenContext.db, anotherEmailDocPath))
+    );
+  } finally {
+    await forbiddenContext.cleanup();
+  }
+});
