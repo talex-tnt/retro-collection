@@ -200,40 +200,8 @@ service cloud.firestore {
     function isValidVisibilityMapOptional(data) {
       return !('visibility' in data) || data.visibility == null || isValidVisibilityMap(data.visibility);
     }
-
-    // Used indirectly by tests: 0.4.1 (nickname set and update), 0.4.4 (nickname with visibility)
-    function hasValidNickname(data) {
-      return ('nickname' in data) && validString(data.nickname, 50);
-    }
-
-    // Used indirectly by tests: 0.4.1-0.4.2 (user nickname optional/validation), 0.4.4 (visibility without nickname)
-    function hasValidOptionalNickname(data) {
-      return !('nickname' in data) || data.nickname == null || hasValidNickname(data);
-    }
-
-    // Used indirectly by tests: 0.4.4 (nickname required when public)
-    function isPublicVisibilityEnabled(data) {
-      return ('visibility' in data) &&
-        isValidVisibilityMap(data.visibility) &&
-        data.visibility.public == true;
-    }
-
-    function isValidPublicUserData(data) {
-      return 
-        data.keys().hasOnly(['name', 'visibility', 'nickname']) && // Tests 0.1.1, 0.1.2: Only allowed fields
-        validString(data.name, 100) && // Test 0.1.1: Name required and max 100
-        isValidVisibilityMapOptional(data) && // Tests 0.1.1, 0.2.2: Visibility validation
-        hasValidOptionalNickname(data) && // Tests 0.4.1, 0.4.2: Nickname optional but valid if present
-        (!isPublicVisibilityEnabled(data) || hasValidNickname(data)); // Test 0.4.4: Nickname required if public
-    }
-
-    function isValidPrivateUserData(data) {
-      return 
-        data.keys().hasOnly(['email', 'lastLogin']) && // Test 0.3.1: Only allowed fields
-        validOptionalString(data.email, 100) && // Test 0.3.1: Email optional, max 100
-        validTimestamp(data.lastLogin); // Test 0.3.1: LastLogin must be valid timestamp
-    }
-
+   
+ 
 
     // WIP:
     // function getLengthLimitUser(field) {
@@ -315,6 +283,32 @@ service cloud.firestore {
         function isUserOwner() {
           return isOwner({'userId': userId}, 'userId');
         }
+        // Used indirectly by tests: 0.4.1 (nickname set and update), 0.4.4 (nickname with visibility)
+        function hasValidNickname(data) {
+          return ('nickname' in data) && validString(data.nickname, 50);
+        }
+
+        // Used indirectly by tests: 0.4.1-0.4.2 (user nickname optional/validation), 0.4.4 (visibility without nickname)
+        function hasValidOptionalNickname(data) {
+          return !('nickname' in data) || data.nickname == null || hasValidNickname(data);
+        }
+
+         // Used indirectly by tests: 0.4.4 (nickname required when public)
+        function isPublicVisibilityEnabled(data) {
+          return ('visibility' in data) &&
+            isValidVisibilityMap(data.visibility) &&
+            data.visibility.public == true;
+        }
+
+        function isValidPublicUserData(data) {
+          return 
+            data.keys().hasOnly(['name', 'visibility', 'nickname']) && // Tests 0.1.1, 0.1.2: Only allowed fields
+            validString(data.name, 100) && // Test 0.1.1: Name required and max 100
+            isValidVisibilityMapOptional(data) && // Tests 0.1.1, 0.2.2: Visibility validation
+            hasValidOptionalNickname(data) && // Tests 0.4.1, 0.4.2: Nickname optional but valid if present
+            (!isPublicVisibilityEnabled(data) || hasValidNickname(data)); // Test 0.4.4: Nickname required if public
+        }
+
         // Test 0.1.1, 0.1.2, 0.2.1: Get (admin, owner, or public)
         allow get: if 
           environmentAccessAllowed() && (
@@ -358,6 +352,14 @@ service cloud.firestore {
          function isUserOwner() {
           return isOwner({'userId': userId}, 'userId');
         }
+
+        function isValidPrivateUserData(data) {
+          return 
+            data.keys().hasOnly(['email', 'lastLogin']) && // Test 0.3.1: Only allowed fields
+            validOptionalString(data.email, 100) && // Test 0.3.1: Email optional, max 100
+            validTimestamp(data.lastLogin); // Test 0.3.1: LastLogin must be valid timestamp
+        }
+
         // Test 0.3.1, 0.3.2: Owner-only get
         allow get: if 
           environmentAccessAllowed() && (
