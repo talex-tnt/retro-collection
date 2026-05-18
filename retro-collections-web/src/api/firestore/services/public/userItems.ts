@@ -12,15 +12,16 @@ import {
   Timestamp,
   type QueryDocumentSnapshot,
   type DocumentData,
+  getCountFromServer,
 } from 'firebase/firestore';
 import type { FirestoreBuilder } from '../../types/firestoreBuilder';
 import { createFirestoreApiError } from '../../errorLogger';
 import { db } from '../../../../lib/firebase';
-import { resolveDataCollectionPath } from '../../runtimeConfig';
+import { getUserCollectionPath } from '../../runtimeConfig';
 
 const visibility = 'public' as const;
 
-export interface Collection {
+export interface Item {
   id: string;
   name: string;
   userId: string;
@@ -32,11 +33,11 @@ export interface Collection {
   };
 }
 
-type CollectionInput = Omit<Collection, 'id' | 'createdAt' | 'updatedAt'>;
+type ItemInput = Omit<Item, 'id' | 'createdAt' | 'updatedAt'>;
 
-type CollectionUpdate = Partial<Omit<Collection, 'id' | 'createdAt'>>;
+type ItemUpdate = Partial<Omit<Item, 'id' | 'createdAt'>>;
 
-interface FirestoreCollectionDoc {
+interface FirestoreItemDoc {
   name: string;
   userId: string;
   createdAt: Timestamp;
@@ -47,39 +48,39 @@ interface FirestoreCollectionDoc {
   };
 }
 
-const mapCollectionDoc = (
-  snapshot: QueryDocumentSnapshot<DocumentData>
-): Collection => {
-  const data = snapshot.data() as FirestoreCollectionDoc;
+const mapItemDoc = (snapshot: QueryDocumentSnapshot<DocumentData>): Item => {
+  const data = snapshot.data() as FirestoreItemDoc;
 
   return {
     id: snapshot.id,
 
     name: data.name,
     userId: data.userId,
+    // collectionId removed
     description: data.description,
     visibility: data.visibility,
 
     createdAt: data.createdAt?.toDate?.()?.toISOString(),
+
     updatedAt: data.updatedAt?.toDate?.()?.toISOString(),
   };
 };
 
-const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
-  getCollections: builder.query<Collection[], string>({
-    async queryFn(userId) {
-      const path = await resolveDataCollectionPath({
+const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
+  getPublicUserItems: builder.query<Item[], { userId: string }>({
+    async queryFn({ userId }) {
+      const path = await getUserCollectionPath({
         visibility,
-        resourceType: 'collections',
+        resourceType: 'items',
+        userId,
       });
       const q = query(
         collection(db, path),
-        where('userId', '==', userId),
         orderBy('createdAt', 'desc'),
         orderBy('__name__', 'asc')
       );
       const context = {
-        apiEndpoint: 'getCollections',
+        apiEndpoint: 'getPublicUserItems',
         operation: 'QUERY' as const,
         firebaseFunc: 'getDocs',
         path,
@@ -87,77 +88,78 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
       };
       try {
         const snapshot = await getDocs(q);
-
         return {
-          data: snapshot.docs.map(mapCollectionDoc),
+          data: snapshot.docs.map(mapItemDoc),
         };
       } catch (error) {
         return { error: createFirestoreApiError(context, error) };
       }
     },
-
-    providesTags: (result) =>
+    providesTags: (result, _error, request) =>
       result
         ? [
             ...result.map(({ id }) => ({
-              type: 'PublicCollections' as const,
+              type: 'PublicUserItems' as const,
               id,
             })),
-            { type: 'PublicCollections' as const, id: 'LIST' },
+            {
+              type: 'PublicUserItems' as const,
+              id: `${request.userId}_LIST`,
+            },
           ]
-        : [{ type: 'PublicCollections' as const, id: 'LIST' }],
+        : [
+            {
+              type: 'PublicUserItems' as const,
+              id: `${request.userId}_LIST`,
+            },
+          ],
   }),
 
-  getPublicCollections: builder.query<Collection[], string>({
+  getPublicUserItemsCount: builder.query<number, string>({
     async queryFn(userId) {
-      const path = await resolveDataCollectionPath({
+      const path = await getUserCollectionPath({
         visibility,
-        resourceType: 'collections',
+        resourceType: 'items',
+        userId,
       });
-      const q = query(
-        collection(db, path),
-        where('userId', '==', userId),
-        where('visibility.public', '==', true),
-        orderBy('createdAt', 'desc'),
-        orderBy('__name__', 'asc')
-      );
+      const q = query(collection(db, path), where('userId', '==', userId));
       const context = {
-        apiEndpoint: 'getPublicCollections',
+        apiEndpoint: 'getPublicUserItemsCount',
         operation: 'QUERY' as const,
-        firebaseFunc: 'getDocs',
+        firebaseFunc: 'getCountFromServer',
         path,
         requestPayload: q,
       };
       try {
-        const snapshot = await getDocs(q);
+        const snapshot = await getCountFromServer(q);
 
         return {
-          data: snapshot.docs.map(mapCollectionDoc),
+          data: snapshot.data().count,
         };
       } catch (error) {
         return { error: createFirestoreApiError(context, error) };
       }
     },
-
-    providesTags: (_result, _error, userId) => [
-      { type: 'PublicCollections' as const, id: `${userId}_PUBLIC_LIST` },
-    ],
+    providesTags: (result, _error, userId) =>
+      result
+        ? [{ type: 'PublicUserItems' as const, id: `${userId}_LIST` }]
+        : [],
   }),
 
-  createCollection: builder.mutation<Collection, CollectionInput>({
-    async queryFn(collectionData) {
-      const path = await resolveDataCollectionPath({
+  createPublicUserItem: builder.mutation<Item, ItemInput>({
+    async queryFn(itemData) {
+      const path = await getUserCollectionPath({
         visibility,
-        resourceType: 'collections',
+        resourceType: 'items',
+        userId: itemData.userId,
       });
       const requestPayload = {
-        ...collectionData,
-        visibility: collectionData.visibility ?? { public: false },
+        ...itemData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
       const context = {
-        apiEndpoint: 'createCollection',
+        apiEndpoint: 'createPublicUserItem',
         operation: 'CREATE' as const,
         firebaseFunc: 'addDoc',
         path,
@@ -165,12 +167,10 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
       };
       try {
         const docRef = await addDoc(collection(db, path), requestPayload);
-
         return {
           data: {
             id: docRef.id,
-            ...collectionData,
-            visibility: collectionData.visibility ?? { public: false },
+            ...itemData,
             createdAt: '',
             updatedAt: '',
           },
@@ -179,25 +179,31 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
         return { error: createFirestoreApiError(context, error) };
       }
     },
-
-    invalidatesTags: [{ type: 'PublicCollections' as const, id: 'LIST' }],
+    invalidatesTags: (_r, _e, { userId }) => [
+      { type: 'PublicUserItems' as const, id: `${userId}_LIST` },
+    ],
   }),
 
-  updateCollection: builder.mutation<
+  updatePublicUserItem: builder.mutation<
     void,
-    { id: string; updates: CollectionUpdate }
+    {
+      id: string;
+      userId: string;
+      updates: ItemUpdate;
+    }
   >({
-    async queryFn({ id, updates }) {
-      const path = await resolveDataCollectionPath({
+    async queryFn({ id, userId, updates }) {
+      const path = await getUserCollectionPath({
         visibility,
-        resourceType: 'collections',
+        resourceType: 'items',
+        userId,
       });
       const requestPayload = {
         ...updates,
         updatedAt: serverTimestamp(),
       };
       const context = {
-        apiEndpoint: 'updateCollection',
+        apiEndpoint: 'updatePublicUserItem',
         operation: 'UPDATE' as const,
         firebaseFunc: 'updateDoc',
         path,
@@ -206,27 +212,26 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
       };
       try {
         await updateDoc(doc(db, path, id), requestPayload);
-
         return { data: undefined };
       } catch (error) {
         return { error: createFirestoreApiError(context, error) };
       }
     },
-
-    invalidatesTags: (_r, _e, { id }) => [
-      { type: 'PublicCollections' as const, id },
-      { type: 'PublicCollections' as const, id: 'LIST' },
+    invalidatesTags: (_r, _e, { id, userId }) => [
+      { type: 'PublicUserItems' as const, id },
+      { type: 'PublicUserItems' as const, id: `${userId}_LIST` },
     ],
   }),
 
-  deleteCollection: builder.mutation<void, string>({
-    async queryFn(id) {
-      const path = await resolveDataCollectionPath({
+  deletePublicUserItem: builder.mutation<void, { id: string; userId: string }>({
+    async queryFn({ id, userId }) {
+      const path = await getUserCollectionPath({
         visibility,
-        resourceType: 'collections',
+        resourceType: 'items',
+        userId,
       });
       const context = {
-        apiEndpoint: 'deleteCollection',
+        apiEndpoint: 'deletePublicUserItem',
         operation: 'DELETE' as const,
         firebaseFunc: 'deleteDoc',
         path,
@@ -234,18 +239,16 @@ const getCollectionsEndpoints = (builder: FirestoreBuilder) => ({
       };
       try {
         await deleteDoc(doc(db, path, ...context.segmentPaths));
-
         return { data: undefined };
       } catch (error) {
         return { error: createFirestoreApiError(context, error) };
       }
     },
-
-    invalidatesTags: (_r, _e, id) => [
-      { type: 'PublicCollections' as const, id },
-      { type: 'PublicCollections' as const, id: 'LIST' },
+    invalidatesTags: (_r, _e, { id, userId }) => [
+      { type: 'PublicUserItems' as const, id },
+      { type: 'PublicUserItems' as const, id: `${userId}_LIST` },
     ],
   }),
 });
 
-export default getCollectionsEndpoints;
+export default getPublicUserItemsEndpoints;

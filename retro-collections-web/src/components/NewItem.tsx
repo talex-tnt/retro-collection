@@ -1,51 +1,16 @@
-import { useEffect, useState } from 'react';
-import { useCreateItemMutation } from '../api/firestore/firestoreApi';
-
-interface CollectionRecord {
-  id: string;
-  name: string;
-  createdAt: string;
-}
-
-type SelectedCollection =
-  | CollectionRecord
-  | { id: 'orphaned'; name: 'Orphaned Items'; createdAt: '' };
+import { useState } from 'react';
+import { useCreatePublicUserItemMutation } from '../api/firestore/firestoreApi';
 
 interface NewItemProps {
   userId: string;
-  collections: CollectionRecord[];
-  selectedCollection: SelectedCollection | null;
 }
 
-function NewItem({ userId, collections, selectedCollection }: NewItemProps) {
-  const [collectionId, setCollectionId] = useState('');
+function NewItem({ userId }: NewItemProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
-  const [createItem, { isLoading: isCreatingItem }] = useCreateItemMutation();
-
-  useEffect(() => {
-    if (selectedCollection?.id && selectedCollection.id !== 'orphaned') {
-      setCollectionId(selectedCollection.id);
-      return;
-    }
-
-    if (selectedCollection?.id === 'orphaned') {
-      setCollectionId('');
-      return;
-    }
-
-    setCollectionId((currentCollectionId) => {
-      if (
-        currentCollectionId &&
-        collections.some((collection) => collection.id === currentCollectionId)
-      ) {
-        return currentCollectionId;
-      }
-
-      return collections[0]?.id ?? '';
-    });
-  }, [collections, selectedCollection]);
+  const [createItem, { isLoading: isCreatingItem }] =
+    useCreatePublicUserItemMutation();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -65,10 +30,6 @@ function NewItem({ userId, collections, selectedCollection }: NewItemProps) {
         itemData.description = description.trim();
       }
 
-      if (collectionId) {
-        itemData.collectionId = collectionId;
-      }
-
       await createItem(itemData as Parameters<typeof createItem>[0]).unwrap();
 
       setName('');
@@ -83,31 +44,10 @@ function NewItem({ userId, collections, selectedCollection }: NewItemProps) {
       <div className="card-body space-y-4">
         <div>
           <h2 className="card-title text-lg">New Item</h2>
-          <p className="text-sm text-base-content/70">
-            Choose a collection or leave it unassigned to create an orphaned
-            item.
-          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="grid gap-3 sm:grid-cols-[minmax(0,220px)_1fr]">
-            <label className="form-control w-full">
-              <span className="label-text mb-1">Collection</span>
-              <select
-                className="select select-bordered w-full"
-                value={collectionId}
-                onChange={(event) => setCollectionId(event.target.value)}
-                disabled={isCreatingItem}
-              >
-                <option value="">No collection</option>
-                {collections.map((collection) => (
-                  <option key={collection.id} value={collection.id}>
-                    {collection.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
+          <div className="grid gap-3 sm:grid-cols-1">
             <label className="form-control w-full">
               <span className="label-text mb-1">Name</span>
               <input

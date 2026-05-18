@@ -3,7 +3,7 @@ import type { FirestoreApiError } from '../errorLogger';
 
 export type FirestoreTagTypes =
   | 'PublicCollections'
-  | 'PublicItems'
+  | 'PublicUserItems'
   | 'PublicUsers'
   | 'PrivateUsers'
   | 'PrivateAuthorizedUsers';

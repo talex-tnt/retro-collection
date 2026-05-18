@@ -46,7 +46,9 @@ function CollectorsPage() {
                       <td>{user.name || '—'}</td>
                       <td>
                         {user.nickname ? (
-                          <span className="badge badge-outline">@{user.nickname}</span>
+                          <span className="badge badge-outline">
+                            @{user.nickname}
+                          </span>
                         ) : (
                           '—'
                         )}

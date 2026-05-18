@@ -1,62 +1,29 @@
-import type { ChangeEvent } from 'react';
 import {
-  useGetItemsQuery,
-  useUpdateItemMutation,
-  useDeleteItemMutation,
+  useGetPublicUserItemsQuery,
+  useUpdatePublicUserItemMutation,
+  useDeletePublicUserItemMutation,
 } from '../api/firestore/firestoreApi';
+
 import ItemActions from './ItemActions';
-
-type SelectedCollection =
-  | CollectionRecord
-  | { id: 'orphaned'; name: 'Orphaned Items'; createdAt: '' };
-
-interface ItemData {
-  id: string;
-  name: string;
-  collectionId?: string;
-  createdAt: string;
-  description?: string;
-  visibility?: {
-    public: boolean;
-  };
-}
-
-interface CollectionRecord {
-  id: string;
-  name: string;
-  createdAt: string;
-}
 
 interface ItemsPanelProps {
   user: { uid: string } | null;
-  selectedCollection: SelectedCollection | null;
-  collections: CollectionRecord[];
   itemFilter: string;
   onItemFilterChange: (filter: string) => void;
-  orphanedItems: ItemData[];
 }
 
-function ItemsPanel({
-  user,
-  selectedCollection,
-  collections,
-  itemFilter,
-  onItemFilterChange,
-  orphanedItems,
-}: ItemsPanelProps) {
+function ItemsPanel({ user, itemFilter, onItemFilterChange }: ItemsPanelProps) {
   const {
     data: items = [],
     isLoading: loadingItems,
     error: itemsError,
-  } = useGetItemsQuery(
-    { collectionId: selectedCollection?.id || '', userId: user?.uid || '' },
-    {
-      skip: !selectedCollection?.id || selectedCollection?.id === 'orphaned',
-    }
+  } = useGetPublicUserItemsQuery(
+    { userId: user?.uid || '' },
+    { skip: !user?.uid }
   );
 
-  const [updateItem] = useUpdateItemMutation();
-  const [deleteItem] = useDeleteItemMutation();
+  const [updateItem] = useUpdatePublicUserItemMutation();
+  const [deleteItem] = useDeletePublicUserItemMutation();
 
   const handleEditItem = async (itemId: string, newName: string) => {
     if (!user || !newName.trim()) return;
@@ -73,41 +40,14 @@ function ItemsPanel({
   };
 
   const handleDeleteItem = async (itemId: string) => {
-    if (!selectedCollection || !user) return;
+    if (!user) return;
     try {
       await deleteItem({
         id: itemId,
-        collectionId: selectedCollection.id,
         userId: user.uid,
       }).unwrap();
     } catch (error) {
       console.error('Error deleting item:', error);
-    }
-  };
-
-  const handleCollectionChange = async (
-    itemId: string,
-    currentCollectionId: string | undefined,
-    event: ChangeEvent<HTMLSelectElement>
-  ) => {
-    if (!user) return;
-
-    const nextCollectionId = event.target.value;
-
-    if (nextCollectionId === currentCollectionId) {
-      return;
-    }
-
-    try {
-      await updateItem({
-        id: itemId,
-        userId: user.uid,
-        previousCollectionId: currentCollectionId,
-        updates: { collectionId: nextCollectionId || undefined },
-      }).unwrap();
-    } catch (error) {
-      event.target.value = currentCollectionId || '';
-      console.error('Error moving item:', error);
     }
   };
 
@@ -129,42 +69,16 @@ function ItemsPanel({
   };
 
   // Filter items by name
-  const displayItems =
-    selectedCollection?.id === 'orphaned' ? orphanedItems : items;
-  const filteredItems = displayItems.filter((item) =>
+  const filteredItems = items.filter((item) =>
     item.name.toLowerCase().includes(itemFilter.toLowerCase())
   );
-
-  if (!selectedCollection) {
-    return (
-      <div className="card bg-base-100 shadow-xl">
-        <div className="card-body">
-          <div className="alert alert-info">
-            <span>Select a collection from the left to view items</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="card bg-base-100 shadow-xl">
       <div className="card-body space-y-4">
-        {/* Collection Header */}
+        {/* Items Header */}
         <div>
-          <h2 className="card-title">{selectedCollection.name}</h2>
-          {selectedCollection.id !== 'orphaned' &&
-            selectedCollection.createdAt && (
-              <p className="text-sm text-base-content/70">
-                Created{' '}
-                {new Date(selectedCollection.createdAt).toLocaleString()}
-              </p>
-            )}
-          {selectedCollection.id === 'orphaned' && (
-            <p className="text-sm text-base-content/70">
-              Items with deleted or invalid collections
-            </p>
-          )}
+          <h2 className="card-title">My Items</h2>
         </div>
 
         {/* Filter Input */}
@@ -180,10 +94,7 @@ function ItemsPanel({
 
         {/* Items List */}
         <div className="space-y-3">
-          {selectedCollection?.id === 'orphaned' &&
-          orphanedItems.length === 0 ? (
-            <div className="alert alert-info">No orphaned items.</div>
-          ) : itemsError && selectedCollection?.id !== 'orphaned' ? (
+          {itemsError ? (
             <div className="alert alert-error">
               <span>
                 Error loading items:{' '}
@@ -194,9 +105,7 @@ function ItemsPanel({
             <div className="alert alert-info">Loading items...</div>
           ) : filteredItems.length === 0 ? (
             <div className="alert alert-info">
-              {itemFilter
-                ? 'No items match your filter.'
-                : 'No items in this collection yet.'}
+              {itemFilter ? 'No items match your filter.' : 'No items yet.'}
             </div>
           ) : (
             filteredItems.map((item) => (
@@ -221,36 +130,6 @@ function ItemsPanel({
                       {item.description}
                     </p>
                   )}
-                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="text-sm text-base-content/70">
-                      Collection
-                    </span>
-                    <select
-                      className="select select-bordered select-sm w-full sm:max-w-xs"
-                      value={
-                        item.collectionId &&
-                        collections.some(
-                          (collection) => collection.id === item.collectionId
-                        )
-                          ? item.collectionId
-                          : ''
-                      }
-                      onChange={(event) =>
-                        handleCollectionChange(
-                          item.id,
-                          item.collectionId,
-                          event
-                        )
-                      }
-                    >
-                      <option value="">No collection</option>
-                      {collections.map((collection) => (
-                        <option key={collection.id} value={collection.id}>
-                          {collection.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
                   <p className="text-sm text-base-content/70">
                     {item.createdAt
                       ? `Added ${new Date(item.createdAt).toLocaleString()}`

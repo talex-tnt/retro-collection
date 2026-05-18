@@ -1,75 +1,9 @@
 {
   "indexes": [
     {
-      "collectionGroup": "collections",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "__name__",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "collections",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "visibility.public",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "__name__",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
       "collectionGroup": "items",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "collectionId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "__name__",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "items",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "collectionId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "visibility.public",
-          "order": "ASCENDING"
-        },
         {
           "fieldPath": "createdAt",
           "order": "DESCENDING"

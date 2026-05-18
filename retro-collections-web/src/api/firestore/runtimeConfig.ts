@@ -63,3 +63,15 @@ export const resolveDataCollectionPath = async ({
   const { dataFolder } = await loadRuntimeConfig();
   return `main/data/${dataFolder}/${visibility}/${resourceType}`;
 };
+
+export const getUserCollectionPath = async ({
+  visibility,
+  resourceType,
+  userId,
+}: {
+  visibility: string;
+  resourceType: string;
+  userId: string;
+}) => {
+  return `${await resolveDataCollectionPath({ visibility, resourceType: 'users' })}/${userId}/${resourceType}`;
+};

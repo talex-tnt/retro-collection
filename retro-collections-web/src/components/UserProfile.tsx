@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useGetUserByIdQuery, useCreateOrUpdateUserMutation } from '../api/firestore/firestoreApi';
+import {
+  useGetUserByIdQuery,
+  useCreateOrUpdateUserMutation,
+} from '../api/firestore/firestoreApi';
 import type { User } from 'firebase/auth';
 
 interface UserProfileProps {
@@ -62,7 +65,8 @@ function UserProfile({ user }: UserProfileProps) {
       setIsEditing(false);
     } catch (err) {
       console.error(err);
-      const errorMsg = err instanceof Error ? err.message : 'Failed to update profile';
+      const errorMsg =
+        err instanceof Error ? err.message : 'Failed to update profile';
       setError(errorMsg);
     } finally {
       setIsLoading(false);
@@ -95,8 +99,12 @@ function UserProfile({ user }: UserProfileProps) {
           )}
         </div>
 
-        {error && <div className="alert alert-error shadow-sm text-sm">{error}</div>}
-        {success && <div className="alert alert-success shadow-sm text-sm">{success}</div>}
+        {error && (
+          <div className="alert alert-error shadow-sm text-sm">{error}</div>
+        )}
+        {success && (
+          <div className="alert alert-success shadow-sm text-sm">{success}</div>
+        )}
 
         {isEditing ? (
           <div className="space-y-4">
