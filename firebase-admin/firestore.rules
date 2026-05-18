@@ -1,176 +1,72 @@
-/**
- * FIRESTORE RULES WITH TEST CASE MAPPING
- * 
- * This file maps Firestore security rules to their corresponding test cases.
- * Test case format: x.y.z where x=suite, y=group, z=test number
- * 
- * RULE MAPPING TABLE:
- * =====================================================
- *
-* SUITE 0: USERS (PUBLIC & PRIVATE PROFILES)
- * 0.1.1 - owner can create/get/update own doc with name and visibility only
- * 0.1.2 - non-owner cannot create or update someone else's doc
- * 0.1.3 - owner cannot access user doc in non-configured folder
- * 0.1.4 - delete is admin-only
- * 0.2.1 - authenticated non-owner can get a public user, but not a private one
- * 0.2.2 - only owner can update own visibility
- * 0.2.3 - authenticated non-owner can list public users only with explicit filter
- * 0.3.1 - owner can create/get/update own doc with email and lastLogin only
- * 0.3.2 - non-owner cannot read or write someone else's doc
- * 0.4.1 - owner can set and update nickname field
- * 0.4.2 - owner cannot set empty nickname
- * 0.4.3 - non-owner cannot set or modify someone else's nickname
- * 0.4.4 - owner can set visibility to private without nickname
- *
- * SUITE 1: AUTHORIZED-USERS
- * 1.1.1 - admin-only read/write on /private/authorized-users/{email}
- * 1.1.2 - legacy root collection query is denied
- * 1.1.3 - admin can list from canonical docs-root path
- * 
- * SUITE 2: ITEMS CRUD
- * 2.1.1 - admin can read any item
- * 2.1.2 - owner can read own item
- * 2.1.3 - non-owner cannot read private item
- * 2.1.4 - authenticated non-owner can read public item
- * 2.2.1 - owner can create own item
- * 2.2.2 - non-owner cannot create item for another user
- * 2.2.3 - unauthenticated cannot create item
- * 2.2.4 - admin can bypass all validation
- * 2.3.1 - rejects missing required name field
- * 2.3.2 - rejects missing required createdAt
- * 2.3.3 - rejects missing required visibility
- * 2.3.4 - name cannot exceed 100 characters
- * 2.3.5 - collectionId is required and must be non-empty string
- * 2.3.6 - description cannot exceed 1000 characters
- * 2.3.7 - rejects invalid visibility map
- * 2.3.8 - rejects non-timestamp createdAt
- * 2.4.1 - owner can update own item
- * 2.4.2 - non-owner cannot update item
- * 2.0.1 - updatedAt is required
- * 2.0.2 - name is optional in updates
- * 2.0.3 - description is optional in updates
- * 2.0.4 - visibility is optional in updates
- * 2.0.5 - name cannot exceed 100 characters on update
- * 2.6.1 - owner can delete own item
- * 2.6.2 - non-owner cannot delete item
- * 2.6.3 - admin can delete any item
- * 2.1.1 (query) - items query reproduces the frontend getItems shape
- * 
- * SUITE 3: INFRASTRUCTURE & CROSS-CUTTING RULES
- * 3.1.1 - admin can write to test/testData/rulesSmoke
- * 3.1.2 - non-admin cannot write to test data path
- * 3.1.3 - admin can write to test/config/public/runtime
- * 3.1.4 - non-admin cannot write to test config path
- * 3.1.5 - USERS (non-testers) cannot read/write to /test folder
- * 3.1.6 - TESTERS cannot read/write to /main folder
- * 3.1.7 - unauthenticated cannot read/write to /main or /test
- * 3.1.8 - admin with tester claim can access both /main and /test
- * 3.1.9 - admin without tester claim can access both /main and /test
- * 3.2.1 - user can write to matched dataFolder
- * 3.2.2 - user cannot write to non-matched dataFolder
- * 3.2.3 - user cannot write to unknown resourceType
- * 3.3.1 - authenticated user can read data
- * 3.3.2 - user can read config public and then read matched dataFolder data
- * 3.3.3 - user cannot read data from folder that does not match public config
- * 
- * SUITE 4: NICKNAME INDEX
- * 4.1.1 - authenticated user can read any nickname entry
- * 4.1.2 - owner can create nickname entry only if it contains their own userId
- * 4.1.3 - owner can only delete nickname entry if they own it
- * 4.1.4 - non-owner cannot read or modify nicknameIndex from non-configured folder
- * 4.1.5 - admin can create/read/update/delete any nickname entry
- *
- * =====================================================
- */
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Used indirectly by tests: All test suites (0-5) - fundamental auth check
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Used indirectly by tests: 1.x.x, 1.x.x, 2.x.x, 3.x.x, 4.x.x, 0.x.x (admin operations throughout)
     function isAdmin() {
       return isAuthenticated() && request.auth.token.admin == true;
     }
 
-    // Used indirectly by tests: 3.1.5, 3.1.8 (role-based environment access)
     function hasTesterClaim() {
       return isAuthenticated() &&
         ('tester' in request.auth.token) &&
         request.auth.token.tester == true;
     }
 
-    // Used indirectly by tests: 3.1.5, 3.1.8 (role-based environment access)
     function isTester() {
       return isAuthenticated() && hasTesterClaim();
     }
 
-    // Used indirectly by tests: 3.1.6, 3.1.9 (role-based environment access)
     function isUser() {
       return isAuthenticated() && !hasTesterClaim();
     }
 
-    // Used indirectly by tests: 3.1.5-3.1.9 (environment access split)
     function canAccessEnvironment(env) {
       return isAdmin() ||
         (env == 'main' && isUser()) ||
         (env == 'test' && isTester());
     }
 
-    // Used indirectly by tests: 1.x.x, 1.x.x, 3.x.x, 4.x.x, 0.x.x (owner checks throughout)
     function isOwner(data, field) {
       return isAuthenticated() && (field in data) && request.auth.uid == data[field];
     }
 
-    // Used indirectly by tests: 1.3.7-1.3.8 (collection field validation)
     function hasOnlyValidKeys(data, validKeys) { 
       return data.keys().hasOnly(validKeys);
     }
-    // Used indirectly by tests: 1.3.1-1.3.3 (collection required fields), 0.1.1, 0.3.1 (user fields)
     function hasAllRequiredKeys(data, requiredKeys) {
       return data.keys().hasAll(requiredKeys);
     }
-    // Used indirectly by tests: 1.0.2-1.0.4 (collection optional fields on update)
     function hasOnlyAffectedKeys(newData, existingData, validKeys) {
       return newData.diff(existingData).affectedKeys().hasOnly(validKeys);
     }
-    // Used indirectly by tests: 1.0.1 (collection updatedAt required on update)
     function hasAllRequiredAffectedKeys(newData, existingData, requiredKeys) {
       return newData.diff(existingData).affectedKeys().hasAll(requiredKeys);
     }
 
-    // Used indirectly by tests: 1.3.1, 1.3.4 (collection name), 1.3.5, 1.0.2-1.0.5 (description),
-    // 0.1.1 (user name), 0.4.1-0.4.2 (nickname)
     function validString(field, maxLength) {
       return field is string && field.size() > 0 && field.size() <= maxLength;
     }
 
-    // Used indirectly by tests: 0.3.1 (user email - optional)
     function validOptionalString(field, maxLength) {
       return field == null || (field is string && field.size() <= maxLength);
     }
 
-    // Used indirectly by tests: 1.3.5-1.3.6, 1.0.2-1.0.3 (collection description),
-    // 0.1.1 (user name), 0.3.1 (user email)
     function hasValidOptionalString(data, field, maxLength) {
       return !(field in data) || data[field] == null || validOptionalString(data[field], maxLength);
     }
 
 
-    // Used indirectly by tests: 1.1.x (authorized-users), 1.1.x-1.7.x (collections),
-    // 3.x.x (infrastructure), 4.x.x (nickname), 0.x.x (users)
     function validTimestamp(field) {
       return field is timestamp && 
         field.toMillis() > 0 &&
         field.toMillis() < request.time.toMillis() + 60000; // Allow up to 60 seconds in the future for clock skew
     }
 
-    // Used indirectly by tests: 1.1.1 (authorized-users email matching)
     function tokenEmail() {
       return isAuthenticated() &&
             request.auth.token.email is string
@@ -181,7 +77,6 @@ service cloud.firestore {
         : null;
     }
 
-    // Used indirectly by tests: 1.1.4 (public collections), 1.7.1 (query), 0.2.1 (public users), 0.2.3 (user list)
     function isPubliclyVisible() {
       return resource != null &&
         resource.data != null &&
@@ -191,14 +86,12 @@ service cloud.firestore {
         resource.data.visibility.public == true;
     }
 
-    // Used indirectly by tests: 1.3.3, 1.3.8 (collection visibility), 1.0.4 (collection update), 0.1.1 (user public)
     function isValidVisibilityMap(data) {
       return (data is map) &&
         data.keys().hasOnly(['public']) &&
         ('public' in data) &&
         data.public is bool;
     }
-    // Used indirectly by tests: 1.3.3 (collection), 0.1.1 (user visibility)
     function isValidVisibilityMapOptional(data) {
       return !('visibility' in data) || data.visibility == null || isValidVisibilityMap(data.visibility);
     }
@@ -231,13 +124,11 @@ service cloud.firestore {
     //     );
     // }
 
-    // Public runtime config doc - Tests 3.1.3, 3.1.4
     match /{env}/config/public/runtime {
       allow read: if canAccessEnvironment(env); // Tests 3.1.5-3.1.9: environment gate
       allow write: if canAccessEnvironment(env) && isAdmin(); // Tests 3.1.3, 3.1.4, 3.1.5-3.1.9
     }
 
-    // All other config paths are admin-only - Tests 3.1.3, 3.1.4
     match /{env}/config/{document=**} {
       allow read, write: if canAccessEnvironment(env) && isAdmin(); // Tests 3.1.3, 3.1.4, 3.1.5-3.1.9
     }
@@ -247,12 +138,9 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
-    // Folder documents themselves are not user-writable
     match /{env}/data/{folder} {
       allow read, list, write: if canAccessEnvironment(env) && isAdmin(); // Tests 3.1.5-3.1.9: env gate; admin-only on folder doc
 
-      // Reused by nested resource rules so environment access stays explicit.
-      // Tests 3.1.5-3.1.9 cover this gate across /main vs /test.
       function environmentAccessAllowed() {
         return canAccessEnvironment(env);
       }
@@ -261,21 +149,16 @@ service cloud.firestore {
         return get(/databases/$(database)/documents/$(env)/config/public/runtime).data.dataFolder == folder;
       }
 
-      // authorized-users: admin-only read/write (login allowlist) - Tests 1.1.1, 1.1.2, 1.1.3
       match /private/authorized-users/{email} {
         allow get: if 
-          environmentAccessAllowed() && 
+          environmentAccessAllowed() && folderMatchesConfig() && (
+          isAdmin() || 
           (
-          isAdmin() || // Test 1.1.1
-          (
-            folderMatchesConfig() && // Test 3.2.1
-            isAuthenticated() && // Test 1.1.1
-            request.auth != null && request.auth.token.email == email
+            isAuthenticated() && 
+            tokenEmail() == email 
           ));
-        // Test 1.1.3: Admin can list
-        allow list: if environmentAccessAllowed() && isAdmin();
-        // Test 1.1.1: Admin-only write
-        allow write: if environmentAccessAllowed() && isAdmin();
+        allow list: if environmentAccessAllowed() && folderMatchesConfig() && isAdmin();
+        allow write: if environmentAccessAllowed() && folderMatchesConfig() && isAdmin();
       }
 
       // users public profile: owner writes only name + visibility.public; others may read only when public - Tests 0.1.1-0.4.4
