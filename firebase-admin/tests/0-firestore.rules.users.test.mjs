@@ -1,24 +1,24 @@
 /**
- * SUITE 5: USERS (PUBLIC & PRIVATE PROFILES)
+ * SUITE 0: USERS (PUBLIC & PRIVATE PROFILES)
  *
  * Test Checklist:
- * [x] 5.1.1 - owner can create/get/update own doc with name and visibility only
- * [x] 5.1.2 - non-owner cannot create or update someone else's doc
- * [x] 5.1.3 - owner cannot access user doc in non-configured folder
- * [x] 5.1.4 - delete is admin-only
- * [x] 5.2.1 - authenticated non-owner can get a public user, but not a private one
- * [x] 5.2.2 - only owner can update own visibility
- * [x] 5.2.3 - authenticated non-owner can list public users only with explicit filter
- * [x] 5.3.1 - owner can create/get/update own doc with email and lastLogin only
- * [x] 5.3.2 - non-owner cannot read or write someone else's doc
- * [x] 5.4.1 - owner can set and update nickname field
- * [x] 5.4.2 - owner cannot set empty nickname
- * [x] 5.4.3 - non-owner cannot set or modify someone else's nickname
- * [x] 5.4.4 - owner can set visibility to private without nickname
- * [x] 5.5.1 - owner can update user profile with nickname when visibility is public
- * [x] 5.5.2 - owner cannot set nickname when visibility is private (rules allow, client prevents)
- * [x] 5.5.3 - profile and nicknameIndex must be kept in sync by client (rules allow orphaned state)
- * [x] 5.5.4 - changing nickname requires updating both profile and nicknameIndex
+ * [x] 0.1.1 - owner can create/get/update own doc with name and visibility only
+ * [x] 0.1.2 - non-owner cannot create or update someone else's doc
+ * [x] 0.1.3 - owner cannot access user doc in non-configured folder
+ * [x] 0.1.4 - delete is admin-only
+ * [x] 0.2.1 - authenticated non-owner can get a public user, but not a private one
+ * [x] 0.2.2 - only owner can update own visibility
+ * [x] 0.2.3 - authenticated non-owner can list public users only with explicit filter
+ * [x] 0.3.1 - owner can create/get/update own doc with email and lastLogin only
+ * [x] 0.3.2 - non-owner cannot read or write someone else's doc
+ * [x] 0.4.1 - owner can set and update nickname field
+ * [x] 0.4.2 - owner cannot set empty nickname
+ * [x] 0.4.3 - non-owner cannot set or modify someone else's nickname
+ * [x] 0.4.4 - owner can set visibility to private without nickname
+ * [x] 0.5.1 - owner can update user profile with nickname when visibility is public
+ * [x] 0.5.2 - owner cannot set nickname when visibility is private (rules allow, client prevents)
+ * [x] 0.5.3 - profile and nicknameIndex must be kept in sync by client (rules allow orphaned state)
+ * [x] 0.5.4 - changing nickname requires updating both profile and nicknameIndex
  */
 
 import 'dotenv/config';
@@ -152,7 +152,7 @@ test.after(async () => {
   releaseSuiteLock();
 });
 
-test(`[5.1.1] owner can create/get/update own doc with name and visibility only on ${RULES_TARGET}`, async () => {
+test(`[0.1.1] owner can create/get/update own doc with name and visibility only on ${RULES_TARGET}`, async () => {
   const owner = await buildClientContext({
     uid: TEST_USER_ID,
     claims: { admin: false },
@@ -201,7 +201,7 @@ test(`[5.1.1] owner can create/get/update own doc with name and visibility only 
   }
 });
 
-test(`[5.1.2] non-owner cannot create or update someone else's doc on ${RULES_TARGET}`, async () => {
+test(`[0.1.2] non-owner cannot create or update someone else's doc on ${RULES_TARGET}`, async () => {
   await getAdminDb()
     .doc(OTHER_PUBLIC_USER_DOC_PATH)
     .set({
@@ -233,7 +233,7 @@ test(`[5.1.2] non-owner cannot create or update someone else's doc on ${RULES_TA
   }
 });
 
-test(`[5.1.3] owner cannot access user doc in non-configured folder on ${RULES_TARGET}`, async () => {
+test(`[0.1.3] owner cannot access user doc in non-configured folder on ${RULES_TARGET}`, async () => {
   await getAdminDb()
     .doc(WRONG_FOLDER_USER_DOC_PATH)
     .set({
@@ -262,7 +262,7 @@ test(`[5.1.3] owner cannot access user doc in non-configured folder on ${RULES_T
   }
 });
 
-test(`[5.1.4] delete is admin-only on ${RULES_TARGET}`, async () => {
+test(`[0.1.4] delete is admin-only on ${RULES_TARGET}`, async () => {
   await getAdminDb()
     .doc(OWN_PUBLIC_USER_DOC_PATH)
     .set({
@@ -297,7 +297,7 @@ test(`[5.1.4] delete is admin-only on ${RULES_TARGET}`, async () => {
   }
 });
 
-test(`[5.2.1] authenticated non-owner can get a public user, but not a private one on ${RULES_TARGET}`, async () => {
+test(`[0.2.1] authenticated non-owner can get a public user, but not a private one on ${RULES_TARGET}`, async () => {
   await getAdminDb()
     .doc(PUBLIC_USER_DOC_PATH)
     .set({
@@ -353,7 +353,7 @@ test(`[5.2.1] authenticated non-owner can get a public user, but not a private o
   }
 });
 
-test(`[5.2.2] only owner can update own visibility on ${RULES_TARGET}`, async () => {
+test(`[0.2.2] only owner can update own visibility on ${RULES_TARGET}`, async () => {
   await getAdminDb()
     .doc(OWNER_VISIBILITY_DOC_PATH)
     .set({
@@ -411,7 +411,7 @@ test(`[5.2.2] only owner can update own visibility on ${RULES_TARGET}`, async ()
   }
 });
 
-test(`[5.2.3] authenticated non-owner can list public users only with explicit filter on ${RULES_TARGET}`, async () => {
+test(`[0.2.3] authenticated non-owner can list public users only with explicit filter on ${RULES_TARGET}`, async () => {
   const usersCollectionPath = getPublicResourcePath(TEST_DATA_FOLDER, 'users');
 
   await getAdminDb()
@@ -457,7 +457,7 @@ test(`[5.2.3] authenticated non-owner can list public users only with explicit f
   }
 });
 
-test(`[5.3.1] owner can create/get/update own doc with email and lastLogin only on ${RULES_TARGET}`, async () => {
+test(`[0.3.1] owner can create/get/update own doc with email and lastLogin only on ${RULES_TARGET}`, async () => {
   const owner = await buildClientContext({
     uid: TEST_USER_ID,
     claims: { admin: false },
@@ -508,7 +508,7 @@ test(`[5.3.1] owner can create/get/update own doc with email and lastLogin only 
   }
 });
 
-test(`[5.3.2] non-owner cannot read or write someone else's doc on ${RULES_TARGET}`, async () => {
+test(`[0.3.2] non-owner cannot read or write someone else's doc on ${RULES_TARGET}`, async () => {
   await getAdminDb().doc(PRIVATE_OTHER_USER_DOC_PATH).set({
     email: 'other@example.com',
     lastLogin: admin.firestore.FieldValue.serverTimestamp(),
@@ -542,7 +542,7 @@ test(`[5.3.2] non-owner cannot read or write someone else's doc on ${RULES_TARGE
   }
 });
 
-test(`[5.4.1] owner can set and update nickname field on ${RULES_TARGET}`, async () => {
+test(`[0.4.1] owner can set and update nickname field on ${RULES_TARGET}`, async () => {
   const owner = await buildClientContext({
     uid: TEST_USER_ID,
     claims: { admin: false },
@@ -604,7 +604,7 @@ test(`[5.4.1] owner can set and update nickname field on ${RULES_TARGET}`, async
   }
 });
 
-test(`[5.4.2] owner cannot set empty nickname on ${RULES_TARGET}`, async () => {
+test(`[0.4.2] owner cannot set empty nickname on ${RULES_TARGET}`, async () => {
   const owner = await buildClientContext({
     uid: TEST_USER_ID,
     claims: { admin: false },
@@ -629,7 +629,7 @@ test(`[5.4.2] owner cannot set empty nickname on ${RULES_TARGET}`, async () => {
   }
 });
 
-test(`[5.4.3] non-owner cannot set or modify someone else's nickname on ${RULES_TARGET}`, async () => {
+test(`[0.4.3] non-owner cannot set or modify someone else's nickname on ${RULES_TARGET}`, async () => {
   await getAdminDb()
     .doc(NICKNAME_OTHER_USER_DOC_PATH)
     .set({
@@ -656,7 +656,7 @@ test(`[5.4.3] non-owner cannot set or modify someone else's nickname on ${RULES_
   }
 });
 
-test(`[5.4.4] owner can set visibility to private without nickname on ${RULES_TARGET}`, async () => {
+test(`[0.4.4] owner can set visibility to private without nickname on ${RULES_TARGET}`, async () => {
   await getAdminDb()
     .doc(OWN_PUBLIC_USER_DOC_PATH)
     .set({
@@ -697,7 +697,7 @@ test(`[5.4.4] owner can set visibility to private without nickname on ${RULES_TA
 // NICKNAME-INDEX INTERACTION TESTS
 // ============================================================================
 
-test(`[5.5.1] owner can update user profile with nickname when visibility is public on ${RULES_TARGET}`, async () => {
+test(`[0.5.1] owner can update user profile with nickname when visibility is public on ${RULES_TARGET}`, async () => {
   // Setup: create a public user profile with a nickname
   const owner = await buildClientContext({
     uid: TEST_USER_ID,
@@ -706,26 +706,27 @@ test(`[5.5.1] owner can update user profile with nickname when visibility is pub
 
   try {
     await assert.doesNotReject(
-      setDoc(
-        doc(owner.db, OWN_PUBLIC_USER_DOC_PATH),
-        {
-          name: 'Public User',
-          visibility: { public: true },
-          nickname: 'public_alice',
-        }
-      )
+      setDoc(doc(owner.db, OWN_PUBLIC_USER_DOC_PATH), {
+        name: 'Public User',
+        visibility: { public: true },
+        nickname: 'public_alice',
+      })
     );
 
     const snap = await getDocFromServer(
       doc(owner.db, OWN_PUBLIC_USER_DOC_PATH)
     );
-    assert.equal(snap.data()?.nickname, 'public_alice', 'Nickname should be set');
+    assert.equal(
+      snap.data()?.nickname,
+      'public_alice',
+      'Nickname should be set'
+    );
   } finally {
     await owner.cleanup();
   }
 });
 
-test(`[5.5.2] owner cannot set nickname when visibility is private on ${RULES_TARGET}`, async () => {
+test(`[0.5.2] owner cannot set nickname when visibility is private on ${RULES_TARGET}`, async () => {
   // Setup: create a private user profile
   const owner = await buildClientContext({
     uid: TEST_USER_ID,
@@ -735,13 +736,10 @@ test(`[5.5.2] owner cannot set nickname when visibility is private on ${RULES_TA
   try {
     // Create private user without nickname - should succeed
     await assert.doesNotReject(
-      setDoc(
-        doc(owner.db, OWN_PUBLIC_USER_DOC_PATH),
-        {
-          name: 'Private User',
-          visibility: { public: false },
-        }
-      )
+      setDoc(doc(owner.db, OWN_PUBLIC_USER_DOC_PATH), {
+        name: 'Private User',
+        visibility: { public: false },
+      })
     );
 
     // Try to add nickname to private profile - should succeed (rules don't block this)
@@ -759,7 +757,7 @@ test(`[5.5.2] owner cannot set nickname when visibility is private on ${RULES_TA
   }
 });
 
-test(`[5.5.3] profile and nicknameIndex can be updated independently (client manages sync) on ${RULES_TARGET}`, async () => {
+test(`[0.5.3] profile and nicknameIndex can be updated independently (client manages sync) on ${RULES_TARGET}`, async () => {
   // This test verifies that rules don't prevent independent updates to profile and nicknameIndex.
   // In practice, the client application should manage keeping them in sync via transactions.
   // This is a Spark-compatible design that works without Cloud Functions.
@@ -772,14 +770,11 @@ test(`[5.5.3] profile and nicknameIndex can be updated independently (client man
   try {
     // Create a public profile with a nickname
     await assert.doesNotReject(
-      setDoc(
-        doc(owner.db, OWN_PUBLIC_USER_DOC_PATH),
-        {
-          name: 'Public User',
-          visibility: { public: true },
-          nickname: 'sync_test_user',
-        }
-      )
+      setDoc(doc(owner.db, OWN_PUBLIC_USER_DOC_PATH), {
+        name: 'Public User',
+        visibility: { public: true },
+        nickname: 'sync_test_user',
+      })
     );
 
     // Verify the profile was created
@@ -787,7 +782,11 @@ test(`[5.5.3] profile and nicknameIndex can be updated independently (client man
       doc(owner.db, OWN_PUBLIC_USER_DOC_PATH)
     );
     assert.ok(profileSnap.exists(), 'Profile should exist');
-    assert.equal(profileSnap.data()?.nickname, 'sync_test_user', 'Nickname should be set');
+    assert.equal(
+      profileSnap.data()?.nickname,
+      'sync_test_user',
+      'Nickname should be set'
+    );
 
     // Update name - rules allow this independently of nicknameIndex
     await assert.doesNotReject(
@@ -802,14 +801,22 @@ test(`[5.5.3] profile and nicknameIndex can be updated independently (client man
     const updatedSnap = await getDocFromServer(
       doc(owner.db, OWN_PUBLIC_USER_DOC_PATH)
     );
-    assert.equal(updatedSnap.data()?.name, 'Updated User', 'Name should be updated');
-    assert.equal(updatedSnap.data()?.nickname, 'sync_test_user', 'Nickname should remain');
+    assert.equal(
+      updatedSnap.data()?.name,
+      'Updated User',
+      'Name should be updated'
+    );
+    assert.equal(
+      updatedSnap.data()?.nickname,
+      'sync_test_user',
+      'Nickname should remain'
+    );
   } finally {
     await owner.cleanup();
   }
 });
 
-test(`[5.5.4] changing nickname requires updating both profile and nicknameIndex on ${RULES_TARGET}`, async () => {
+test(`[0.5.4] changing nickname requires updating both profile and nicknameIndex on ${RULES_TARGET}`, async () => {
   // This test documents that nickname changes require updating two documents.
   // Rules allow this but don't enforce it; client transactions should handle it.
 
@@ -824,14 +831,11 @@ test(`[5.5.4] changing nickname requires updating both profile and nicknameIndex
     const newNickname = 'new_nick';
 
     await assert.doesNotReject(
-      setDoc(
-        doc(owner.db, OWN_PUBLIC_USER_DOC_PATH),
-        {
-          name: 'User',
-          visibility: { public: true },
-          nickname: oldNickname,
-        }
-      )
+      setDoc(doc(owner.db, OWN_PUBLIC_USER_DOC_PATH), {
+        name: 'User',
+        visibility: { public: true },
+        nickname: oldNickname,
+      })
     );
 
     const oldIndexPath = getPublicResourceDocPath(
@@ -854,9 +858,7 @@ test(`[5.5.4] changing nickname requires updating both profile and nicknameIndex
     );
 
     // Delete old nicknameIndex entry
-    await assert.doesNotReject(
-      deleteDoc(doc(owner.db, oldIndexPath))
-    );
+    await assert.doesNotReject(deleteDoc(doc(owner.db, oldIndexPath)));
 
     // Create new nicknameIndex entry
     const newIndexPath = getPublicResourceDocPath(
@@ -873,7 +875,11 @@ test(`[5.5.4] changing nickname requires updating both profile and nicknameIndex
     const profileSnap = await getDocFromServer(
       doc(owner.db, OWN_PUBLIC_USER_DOC_PATH)
     );
-    assert.equal(profileSnap.data()?.nickname, newNickname, 'Nickname should be updated');
+    assert.equal(
+      profileSnap.data()?.nickname,
+      newNickname,
+      'Nickname should be updated'
+    );
   } finally {
     await owner.cleanup();
   }
