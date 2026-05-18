@@ -91,7 +91,7 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Used indirectly by tests: 0.x.x, 1.x.x, 2.x.x, 3.x.x, 4.x.x, 5.x.x (admin operations throughout)
+    // Used indirectly by tests: 1.x.x, 1.x.x, 2.x.x, 3.x.x, 4.x.x, 5.x.x (admin operations throughout)
     function isAdmin() {
       return isAuthenticated() && request.auth.token.admin == true;
     }
@@ -120,7 +120,7 @@ service cloud.firestore {
         (env == 'test' && isTester());
     }
 
-    // Used indirectly by tests: 0.x.x, 1.x.x, 3.x.x, 4.x.x, 5.x.x (owner checks throughout)
+    // Used indirectly by tests: 1.x.x, 1.x.x, 3.x.x, 4.x.x, 5.x.x (owner checks throughout)
     function isOwner(data, field) {
       return isAuthenticated() && (field in data) && request.auth.uid == data[field];
     }
@@ -160,7 +160,7 @@ service cloud.firestore {
     }
 
 
-    // Used indirectly by tests: 0.1.x (authorized-users), 1.1.x-1.7.x (collections),
+    // Used indirectly by tests: 1.1.x (authorized-users), 1.1.x-1.7.x (collections),
     // 3.x.x (infrastructure), 4.x.x (nickname), 5.x.x (users)
     function validTimestamp(field) {
       return field is timestamp && 
@@ -168,7 +168,7 @@ service cloud.firestore {
         field.toMillis() < request.time.toMillis() + 60000; // Allow up to 60 seconds in the future for clock skew
     }
 
-    // Used indirectly by tests: 0.1.1 (authorized-users email matching)
+    // Used indirectly by tests: 1.1.1 (authorized-users email matching)
     function tokenEmail() {
       return (isAuthenticated() && ('email' in request.auth.token) && request.auth.token.email is string)
         ? request.auth.token.email
@@ -289,34 +289,37 @@ service cloud.firestore {
         return get(/databases/$(database)/documents/$(env)/config/public/runtime).data.dataFolder == folder;
       }
 
-      // authorized-users: admin-only read/write (login allowlist) - Tests 0.1.1, 0.1.2, 0.1.3
+      // authorized-users: admin-only read/write (login allowlist) - Tests 1.1.1, 1.1.2, 1.1.3
       match /private/authorized-users/{email} {
-        // Test 0.1.1: Allow a signed-in user to check *only their own* authorization doc.
-        // Test 0.1.2: This enables a client-side allowlist check without permitting enumeration.
+        // Test 1.1.1: Allow a signed-in user to check *only their own* authorization doc.
+        // Test 1.1.2: This enables a client-side allowlist check without permitting enumeration.
         allow get: if 
           environmentAccessAllowed() && (
-          isAdmin() || // Test 0.1.1
+          isAdmin() || // Test 1.1.1
           (
             folderMatchesConfig() && // Test 3.2.1
-            isAuthenticated() && // Test 0.1.1
-            tokenEmail() != null && // Test 0.1.1
-            tokenEmail().lower() == email.lower() // Test 0.1.1
+            isAuthenticated() && // Test 1.1.1
+            tokenEmail() != null && // Test 1.1.1
+            tokenEmail().lower() == email.lower() // Test 1.1.1
           ));
-        // Test 0.1.3: Admin can list
+        // Test 1.1.3: Admin can list
         allow list: if environmentAccessAllowed() && isAdmin();
-        // Test 0.1.1: Admin-only write
+        // Test 1.1.1: Admin-only write
         allow write: if environmentAccessAllowed() && isAdmin();
       }
 
       // users public profile: owner writes only name + visibility.public; others may read only when public - Tests 5.1.1-5.4.4
       match /public/users/{userId} {
+        function isUserOwner() {
+          return isOwner({'userId': userId}, 'userId');
+        }
         // Test 5.1.1, 5.1.2, 5.2.1: Get (admin, owner, or public)
         allow get: if 
           environmentAccessAllowed() && (
           isAdmin() || // Test 5.1.1
           (
             folderMatchesConfig() && // Test 5.1.3
-            (isOwner({'userId': userId}, 'userId') || isPubliclyVisible()) // Test 5.1.1, 5.2.1
+            (isUserOwner() || isPubliclyVisible()) // Test 5.1.1, 5.2.1
           ));
         // Test 5.2.1, 5.2.3: List only public users
         allow list: if 
@@ -332,7 +335,7 @@ service cloud.firestore {
           isAdmin() || // Test 5.1.1
           (
             folderMatchesConfig() && // Test 5.1.3
-            isOwner({'userId': userId}, 'userId') && // Test 5.1.2
+            isUserOwner() && // Test 5.1.2
             isValidPublicUserData(request.resource.data) // Test 5.1.1, 5.4.1-5.4.4
           ));
         // Test 5.1.1, 5.1.2, 5.2.2: Update with validation
@@ -341,7 +344,7 @@ service cloud.firestore {
           isAdmin() || // Test 5.1.1
           (
             folderMatchesConfig() && // Test 5.1.3
-            isOwner({'userId': userId}, 'userId') && // Test 5.1.2
+            isUserOwner() && // Test 5.1.2
             isValidPublicUserData(request.resource.data) // Test 5.1.1, 5.2.2, 5.4.1-5.4.4
           ));
         // Test 5.1.4: Delete is admin-only
@@ -350,13 +353,16 @@ service cloud.firestore {
 
       // users private profile: owner-only read/write for email + lastLogin - Tests 5.3.1, 5.3.2
       match /private/users/{userId} {
+         function isUserOwner() {
+          return isOwner({'userId': userId}, 'userId');
+        }
         // Test 5.3.1, 5.3.2: Owner-only get
         allow get: if 
           environmentAccessAllowed() && (
           isAdmin() || // Test 5.3.1
           (
             folderMatchesConfig() && // Test 5.3.2
-            isOwner({'userId': userId}, 'userId') // Test 5.3.2
+            isUserOwner() // Test 5.3.2
           ));
         // Test 5.3.1: Admin list only
         allow list: if environmentAccessAllowed() && isAdmin();
@@ -365,7 +371,7 @@ service cloud.firestore {
           environmentAccessAllowed() && (
           isAdmin() || // Test 5.3.1
           (
-            isOwner({'userId': userId}, 'userId') && // Test 5.3.2
+            isUserOwner() && // Test 5.3.2
             folderMatchesConfig() && // Test 5.3.2
             isValidPrivateUserData(request.resource.data) // Test 5.3.1
           ));
@@ -374,7 +380,7 @@ service cloud.firestore {
           environmentAccessAllowed() && (
           isAdmin() || // Test 5.3.1
           (
-            isOwner({'userId': userId}, 'userId') && // Test 5.3.2
+            isUserOwner() && // Test 5.3.2
             folderMatchesConfig() && // Test 5.3.2
             isValidPrivateUserData(request.resource.data) // Test 5.3.1
           ));
@@ -385,78 +391,83 @@ service cloud.firestore {
 
       // Items are now stored directly under the user document (no collections)
       match /public/users/{userId}/items/{itemId} {
+        function isUserOwner() {
+          return isOwner({'userId': userId}, 'userId');
+        }
+        // ----------------------------------------------------------------
+        // items helpers -----------------------------------------------
+        function getLengthLimitItem(field) {
+          return (field == 'item.name') ? 100 :
+                (field == 'item.description') ? 1000 : 0;
+        }
+        function createItemKeys() {
+          return ['name', 'userId', 'createdAt', 'visibility', 'description'];
+        }
+        function createItemRequiredKeys() {
+          return ['name', 'userId', 'createdAt', 'visibility'];
+        }
+        function validItemCreate(data) {
+          return 
+            isAdmin() ||
+            (
+              isAuthenticated() &&
+              hasOnlyValidKeys(data, createItemKeys()) &&
+              hasAllRequiredKeys(data, createItemRequiredKeys()) &&
+              isOwner(data, 'userId') &&
+              validString(data.name, getLengthLimitItem('item.name')) &&
+              validTimestamp(data.createdAt) &&
+              isValidVisibilityMap(data.visibility) &&
+              hasValidOptionalString(data, 'description', getLengthLimitItem('item.description'))
+            );
+        }
+        function updateItemKeys() {
+          return ['name', 'updatedAt', 'description', 'visibility'];
+        }
+        function updateItemRequiredKeys() {
+          return ['updatedAt'];
+        }
+        function validItemUpdate(newData, existingData) {
+          return 
+            isAdmin() ||
+            (
+              isAuthenticated() &&
+              existingData != null &&
+              hasOnlyAffectedKeys(newData, existingData, updateItemKeys()) &&
+              hasAllRequiredAffectedKeys(newData, existingData, updateItemRequiredKeys()) &&
+              isOwner(existingData, 'userId') &&
+              newData.userId == existingData.userId &&
+              newData.createdAt == existingData.createdAt &&
+              validTimestamp(newData.updatedAt) &&
+              hasValidOptionalString(newData, 'name', getLengthLimitItem('item.name')) &&
+              hasValidOptionalString(newData, 'description', getLengthLimitItem('item.description')) &&
+              isValidVisibilityMapOptional(newData.visibility)
+            );
+        }
+
         // Admin, owner, or public
         allow get: if environmentAccessAllowed() && (
           isAdmin() ||
-          (folderMatchesConfig() && (isOwner({'userId': userId}, 'userId') || isPubliclyVisible()))
+          (folderMatchesConfig() && (isUserOwner() || isPubliclyVisible()))
         );
         allow list: if environmentAccessAllowed() && (
           isAdmin() ||
-          (folderMatchesConfig() && (isOwner({'userId': userId}, 'userId') || isPubliclyVisible()))
+          (folderMatchesConfig() && (isUserOwner() || isPubliclyVisible()))
         );
         allow create: if environmentAccessAllowed() && (
           isAdmin() ||
-          (isOwner({'userId': userId}, 'userId') && folderMatchesConfig() && validItemCreate(request.resource.data))
+          (isUserOwner() && folderMatchesConfig() && validItemCreate(request.resource.data))
         );
         allow update: if environmentAccessAllowed() && (
           isAdmin() ||
-          (isOwner({'userId': userId}, 'userId') && folderMatchesConfig() && validItemUpdate(request.resource.data, resource.data))
+          (isUserOwner() && folderMatchesConfig() && validItemUpdate(request.resource.data, resource.data))
         );
         allow delete: if environmentAccessAllowed() && (
           isAdmin() ||
-          (isOwner({'userId': userId}, 'userId') && folderMatchesConfig())
+          (isUserOwner() && folderMatchesConfig())
         );
       }
 
-      // ----------------------------------------------------------------
-      // items helpers -----------------------------------------------
-      function getLengthLimitItem(field) {
-        return (field == 'item.name') ? 100 :
-               (field == 'item.description') ? 1000 : 0;
-      }
-      function createItemKeys() {
-        return ['name', 'userId', 'createdAt', 'visibility', 'description'];
-      }
-      function createItemRequiredKeys() {
-        return ['name', 'userId', 'createdAt', 'visibility'];
-      }
-      function validItemCreate(data) {
-        return 
-          isAdmin() ||
-          (
-            isAuthenticated() &&
-            hasOnlyValidKeys(data, createItemKeys()) &&
-            hasAllRequiredKeys(data, createItemRequiredKeys()) &&
-            isOwner(data, 'userId') &&
-            validString(data.name, getLengthLimitItem('item.name')) &&
-            validTimestamp(data.createdAt) &&
-            isValidVisibilityMap(data.visibility) &&
-            hasValidOptionalString(data, 'description', getLengthLimitItem('item.description'))
-          );
-      }
-      function updateItemKeys() {
-        return ['name', 'updatedAt', 'description', 'visibility'];
-      }
-      function updateItemRequiredKeys() {
-        return ['updatedAt'];
-      }
-      function validItemUpdate(newData, existingData) {
-        return 
-          isAdmin() ||
-          (
-            isAuthenticated() &&
-            existingData != null &&
-            hasOnlyAffectedKeys(newData, existingData, updateItemKeys()) &&
-            hasAllRequiredAffectedKeys(newData, existingData, updateItemRequiredKeys()) &&
-            isOwner(existingData, 'userId') &&
-            newData.userId == existingData.userId &&
-            newData.createdAt == existingData.createdAt &&
-            validTimestamp(newData.updatedAt) &&
-            hasValidOptionalString(newData, 'name', getLengthLimitItem('item.name')) &&
-            hasValidOptionalString(newData, 'description', getLengthLimitItem('item.description')) &&
-            isValidVisibilityMapOptional(newData.visibility)
-          );
-      }
+
 
 
       // Nickname index: track nicknames and their owners - Tests 4.1.1-4.1.5
