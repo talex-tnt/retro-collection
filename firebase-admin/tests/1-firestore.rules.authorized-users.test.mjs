@@ -105,7 +105,7 @@ test(`[1.1.1] authorized-users is admin-only read/write on ${RULES_TARGET}`, asy
 
   const adminUser = await buildClientContext({
     uid: 'rules-admin-user',
-    claims: { admin: true },
+    claims: { admin: true, email: OTHER_EMAIL },
   });
 
   try {

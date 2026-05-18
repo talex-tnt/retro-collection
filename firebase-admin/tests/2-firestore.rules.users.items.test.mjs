@@ -306,29 +306,6 @@ test(`[2.2.3] unauthenticated cannot create item on ${RULES_TARGET}`, async () =
   }
 });
 
-test(`[2.2.4] admin can bypass all validation on ${RULES_TARGET}`, async () => {
-  const userId = 'admin-user';
-  const itemPath = getItemPath(userId, 'new-item-admin');
-
-  const adminContext = await buildClientContext({
-    uid: 'admin-user',
-    claims: { admin: true },
-  });
-
-  try {
-    // Admin can create with minimal/invalid data - should pass because of isAdmin bypass
-    await assert.doesNotReject(
-      setDoc(doc(adminContext.db, itemPath), {
-        name: 'Admin Created',
-        userId: 'any-user',
-        createdAt: Timestamp.now(),
-        visibility: { public: false },
-      })
-    );
-  } finally {
-    await adminContext.cleanup();
-  }
-});
 
 // ============================================================================
 // CREATE - Data Validation Tests

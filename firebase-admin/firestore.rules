@@ -69,10 +69,10 @@ service cloud.firestore {
 
     function tokenEmail() {
       return isAuthenticated() &&
-            request.auth.token.email is string
+            ('email' in request.auth.token) && request.auth.token.email is string
         ? request.auth.token.email
         : isAuthenticated() &&
-          request.auth.token.authEmail is string
+          ('authEmail' in request.auth.token) && request.auth.token.authEmail is string
         ? request.auth.token.authEmail
         : null;
     }
