@@ -5,6 +5,7 @@ import {
   useGetPublicUserTagsQuery,
   useCreatePublicUserTagMutation,
 } from '../api/firestore/firestoreApi';
+import Tags from './Tags';
 import { useUpdatePublicUserItemMutation } from '../api/firestore/firestoreApi';
 
 interface ListItemProps {
@@ -85,27 +86,31 @@ function ListItem({
       className="flex flex-col gap-2 rounded-lg border border-base-300 bg-base-200 p-4"
     >
       <div className="flex items-center justify-between gap-2">
-        {editingItemId === item.id && editingField === 'name' ? (
-          <input
-            className="input input-sm input-bordered font-medium w-full max-w-xs"
-            value={editValue}
-            autoFocus
-            onChange={(e) => setEditValue(e.target.value)}
-            onBlur={() => saveEdit(item.id)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') saveEdit(item.id);
-              if (e.key === 'Escape') cancelEdit();
-            }}
-          />
-        ) : (
-          <p
-            className="font-medium cursor-pointer hover:underline"
-            onDoubleClick={() => startEditing(item.id, 'name', item.name)}
-            title="Double-click to edit name"
-          >
-            {item.name}
-          </p>
-        )}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {editingItemId === item.id && editingField === 'name' ? (
+            <input
+              className="input input-sm input-bordered font-medium w-full max-w-xs"
+              value={editValue}
+              autoFocus
+              onChange={(e) => setEditValue(e.target.value)}
+              onBlur={() => saveEdit(item.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveEdit(item.id);
+                if (e.key === 'Escape') cancelEdit();
+              }}
+            />
+          ) : (
+            <p
+              className="font-medium cursor-pointer hover:underline"
+              onDoubleClick={() => startEditing(item.id, 'name', item.name)}
+              title="Double-click to edit name"
+            >
+              {item.name}
+            </p>
+          )}
+          {/* Tags next to actions, to their left */}
+          <Tags userId={item.userId} itemId={item.id} tags={item.tags || []} />
+        </div>
         <ItemActions
           itemId={item.id}
           itemName={item.name}
@@ -116,7 +121,7 @@ function ListItem({
         />
       </div>
       <div className="flex flex-row gap-4 justify-between items-start w-full">
-        {/* Description & Tags (left) */}
+        {/* Description (left) */}
         <div className="flex-1 min-w-0">
           {editingItemId === item.id && editingField === 'description' ? (
             <textarea
@@ -154,76 +159,7 @@ function ListItem({
             </p>
           )}
         </div>
-        {/* Tags UI */}
-        <div className="mt-2">
-          <div className="flex flex-wrap gap-2 mb-2">
-            {item.tags && item.tags.length > 0 ? (
-              item.tags.map((tag) => (
-                <span key={tag} className="badge badge-outline">
-                  {tag}
-                </span>
-              ))
-            ) : (
-              <span className="text-xs text-base-content/50 italic">
-                No tags
-              </span>
-            )}
-            <button
-              type="button"
-              className="btn btn-xs btn-circle btn-outline flex items-center justify-center"
-              aria-label="Add tag"
-              onClick={() => setShowAddTag(true)}
-              tabIndex={0}
-            >
-              <span className="text-lg leading-none">+</span>
-            </button>
-          </div>
-          {showAddTag && (
-            <form
-              className="flex gap-2 mt-1"
-              onSubmit={handleAddTag}
-              tabIndex={-1}
-            >
-              <input
-                type="text"
-                className="input input-xs input-bordered"
-                placeholder="Add tag"
-                value={newTag}
-                autoFocus
-                onChange={(e) => setNewTag(e.target.value)}
-                onBlur={(e) => {
-                  setTimeout(() => setShowAddTag(false), 100);
-                }}
-                list={`tag-suggestions-${item.id}`}
-              />
-              <datalist id={`tag-suggestions-${item.id}`}>
-                {userTags.map((t) => (
-                  <option key={t.id} value={t.id} />
-                ))}
-              </datalist>
-              <button type="submit" className="btn btn-xs btn-primary">
-                Add
-              </button>
-            </form>
-          )}
-          {addTagError && (
-            <div className="text-xs text-error mt-1">{addTagError}</div>
-          )}
-          <p className="text-xs text-base-content/70 mt-2">
-            {item.createdAt
-              ? `Added ${new Date(item.createdAt).toLocaleString()}`
-              : 'No timestamp'}
-          </p>
-          <p
-            className="text-xs text-base-content/70 cursor-pointer hover:underline"
-            title="Double-click to toggle visibility"
-            onDoubleClick={() =>
-              handleToggleItemVisibility(item.id, !!item.visibility?.public)
-            }
-          >
-            Visibility: {item.visibility?.public ? 'Public' : 'Private'}
-          </p>
-        </div>
+        {/* End Description */}
       </div>
     </div>
   );
