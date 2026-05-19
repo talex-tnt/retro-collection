@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   useGetPublicUserItemsQuery,
   useUpdatePublicUserItemMutation,
@@ -13,6 +14,51 @@ interface ItemsListProps {
 }
 
 function ItemsList({ user, itemFilter, onItemFilterChange }: ItemsListProps) {
+  // Local state for editing
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingField, setEditingField] = useState<
+    'name' | 'description' | null
+  >(null);
+  const [editValue, setEditValue] = useState('');
+
+  // Start editing handler
+  const startEditing = (
+    itemId: string,
+    field: 'name' | 'description',
+    currentValue: string
+  ) => {
+    setEditingItemId(itemId);
+    setEditingField(field);
+    setEditValue(currentValue);
+  };
+
+  // Save edit handler
+  const saveEdit = async (itemId: string) => {
+    if (!user || !editingField) return;
+    const updates =
+      editingField === 'name'
+        ? { name: editValue.trim() }
+        : { description: editValue };
+    try {
+      await updateItem({
+        id: itemId,
+        userId: user.uid,
+        updates,
+      }).unwrap();
+    } catch (error) {
+      console.error('Error updating item:', error);
+    }
+    setEditingItemId(null);
+    setEditingField(null);
+    setEditValue('');
+  };
+
+  // Cancel edit
+  const cancelEdit = () => {
+    setEditingItemId(null);
+    setEditingField(null);
+    setEditValue('');
+  };
   const {
     data: items = [],
     isLoading: loadingItems,
@@ -116,7 +162,29 @@ function ItemsList({ user, itemFilter, onItemFilterChange }: ItemsListProps) {
                 className="flex flex-col gap-2 rounded-lg border border-base-300 bg-base-200 p-4"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-medium">{item.name}</p>
+                  {editingItemId === item.id && editingField === 'name' ? (
+                    <input
+                      className="input input-sm input-bordered font-medium w-full max-w-xs"
+                      value={editValue}
+                      autoFocus
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onBlur={() => saveEdit(item.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveEdit(item.id);
+                        if (e.key === 'Escape') cancelEdit();
+                      }}
+                    />
+                  ) : (
+                    <p
+                      className="font-medium cursor-pointer hover:underline"
+                      onDoubleClick={() =>
+                        startEditing(item.id, 'name', item.name)
+                      }
+                      title="Double-click to edit name"
+                    >
+                      {item.name}
+                    </p>
+                  )}
                   <ItemActions
                     itemId={item.id}
                     itemName={item.name}
@@ -127,9 +195,42 @@ function ItemsList({ user, itemFilter, onItemFilterChange }: ItemsListProps) {
                   />
                 </div>
                 <div className="space-y-1">
-                  {item.description && (
-                    <p className="text-sm text-base-content/80 whitespace-pre-wrap">
+                  {editingItemId === item.id &&
+                  editingField === 'description' ? (
+                    <textarea
+                      className="textarea textarea-bordered textarea-sm w-full"
+                      value={editValue}
+                      autoFocus
+                      rows={2}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onBlur={() => saveEdit(item.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          saveEdit(item.id);
+                        }
+                        if (e.key === 'Escape') cancelEdit();
+                      }}
+                    />
+                  ) : item.description ? (
+                    <p
+                      className="text-sm text-base-content/80 whitespace-pre-wrap cursor-pointer hover:underline"
+                      onDoubleClick={() =>
+                        startEditing(item.id, 'description', item.description)
+                      }
+                      title="Double-click to edit description"
+                    >
                       {item.description}
+                    </p>
+                  ) : (
+                    <p
+                      className="text-sm text-base-content/80 italic cursor-pointer hover:underline"
+                      onDoubleClick={() =>
+                        startEditing(item.id, 'description', '')
+                      }
+                      title="Double-click to add description"
+                    >
+                      Add description...
                     </p>
                   )}
                   <p className="text-sm text-base-content/70">
