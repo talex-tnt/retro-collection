@@ -98,38 +98,28 @@ function ListItem({ item, userId, showTags = true }: ListItemProps) {
       {showTags && (
         <Tags userId={item.userId} itemId={item.id} tags={item.tags || []} />
       )}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          {editing && editingField === 'name' ? (
-            <input
-              className="input input-sm input-bordered font-medium w-full max-w-xs"
-              value={editValue}
-              autoFocus
-              onChange={(e) => setEditValue(e.target.value)}
-              onBlur={saveEdit}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') saveEdit();
-                if (e.key === 'Escape') cancelEdit();
-              }}
-            />
-          ) : (
-            <p
-              className="font-medium cursor-pointer hover:underline"
-              onDoubleClick={() => startEditing('name', item.name)}
-              title="Double-click to edit name"
-            >
-              {item.name}
-            </p>
-          )}
-        </div>
-        <ItemActions
-          itemId={item.id}
-          itemName={item.name}
-          isPublic={!!item.visibility?.public}
-          onEdit={() => startEditing('name', item.name)}
-          onToggleVisibility={handleToggleItemVisibility}
-          onDelete={handleDeleteItem}
-        />
+      <div className="flex items-center gap-2">
+        {editing && editingField === 'name' ? (
+          <input
+            className="input input-sm input-bordered font-medium w-full max-w-xs"
+            value={editValue}
+            autoFocus
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={saveEdit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') saveEdit();
+              if (e.key === 'Escape') cancelEdit();
+            }}
+          />
+        ) : (
+          <p
+            className="font-medium cursor-pointer hover:underline"
+            onDoubleClick={() => startEditing('name', item.name)}
+            title="Double-click to edit name"
+          >
+            {item.name}
+          </p>
+        )}
       </div>
 
       <div className="flex flex-row gap-4 justify-between items-start w-full">
@@ -174,24 +164,36 @@ function ListItem({ item, userId, showTags = true }: ListItemProps) {
         {/* End Description */}
       </div>
 
-      {/* Visibility and dates row */}
-      <div className="flex flex-row gap-4 items-center text-xs text-base-content/60">
-        <span>
-          Visibility:{' '}
-          <span
-            className={
-              item.visibility?.public ? 'text-green-600' : 'text-yellow-600'
-            }
-          >
-            {item.visibility?.public ? 'Public' : 'Private'}
+      {/* Visibility, dates, and actions row */}
+      <div className="flex flex-row gap-4 items-center text-xs text-base-content/60 justify-between w-full mt-1">
+        <div className="flex flex-row gap-4 items-center">
+          <span>
+            Visibility:{' '}
+            <span
+              className={
+                item.visibility?.public ? 'text-green-600' : 'text-yellow-600'
+              }
+            >
+              {item.visibility?.public ? 'Public' : 'Private'}
+            </span>
           </span>
-        </span>
-        {item.createdAt && (
-          <span>Created: {new Date(item.createdAt).toLocaleString()}</span>
-        )}
-        {item.updatedAt && (
-          <span>Edited: {new Date(item.updatedAt).toLocaleString()}</span>
-        )}
+          {item.createdAt && (
+            <span>Created: {new Date(item.createdAt).toLocaleString()}</span>
+          )}
+          {item.updatedAt && (
+            <span>Edited: {new Date(item.updatedAt).toLocaleString()}</span>
+          )}
+        </div>
+        <div className="flex flex-row items-center">
+          <ItemActions
+            itemId={item.id}
+            itemName={item.name}
+            isPublic={!!item.visibility?.public}
+            onEdit={() => startEditing('name', item.name)}
+            onToggleVisibility={handleToggleItemVisibility}
+            onDelete={handleDeleteItem}
+          />
+        </div>
       </div>
     </div>
   );
