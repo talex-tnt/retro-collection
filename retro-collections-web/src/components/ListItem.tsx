@@ -1,7 +1,8 @@
+import type { Item } from '../api/firestore/services/public/userItems';
 import ItemActions from './ItemActions';
 
 interface ListItemProps {
-  item: any;
+  item: Item;
   editingItemId: string | null;
   editingField: 'name' | 'description' | null;
   editValue: string;
