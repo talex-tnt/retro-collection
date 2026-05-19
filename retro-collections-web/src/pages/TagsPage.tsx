@@ -102,7 +102,6 @@ export default function TagsPage({ user }: TagsPageProps) {
         <ul className="space-y-2">
           {tags.map((tag) => {
             const style = tag.style || {};
-            console.log('style for tag', tag.id, style);
             const edit = styleEdits[tag.id] || {
               backgroundColor: style.backgroundColor || '',
               foregroundColor: style.foregroundColor || '',

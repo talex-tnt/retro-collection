@@ -77,7 +77,10 @@ function App() {
                 <Route path="/collectors" element={<CollectorsPage />} />
                 <Route path="/users" element={<UsersPage />} />
                 <Route path="/admin" element={<AdminPage />} />
-                <Route path="/tags" element={user ? <TagsPage user={user} /> : null} />
+                <Route
+                  path="/tags"
+                  element={user ? <TagsPage user={user} /> : null}
+                />
               </Routes>
             </div>
           </div>

@@ -72,14 +72,20 @@ export default function Tags({
     }
   };
 
+  // Build a map for fast style lookup
+  const styleMap = userTags.reduce<
+    Record<string, { backgroundColor?: string; foregroundColor?: string }>
+  >((acc, t) => {
+    acc[t.id] = t.style || {};
+    return acc;
+  }, {});
+
   return (
     <div className="w-full">
       <div className="flex flex-row flex-wrap gap-2 items-center justify-start">
         {tags && tags.length > 0 ? (
           tags.map((tag) => {
-            // Try to find the tag style from userTags (which has style info)
-            const tagObj = userTags.find((t) => t.id === tag);
-            const style = tagObj?.style || {};
+            const style = styleMap[tag] || {};
             return (
               <span
                 key={tag}
@@ -107,39 +113,40 @@ export default function Tags({
         ) : (
           <span className="text-xs text-base-content/50 italic">No tags</span>
         )}
-        {!readOnly && (showAddTag ? (
-          <form
-            className="flex gap-2 items-center"
-            onSubmit={handleAddTag}
-            tabIndex={-1}
-          >
-            <input
-              type="text"
-              className="input input-xs input-bordered"
-              placeholder="Add tag"
-              value={newTag}
-              autoFocus
-              onChange={(e) => setNewTag(e.target.value)}
-              onBlur={() => setTimeout(() => setShowAddTag(false), 100)}
-              list={`tag-suggestions-${itemId}`}
-            />
-            <datalist id={`tag-suggestions-${itemId}`}>
-              {userTags.map((t) => (
-                <option key={t.id} value={t.id} />
-              ))}
-            </datalist>
-          </form>
-        ) : (
-          <button
-            type="button"
-            className="btn btn-xs btn-circle btn-outline flex items-center justify-center"
-            aria-label="Add tag"
-            onClick={() => setShowAddTag(true)}
-            tabIndex={0}
-          >
-            <span className="text-lg leading-none">+</span>
-          </button>
-        ))}
+        {!readOnly &&
+          (showAddTag ? (
+            <form
+              className="flex gap-2 items-center"
+              onSubmit={handleAddTag}
+              tabIndex={-1}
+            >
+              <input
+                type="text"
+                className="input input-xs input-bordered"
+                placeholder="Add tag"
+                value={newTag}
+                autoFocus
+                onChange={(e) => setNewTag(e.target.value)}
+                onBlur={() => setTimeout(() => setShowAddTag(false), 100)}
+                list={`tag-suggestions-${itemId}`}
+              />
+              <datalist id={`tag-suggestions-${itemId}`}>
+                {userTags.map((t) => (
+                  <option key={t.id} value={t.id} />
+                ))}
+              </datalist>
+            </form>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-xs btn-circle btn-outline flex items-center justify-center"
+              aria-label="Add tag"
+              onClick={() => setShowAddTag(true)}
+              tabIndex={0}
+            >
+              <span className="text-lg leading-none">+</span>
+            </button>
+          ))}
       </div>
       {addTagError && (
         <div className="text-xs text-error mt-1 w-full">{addTagError}</div>
