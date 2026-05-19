@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import ItemsPanel from '../components/ItemsPanel';
+import ItemsList from '../components/ItemsList';
 import NewItem from '../components/NewItem';
 
 function MyCollectionPage() {
@@ -29,7 +29,7 @@ function MyCollectionPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-1">
       <div className="space-y-6">
-        <ItemsPanel
+        <ItemsList
           user={user}
           itemFilter={itemFilter}
           onItemFilterChange={setItemFilter}

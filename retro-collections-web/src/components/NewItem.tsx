@@ -43,7 +43,7 @@ function NewItem({ userId }: NewItemProps) {
     <div className="card bg-base-100 shadow-xl h-fit">
       <div className="card-body space-y-4">
         <div>
-          <h2 className="card-title text-lg">New Item</h2>
+          <h2 className="card-title text-lg">New Collectible</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
@@ -55,7 +55,7 @@ function NewItem({ userId }: NewItemProps) {
                 className="input input-bordered w-full"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="New item name"
+                placeholder="New collectible name"
                 disabled={isCreatingItem}
               />
             </label>
@@ -67,7 +67,7 @@ function NewItem({ userId }: NewItemProps) {
               className="textarea textarea-bordered min-h-24 w-full"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="Optional item description"
+              placeholder="Optional collectible description"
               disabled={isCreatingItem}
             />
           </label>
@@ -77,7 +77,7 @@ function NewItem({ userId }: NewItemProps) {
             className="btn btn-primary"
             disabled={isCreatingItem || !name.trim()}
           >
-            {isCreatingItem ? 'Adding...' : 'Add Item'}
+            {isCreatingItem ? 'Adding...' : 'Add Collectible'}
           </button>
         </form>
       </div>

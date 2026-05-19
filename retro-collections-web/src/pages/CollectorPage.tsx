@@ -49,11 +49,11 @@ function CollectorPage() {
         </div>
 
         <div>
-          <h3 className="text-md font-semibold mb-2">Public Items</h3>
+          <h3 className="text-md font-semibold mb-2">Public Collectibles</h3>
           {loadingItems ? (
-            <div className="alert alert-info">Loading items...</div>
+            <div className="alert alert-info">Loading collectibles...</div>
           ) : items.length === 0 ? (
-            <div className="alert alert-info">No public items.</div>
+            <div className="alert alert-info">No public collectibles.</div>
           ) : (
             <div className="space-y-3">
               {items

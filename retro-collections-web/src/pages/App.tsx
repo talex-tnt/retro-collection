@@ -67,12 +67,9 @@ function App() {
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/my-collection" element={<MyCollectionPage />} />
                 <Route
-                  path="/my-collections/:collectionId?"
-                  element={<MyCollectionPage />}
-                />
-                <Route
-                  path="/collectors/:userId/collections/:collectionId?"
+                  path="/collectors/:userId/collectibles"
                   element={<CollectorPage />}
                 />
                 <Route path="/collectors" element={<CollectorsPage />} />

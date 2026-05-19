@@ -18,7 +18,7 @@ function ItemActions({
   onDelete,
 }: ItemActionsProps) {
   const handleEdit = () => {
-    const newName = prompt('New item name:', itemName);
+    const newName = prompt('New collectible name:', itemName);
     if (newName) {
       onEdit(itemId, newName);
     }
@@ -28,9 +28,9 @@ function ItemActions({
     <div className="flex gap-2">
       <button
         className="btn btn-sm btn-ghost tooltip"
-        data-tip="Edit item"
+        data-tip="Edit collectible"
         onClick={handleEdit}
-        title="Edit item"
+        title="Edit collectible"
       >
         <FiEdit2 size={18} />
       </button>
@@ -44,9 +44,9 @@ function ItemActions({
       </button>
       <button
         className="btn btn-sm btn-ghost text-error hover:text-error tooltip"
-        data-tip="Delete item"
+        data-tip="Delete collectible"
         onClick={() => onDelete(itemId)}
-        title="Delete item"
+        title="Delete collectible"
       >
         <FiTrash2 size={18} />
       </button>

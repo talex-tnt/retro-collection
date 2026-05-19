@@ -26,7 +26,7 @@ When you're implementing or refactoring tests, it's important to focus on improv
 - Create a reference document mapping each rule to its test case number (x.y.z format).
 - Ensure rule conditions are on separate lines for adding comments:
 ```
- match /public/collections/{collectionId} {
+ match /public/items/{itemId} {
         allow get: if 
           isAdmin() || // Rule 1.1.2
           (folderMatchesConfig() && // Rule 1.1.3

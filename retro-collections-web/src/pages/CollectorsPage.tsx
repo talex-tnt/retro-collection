@@ -40,7 +40,7 @@ function CollectorsPage() {
                       key={user.id}
                       className="cursor-pointer hover:bg-base-200"
                       onClick={() =>
-                        navigate(`/collectors/${user.id}/collections`)
+                        navigate(`/collectors/${user.id}/collectibles`)
                       }
                     >
                       <td>{user.name || '—'}</td>

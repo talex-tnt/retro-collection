@@ -149,7 +149,7 @@ function UsersPage() {
                       key={user.id}
                       user={user}
                       onSelect={() =>
-                        navigate(`/collectors/${user.id}/collections`)
+                        navigate(`/collectors/${user.id}/collectibles`)
                       }
                     />
                   ))}

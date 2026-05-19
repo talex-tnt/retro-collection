@@ -6,13 +6,13 @@ import {
 
 import ItemActions from './ItemActions';
 
-interface ItemsPanelProps {
+interface ItemsListProps {
   user: { uid: string } | null;
   itemFilter: string;
   onItemFilterChange: (filter: string) => void;
 }
 
-function ItemsPanel({ user, itemFilter, onItemFilterChange }: ItemsPanelProps) {
+function ItemsList({ user, itemFilter, onItemFilterChange }: ItemsListProps) {
   const {
     data: items = [],
     isLoading: loadingItems,
@@ -78,7 +78,7 @@ function ItemsPanel({ user, itemFilter, onItemFilterChange }: ItemsPanelProps) {
       <div className="card-body space-y-4">
         {/* Items Header */}
         <div>
-          <h2 className="card-title">My Items</h2>
+          <h2 className="card-title">My Collectibles</h2>
         </div>
 
         {/* Filter Input */}
@@ -97,15 +97,17 @@ function ItemsPanel({ user, itemFilter, onItemFilterChange }: ItemsPanelProps) {
           {itemsError ? (
             <div className="alert alert-error">
               <span>
-                Error loading items:{' '}
+                Error loading collectibles:{' '}
                 {(itemsError as Error).message || 'Unknown error'}
               </span>
             </div>
           ) : loadingItems ? (
-            <div className="alert alert-info">Loading items...</div>
+            <div className="alert alert-info">Loading collectibles...</div>
           ) : filteredItems.length === 0 ? (
             <div className="alert alert-info">
-              {itemFilter ? 'No items match your filter.' : 'No items yet.'}
+              {itemFilter
+                ? 'No collectibles match your filter.'
+                : 'No collectibles yet.'}
             </div>
           ) : (
             filteredItems.map((item) => (
@@ -148,4 +150,4 @@ function ItemsPanel({ user, itemFilter, onItemFilterChange }: ItemsPanelProps) {
   );
 }
 
-export default ItemsPanel;
+export default ItemsList;
