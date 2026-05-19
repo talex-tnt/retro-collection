@@ -27,14 +27,19 @@ function MyCollectionPage() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-1">
-      <div className="space-y-6">
+    <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
+      {/* Left column: NewItem and future filters */}
+      <div className="md:col-span-2 space-y-6">
+        <NewItem userId={user.uid} />
+        {/* Filters and other controls can be added here later */}
+      </div>
+      {/* Center column: ItemsList */}
+      <div className="md:col-span-4">
         <ItemsList
           user={user}
           itemFilter={itemFilter}
           onItemFilterChange={setItemFilter}
         />
-        <NewItem userId={user.uid} />
       </div>
     </div>
   );
