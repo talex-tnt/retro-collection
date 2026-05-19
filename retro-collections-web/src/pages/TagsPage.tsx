@@ -1,4 +1,20 @@
+// Predefined color pairs for tag styles
+const TAG_COLOR_PAIRS = [
+  { name: 'Default', backgroundColor: null, foregroundColor: null },
+  { name: 'Red', backgroundColor: '#f87171', foregroundColor: '#fff' },
+  { name: 'Amber', backgroundColor: '#fbbf24', foregroundColor: '#222' },
+  { name: 'Green', backgroundColor: '#34d399', foregroundColor: '#222' },
+  { name: 'Blue', backgroundColor: '#60a5fa', foregroundColor: '#fff' },
+  { name: 'Purple', backgroundColor: '#a78bfa', foregroundColor: '#fff' },
+  { name: 'Pink', backgroundColor: '#f472b6', foregroundColor: '#222' },
+  { name: 'Yellow', backgroundColor: '#facc15', foregroundColor: '#222' },
+  { name: 'Gray', backgroundColor: '#d1d5db', foregroundColor: '#222' },
+  { name: 'Black', backgroundColor: '#000000', foregroundColor: '#fff' },
+  { name: 'White', backgroundColor: '#ffffff', foregroundColor: '#222' },
+  { name: 'Dark Blue', backgroundColor: '#1e293b', foregroundColor: '#fff' },
+];
 import { useState } from 'react';
+import { TagColorPicker } from '../components/TagColorPicker';
 import {
   useGetPublicUserTagsQuery,
   useCreatePublicUserTagMutation,
@@ -26,29 +42,58 @@ export default function TagsPage({ user }: TagsPageProps) {
   const [styleEdits, setStyleEdits] = useState<
     Record<string, { backgroundColor: string; foregroundColor: string }>
   >({});
-  const handleStyleChange = (
-    tagId: string,
-    field: 'backgroundColor' | 'foregroundColor',
-    value: string
-  ) => {
-    setStyleEdits((prev) => ({
-      ...prev,
-      [tagId]: {
-        ...prev[tagId],
-        [field]: value,
-      },
-    }));
+
+  // Find the index of a color pair matching bg/fg
+  const findPairIndex = (bg: string, fg: string) => {
+    return TAG_COLOR_PAIRS.findIndex(
+      (pair) => pair.backgroundColor === bg && pair.foregroundColor === fg
+    );
   };
 
-  const handleSaveStyle = async (tagId: string) => {
-    const style = styleEdits[tagId];
-    if (!style) return;
-    try {
-      await updateTagStyle({ userId, tag: tagId, style }).unwrap();
-    } catch (err: any) {
-      // Optionally show error
-    }
+  // Set style by color pair index
+  const handleStylePairChange = (tagId: string, pairIndex: number) => {
+    const pair = TAG_COLOR_PAIRS[pairIndex];
+    const style = {
+      backgroundColor: pair.backgroundColor,
+      foregroundColor: pair.foregroundColor,
+    };
+    updateTagStyle({ userId, tag: tagId, style }).unwrap();
+    // setStyleEdits((prev) => ({
+    //   ...prev,
+    //   [tagId]: {
+    //     backgroundColor: pair.backgroundColor,
+    //     foregroundColor: pair.foregroundColor,
+    //   },
+    // }));
   };
+
+  // Invert bg/fg for the current edit
+  // const handleInvertStyle = (tagId: string) => {
+  //   setStyleEdits((prev) => {
+  //     const current = prev[tagId] || {
+  //       backgroundColor: '',
+  //       foregroundColor: '',
+  //     };
+  //     return {
+  //       ...prev,
+  //       [tagId]: {
+  //         backgroundColor: current.foregroundColor,
+  //         foregroundColor: current.backgroundColor,
+  //       },
+  //     };
+  //   });
+  // };
+
+  // const handleSaveStyle = async (tagId: string) => {
+  //   const style = styleEdits[tagId];
+  //   console.log('Saving style for', tagId, style);
+  //   if (!style) return;
+  //   try {
+  //     await updateTagStyle({ userId, tag: tagId, style }).unwrap();
+  //   } catch (err: any) {
+  //     // Optionally show error
+  //   }
+  // };
 
   const handleAddTag = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,7 +157,7 @@ export default function TagsPage({ user }: TagsPageProps) {
                 className="flex flex-col gap-2 bg-base-100 rounded px-3 py-2"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span
+                  {/* <span
                     className="font-mono text-base-content/80 px-2 py-1 rounded"
                     style={{
                       backgroundColor: style.backgroundColor || undefined,
@@ -120,7 +165,16 @@ export default function TagsPage({ user }: TagsPageProps) {
                     }}
                   >
                     {tag.id}
-                  </span>
+                  </span> */}
+                  <TagColorPicker
+                    text={tag.id}
+                    valueIndex={findPairIndex(
+                      edit.backgroundColor,
+                      edit.foregroundColor
+                    )}
+                    onChange={(idx) => handleStylePairChange(tag.id, idx)}
+                    colorPairs={TAG_COLOR_PAIRS}
+                  />
                   <button
                     className="btn btn-xs btn-error btn-outline"
                     onClick={() => handleDeleteTag(tag.id)}
@@ -128,37 +182,22 @@ export default function TagsPage({ user }: TagsPageProps) {
                     Delete
                   </button>
                 </div>
-                <div className="flex flex-row gap-2 items-center">
-                  <label className="text-xs">BG</label>
-                  <input
-                    type="color"
-                    value={edit.backgroundColor || '#ffffff'}
-                    onChange={(e) =>
-                      handleStyleChange(
-                        tag.id,
-                        'backgroundColor',
-                        e.target.value
-                      )
-                    }
-                  />
-                  <label className="text-xs">FG</label>
-                  <input
-                    type="color"
-                    value={edit.foregroundColor || '#000000'}
-                    onChange={(e) =>
-                      handleStyleChange(
-                        tag.id,
-                        'foregroundColor',
-                        e.target.value
-                      )
-                    }
-                  />
-                  <button
-                    className="btn btn-xs btn-primary"
+                <div className="flex flex-row gap-2 items-center relative">
+                  {/* <label className="text-xs">Style</label> */}
+                  {/* <button
+                    className="btn btn-xs btn-outline ml-2"
+                    type="button"
+                    title="Invert colors"
+                    onClick={() => handleInvertStyle(tag.id)}
+                  >
+                    Invert
+                  </button> */}
+                  {/* <button
+                    className="btn btn-xs btn-primary ml-2"
                     onClick={() => handleSaveStyle(tag.id)}
                   >
                     Save Style
-                  </button>
+                  </button> */}
                 </div>
               </li>
             );
