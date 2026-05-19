@@ -131,6 +131,7 @@ function ListItem({ item, userId, showTags = true }: ListItemProps) {
           onDelete={handleDeleteItem}
         />
       </div>
+
       <div className="flex flex-row gap-4 justify-between items-start w-full">
         {/* Description (left) */}
         <div className="flex-1 min-w-0">
@@ -171,6 +172,26 @@ function ListItem({ item, userId, showTags = true }: ListItemProps) {
           )}
         </div>
         {/* End Description */}
+      </div>
+
+      {/* Visibility and dates row */}
+      <div className="flex flex-row gap-4 items-center text-xs text-base-content/60">
+        <span>
+          Visibility:{' '}
+          <span
+            className={
+              item.visibility?.public ? 'text-green-600' : 'text-yellow-600'
+            }
+          >
+            {item.visibility?.public ? 'Public' : 'Private'}
+          </span>
+        </span>
+        {item.createdAt && (
+          <span>Created: {new Date(item.createdAt).toLocaleString()}</span>
+        )}
+        {item.updatedAt && (
+          <span>Edited: {new Date(item.updatedAt).toLocaleString()}</span>
+        )}
       </div>
     </div>
   );
