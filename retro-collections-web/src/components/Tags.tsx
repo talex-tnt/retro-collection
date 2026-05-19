@@ -12,8 +12,16 @@ interface TagsProps {
   onTagsChange?: (tags: string[]) => void;
 }
 
-export default function Tags({ userId, itemId, tags = [], onTagsChange }: TagsProps) {
-  const { data: userTags = [] } = useGetPublicUserTagsQuery({ userId }, { skip: !userId });
+export default function Tags({
+  userId,
+  itemId,
+  tags = [],
+  onTagsChange,
+}: TagsProps) {
+  const { data: userTags = [] } = useGetPublicUserTagsQuery(
+    { userId },
+    { skip: !userId }
+  );
   const [createTag] = useCreatePublicUserTagMutation();
   const [updateItem] = useUpdatePublicUserItemMutation();
   const [newTag, setNewTag] = useState('');
@@ -25,14 +33,20 @@ export default function Tags({ userId, itemId, tags = [], onTagsChange }: TagsPr
     setAddTagError(null);
     const tag = newTag.trim();
     if (!tag) return;
-    const tagExists = userTags.some((t) => t.id.toLowerCase() === tag.toLowerCase());
+    const tagExists = userTags.some(
+      (t) => t.id.toLowerCase() === tag.toLowerCase()
+    );
     try {
       if (!tagExists) {
         await createTag({ userId, tag }).unwrap();
       }
       if (!tags.includes(tag)) {
         const updatedTags = [...tags, tag];
-        await updateItem({ id: itemId, userId, updates: { tags: updatedTags } }).unwrap();
+        await updateItem({
+          id: itemId,
+          userId,
+          updates: { tags: updatedTags },
+        }).unwrap();
         onTagsChange?.(updatedTags);
       }
       setNewTag('');
@@ -45,7 +59,11 @@ export default function Tags({ userId, itemId, tags = [], onTagsChange }: TagsPr
   const handleRemoveTag = async (tagToRemove: string) => {
     const updatedTags = tags.filter((t) => t !== tagToRemove);
     try {
-      await updateItem({ id: itemId, userId, updates: { tags: updatedTags } }).unwrap();
+      await updateItem({
+        id: itemId,
+        userId,
+        updates: { tags: updatedTags },
+      }).unwrap();
       onTagsChange?.(updatedTags);
     } catch (err: any) {
       setAddTagError(err?.message || 'Failed to remove tag');
@@ -56,7 +74,10 @@ export default function Tags({ userId, itemId, tags = [], onTagsChange }: TagsPr
     <div className="flex flex-wrap gap-2 ml-2">
       {tags && tags.length > 0 ? (
         tags.map((tag) => (
-          <span key={tag} className="badge badge-outline flex items-center gap-1">
+          <span
+            key={tag}
+            className="badge badge-outline flex items-center gap-1"
+          >
             {tag}
             <button
               type="button"
@@ -73,11 +94,7 @@ export default function Tags({ userId, itemId, tags = [], onTagsChange }: TagsPr
         <span className="text-xs text-base-content/50 italic">No tags</span>
       )}
       {showAddTag ? (
-        <form
-          className="flex gap-2 mt-1"
-          onSubmit={handleAddTag}
-          tabIndex={-1}
-        >
+        <form className="flex gap-2 mt-1" onSubmit={handleAddTag} tabIndex={-1}>
           <input
             type="text"
             className="input input-xs input-bordered"
@@ -93,9 +110,9 @@ export default function Tags({ userId, itemId, tags = [], onTagsChange }: TagsPr
               <option key={t.id} value={t.id} />
             ))}
           </datalist>
-          <button type="submit" className="btn btn-xs btn-primary">
+          {/* <button type="submit" className="btn btn-xs btn-primary">
             Add
-          </button>
+          </button> */}
         </form>
       ) : (
         <button
@@ -108,7 +125,9 @@ export default function Tags({ userId, itemId, tags = [], onTagsChange }: TagsPr
           <span className="text-lg leading-none">+</span>
         </button>
       )}
-      {addTagError && <div className="text-xs text-error mt-1 w-full">{addTagError}</div>}
+      {addTagError && (
+        <div className="text-xs text-error mt-1 w-full">{addTagError}</div>
+      )}
     </div>
   );
 }
