@@ -20,13 +20,9 @@ function ItemsList({ user, itemFilter, selectedTags }: ItemsListProps) {
     {
       userId: user?.uid || '',
       tags: selectedTags.length > 0 ? selectedTags : undefined,
+      name: itemFilter.trim() ? itemFilter : undefined,
     },
     { skip: !user?.uid }
-  );
-
-  // Filter items by name
-  const filteredItems = items.filter((item) =>
-    item.name.toLowerCase().includes(itemFilter.toLowerCase())
   );
 
   return (
@@ -54,14 +50,14 @@ function ItemsList({ user, itemFilter, selectedTags }: ItemsListProps) {
             </div>
           ) : loadingItems ? (
             <div className="alert alert-info">Loading collectibles...</div>
-          ) : filteredItems.length === 0 ? (
+          ) : items.length === 0 ? (
             <div className="alert alert-info">
               {itemFilter
                 ? 'No collectibles match your filter.'
                 : 'No collectibles yet.'}
             </div>
           ) : (
-            filteredItems.map((item) => (
+            items.map((item) => (
               <ListItem
                 key={item.id}
                 item={item}

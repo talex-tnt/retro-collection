@@ -68,9 +68,9 @@ const mapItemDoc = (snapshot: QueryDocumentSnapshot<DocumentData>): Item => {
 const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
   getPublicUserItems: builder.query<
     Item[],
-    { userId: string; tags?: string[] }
+    { userId: string; tags?: string[]; name?: string }
   >({
-    async queryFn({ userId, tags }) {
+    async queryFn({ userId, tags, name }) {
       const path = await getUserCollectionPath({
         visibility,
         resourceType: 'items',
@@ -100,8 +100,16 @@ const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
       };
       try {
         const snapshot = await getDocs(q);
+        let items = snapshot.docs.map(mapItemDoc);
+        // If name filter is provided, filter client-side (Firestore does not support case-insensitive substring search)
+        if (name && name.trim()) {
+          const nameLower = name.trim().toLowerCase();
+          items = items.filter((item) =>
+            item.name?.toLowerCase().includes(nameLower)
+          );
+        }
         return {
-          data: snapshot.docs.map(mapItemDoc),
+          data: items,
         };
       } catch (error) {
         return { error: createFirestoreApiError(context, error) };
