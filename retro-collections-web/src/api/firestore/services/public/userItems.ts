@@ -2,7 +2,7 @@ import {
   collection,
   getDocs,
   addDoc,
-  updateDoc,
+  setDoc,
   deleteDoc,
   doc,
   query,
@@ -210,19 +210,18 @@ const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
       });
       const requestPayload = {
         ...updates,
-        tags: updates.tags || [],
         updatedAt: serverTimestamp(),
       };
       const context = {
         apiEndpoint: 'updatePublicUserItem',
         operation: 'UPDATE' as const,
-        firebaseFunc: 'updateDoc',
+        firebaseFunc: 'setDoc',
         path,
         segmentPaths: [id],
         requestPayload,
       };
       try {
-        await updateDoc(doc(db, path, id), requestPayload);
+        await setDoc(doc(db, path, id), requestPayload, { merge: true });
         return { data: undefined };
       } catch (error) {
         return { error: createFirestoreApiError(context, error) };
