@@ -43,6 +43,7 @@ function ListItem({
 }: ListItemProps) {
   const [newTag, setNewTag] = useState('');
   const [addTagError, setAddTagError] = useState<string | null>(null);
+  const [showAddTag, setShowAddTag] = useState(false);
   const userId = item.userId;
   const { data: userTags = [] } = useGetPublicUserTagsQuery(
     { userId },
@@ -51,8 +52,8 @@ function ListItem({
   const [createTag] = useCreatePublicUserTagMutation();
   const [updateItem] = useUpdatePublicUserItemMutation();
 
-  const handleAddTag = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddTag = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setAddTagError(null);
     const tag = newTag.trim();
     if (!tag) return;
@@ -72,6 +73,7 @@ function ListItem({
         }).unwrap();
       }
       setNewTag('');
+      setShowAddTag(false);
     } catch (err: any) {
       setAddTagError(err?.message || 'Failed to add tag');
     }
@@ -166,32 +168,48 @@ function ListItem({
                 No tags
               </span>
             )}
-          </div>
-          <form className="flex gap-2" onSubmit={handleAddTag}>
-            <input
-              type="text"
-              className="input input-xs input-bordered"
-              placeholder="Add tag"
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
-              list={`tag-suggestions-${item.id}`}
-            />
-            <datalist id={`tag-suggestions-${item.id}`}>
-              {userTags.map((t) => (
-                <option key={t.id} value={t.id} />
-              ))}
-            </datalist>
-            <button type="submit" className="btn btn-xs btn-primary">
-              Add
+            <button
+              type="button"
+              className="btn btn-xs btn-circle btn-outline flex items-center justify-center"
+              aria-label="Add tag"
+              onClick={() => setShowAddTag(true)}
+              tabIndex={0}
+            >
+              <span className="text-lg leading-none">+</span>
             </button>
-          </form>
+          </div>
+          {showAddTag && (
+            <form
+              className="flex gap-2 mt-1"
+              onSubmit={handleAddTag}
+              tabIndex={-1}
+            >
+              <input
+                type="text"
+                className="input input-xs input-bordered"
+                placeholder="Add tag"
+                value={newTag}
+                autoFocus
+                onChange={(e) => setNewTag(e.target.value)}
+                onBlur={(e) => {
+                  setTimeout(() => setShowAddTag(false), 100);
+                }}
+                list={`tag-suggestions-${item.id}`}
+              />
+              <datalist id={`tag-suggestions-${item.id}`}>
+                {userTags.map((t) => (
+                  <option key={t.id} value={t.id} />
+                ))}
+              </datalist>
+              <button type="submit" className="btn btn-xs btn-primary">
+                Add
+              </button>
+            </form>
+          )}
           {addTagError && (
             <div className="text-xs text-error mt-1">{addTagError}</div>
           )}
-        </div>
-        {/* Meta info (right, below actions) */}
-        <div className="flex flex-col items-end flex-shrink-0 text-right gap-1 min-w-[140px] ml-2">
-          <p className="text-xs text-base-content/70">
+          <p className="text-xs text-base-content/70 mt-2">
             {item.createdAt
               ? `Added ${new Date(item.createdAt).toLocaleString()}`
               : 'No timestamp'}
