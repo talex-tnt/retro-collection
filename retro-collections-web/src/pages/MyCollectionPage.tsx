@@ -9,6 +9,9 @@ function MyCollectionPage() {
   const [user, setUser] = useState<User | null>(null);
   const [itemFilter, setItemFilter] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [visibilityFilter, setVisibilityFilter] = useState<
+    'public' | 'private' | ''
+  >('');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -39,6 +42,8 @@ function MyCollectionPage() {
           onItemFilterChange={setItemFilter}
           selectedTags={selectedTags}
           setSelectedTags={setSelectedTags}
+          visibilityFilter={visibilityFilter}
+          onVisibilityFilterChange={setVisibilityFilter}
         />
       </div>
       {/* Center column: ItemsList */}
@@ -48,6 +53,13 @@ function MyCollectionPage() {
           itemFilter={itemFilter}
           onItemFilterChange={setItemFilter}
           selectedTags={selectedTags}
+          isPublic={
+            visibilityFilter === 'public'
+              ? true
+              : visibilityFilter === 'private'
+                ? false
+                : undefined
+          }
         />
       </div>
     </div>

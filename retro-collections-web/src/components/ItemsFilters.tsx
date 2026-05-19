@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useGetPublicUserTagsQuery } from '../api/firestore/firestoreApi';
 
 interface ItemsFiltersProps {
@@ -7,6 +6,8 @@ interface ItemsFiltersProps {
   onItemFilterChange: (filter: string) => void;
   selectedTags: string[];
   setSelectedTags: (tags: string[]) => void;
+  visibilityFilter?: 'public' | 'private' | '';
+  onVisibilityFilterChange?: (v: 'public' | 'private' | '') => void;
 }
 
 export default function ItemsFilters({
@@ -15,6 +16,8 @@ export default function ItemsFilters({
   onItemFilterChange,
   selectedTags,
   setSelectedTags,
+  visibilityFilter = '',
+  onVisibilityFilterChange,
 }: ItemsFiltersProps) {
   // Fetch all tags for the user
   const { data: allTags = [] } = useGetPublicUserTagsQuery(
@@ -26,8 +29,8 @@ export default function ItemsFilters({
     <div className="card bg-base-100 shadow-md">
       <div className="card-body space-y-4">
         <h2 className="card-title mb-2">Filter Collectibles</h2>
-        {/* Tag Filter UI */}
-        <div className="flex flex-wrap gap-2 mb-2">
+        {/* Tag & Visibility Filter UI */}
+        <div className="flex flex-wrap gap-2 mb-2 items-center">
           {allTags.map((tag) => {
             const isSelected = selectedTags.includes(tag.id);
             const style =
@@ -75,6 +78,20 @@ export default function ItemsFilters({
             placeholder="Filter collectibles by name..."
           />
         </div>
+        {/* Visibility Filter */}
+        <select
+          className="select select-xs min-w-[100px]"
+          value={visibilityFilter}
+          onChange={(e) =>
+            onVisibilityFilterChange?.(
+              e.target.value as 'public' | 'private' | ''
+            )
+          }
+        >
+          <option value="">All</option>
+          <option value="public">Public</option>
+          <option value="private">Private</option>
+        </select>
       </div>
     </div>
   );

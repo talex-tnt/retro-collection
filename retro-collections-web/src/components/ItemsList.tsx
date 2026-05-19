@@ -8,12 +8,18 @@ interface ItemsListProps {
   itemFilter: string;
   onItemFilterChange: (filter: string) => void;
   selectedTags: string[];
+  isPublic?: boolean;
 }
 
-function ItemsList({ user, itemFilter, selectedTags }: ItemsListProps) {
+function ItemsList({
+  user,
+  itemFilter,
+  selectedTags,
+  isPublic,
+}: ItemsListProps) {
   const [showTags, setShowTags] = useState(true);
   const {
-    data: items = [],
+    data: allItems = [],
     isLoading: loadingItems,
     error: itemsError,
   } = useGetPublicUserItemsQuery(
@@ -21,9 +27,12 @@ function ItemsList({ user, itemFilter, selectedTags }: ItemsListProps) {
       userId: user?.uid || '',
       tags: selectedTags.length > 0 ? selectedTags : undefined,
       name: itemFilter.trim() ? itemFilter : undefined,
+      isPublic,
     },
     { skip: !user?.uid }
   );
+
+  const items = allItems;
 
   return (
     <div className="card bg-base-100 shadow-xl">
