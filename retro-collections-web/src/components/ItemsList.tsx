@@ -238,7 +238,16 @@ function ItemsList({ user, itemFilter, onItemFilterChange }: ItemsListProps) {
                       ? `Added ${new Date(item.createdAt).toLocaleString()}`
                       : 'No timestamp'}
                   </p>
-                  <p className="text-sm text-base-content/70">
+                  <p
+                    className="text-sm text-base-content/70 cursor-pointer hover:underline"
+                    title="Double-click to toggle visibility"
+                    onDoubleClick={() =>
+                      handleToggleItemVisibility(
+                        item.id,
+                        !!item.visibility?.public
+                      )
+                    }
+                  >
                     Visibility: {item.visibility?.public ? 'Public' : 'Private'}
                   </p>
                 </div>
