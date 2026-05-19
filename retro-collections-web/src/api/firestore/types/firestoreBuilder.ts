@@ -4,6 +4,7 @@ import type { FirestoreApiError } from '../errorLogger';
 export type FirestoreTagTypes =
   | 'PublicCollections'
   | 'PublicUserItems'
+  | 'PublicUserTags'
   | 'PublicUsers'
   | 'PrivateUsers'
   | 'PrivateAuthorizedUsers';

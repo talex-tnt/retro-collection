@@ -6,6 +6,7 @@ import getPublicUserItemsEndpoints from './services/public/userItems';
 import getUsersEndpoints from './services/public/users';
 import getAuthorizedUsersEndpoints from './services/private/authorized-users';
 import getPrivateUsersEndpoints from './services/private/users';
+import getPublicUserTagsEndpoints from './services/public/userTags';
 
 export const firestoreApi = createApi({
   reducerPath: 'firestoreApi',
@@ -22,6 +23,7 @@ export const firestoreApi = createApi({
   endpoints: (builder) => ({
     ...getRuntimeConfigEndpoints(builder),
     ...getPublicUserItemsEndpoints(builder),
+    ...getPublicUserTagsEndpoints(builder),
     ...getUsersEndpoints(builder),
     ...getPrivateUsersEndpoints(builder),
     ...getAuthorizedUsersEndpoints(builder),
@@ -51,4 +53,7 @@ export const {
   useGetAuthorizedUsersQuery,
   useAddAuthorizedUserMutation,
   useRemoveAuthorizedUserMutation,
+  useGetPublicUserTagsQuery,
+  useCreatePublicUserTagMutation,
+  useDeletePublicUserTagMutation,
 } = firestoreApi;

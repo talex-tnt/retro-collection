@@ -31,10 +31,10 @@ export interface Item {
   visibility?: {
     public: boolean;
   };
+  tags?: string[];
 }
 
 type ItemInput = Omit<Item, 'id' | 'createdAt' | 'updatedAt'>;
-
 type ItemUpdate = Partial<Omit<Item, 'id' | 'createdAt'>>;
 
 interface FirestoreItemDoc {
@@ -46,6 +46,7 @@ interface FirestoreItemDoc {
   visibility?: {
     public: boolean;
   };
+  tags?: string[];
 }
 
 const mapItemDoc = (snapshot: QueryDocumentSnapshot<DocumentData>): Item => {
@@ -53,15 +54,13 @@ const mapItemDoc = (snapshot: QueryDocumentSnapshot<DocumentData>): Item => {
 
   return {
     id: snapshot.id,
-
     name: data.name,
     userId: data.userId,
     // collectionId removed
     description: data.description,
     visibility: data.visibility,
-
+    tags: data.tags || [],
     createdAt: data.createdAt?.toDate?.()?.toISOString(),
-
     updatedAt: data.updatedAt?.toDate?.()?.toISOString(),
   };
 };
@@ -155,6 +154,7 @@ const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
       });
       const requestPayload = {
         ...itemData,
+        tags: itemData.tags || [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -200,6 +200,7 @@ const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
       });
       const requestPayload = {
         ...updates,
+        tags: updates.tags || [],
         updatedAt: serverTimestamp(),
       };
       const context = {

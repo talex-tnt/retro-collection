@@ -1,5 +1,11 @@
 import type { Item } from '../api/firestore/services/public/userItems';
 import ItemActions from './ItemActions';
+import { useState } from 'react';
+import {
+  useGetPublicUserTagsQuery,
+  useCreatePublicUserTagMutation,
+} from '../api/firestore/firestoreApi';
+import { useUpdatePublicUserItemMutation } from '../api/firestore/firestoreApi';
 
 interface ListItemProps {
   item: Item;
@@ -35,6 +41,42 @@ function ListItem({
   handleToggleItemVisibility,
   handleDeleteItem,
 }: ListItemProps) {
+  const [newTag, setNewTag] = useState('');
+  const [addTagError, setAddTagError] = useState<string | null>(null);
+  const userId = item.userId;
+  const { data: userTags = [] } = useGetPublicUserTagsQuery(
+    { userId },
+    { skip: !userId }
+  );
+  const [createTag] = useCreatePublicUserTagMutation();
+  const [updateItem] = useUpdatePublicUserItemMutation();
+
+  const handleAddTag = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddTagError(null);
+    const tag = newTag.trim();
+    if (!tag) return;
+    const tagExists = userTags.some(
+      (t) => t.id.toLowerCase() === tag.toLowerCase()
+    );
+    try {
+      if (!tagExists) {
+        await createTag({ userId, tag }).unwrap();
+      }
+      // Add tag to item if not already present
+      if (!item.tags?.includes(tag)) {
+        await updateItem({
+          id: item.id,
+          userId,
+          updates: { tags: [...(item.tags || []), tag] },
+        }).unwrap();
+      }
+      setNewTag('');
+    } catch (err: any) {
+      setAddTagError(err?.message || 'Failed to add tag');
+    }
+  };
+
   return (
     <div
       key={item.id}
@@ -72,7 +114,7 @@ function ListItem({
         />
       </div>
       <div className="flex flex-row gap-4 justify-between items-start w-full">
-        {/* Description (left) */}
+        {/* Description & Tags (left) */}
         <div className="flex-1 min-w-0">
           {editingItemId === item.id && editingField === 'description' ? (
             <textarea
@@ -108,6 +150,43 @@ function ListItem({
             >
               Add description...
             </p>
+          )}
+        </div>
+        {/* Tags UI */}
+        <div className="mt-2">
+          <div className="flex flex-wrap gap-2 mb-2">
+            {item.tags && item.tags.length > 0 ? (
+              item.tags.map((tag) => (
+                <span key={tag} className="badge badge-outline">
+                  {tag}
+                </span>
+              ))
+            ) : (
+              <span className="text-xs text-base-content/50 italic">
+                No tags
+              </span>
+            )}
+          </div>
+          <form className="flex gap-2" onSubmit={handleAddTag}>
+            <input
+              type="text"
+              className="input input-xs input-bordered"
+              placeholder="Add tag"
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              list={`tag-suggestions-${item.id}`}
+            />
+            <datalist id={`tag-suggestions-${item.id}`}>
+              {userTags.map((t) => (
+                <option key={t.id} value={t.id} />
+              ))}
+            </datalist>
+            <button type="submit" className="btn btn-xs btn-primary">
+              Add
+            </button>
+          </form>
+          {addTagError && (
+            <div className="text-xs text-error mt-1">{addTagError}</div>
           )}
         </div>
         {/* Meta info (right, below actions) */}

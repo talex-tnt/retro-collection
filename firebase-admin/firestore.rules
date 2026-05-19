@@ -288,7 +288,7 @@ service cloud.firestore {
                 (field == 'item.description') ? 1000 : 0;
         }
         function createItemKeys() {
-          return ['name', 'userId', 'createdAt', 'updatedAt', 'visibility', 'description'];
+          return ['name', 'userId', 'createdAt', 'updatedAt', 'visibility', 'description', 'tags'];
         }
         function createItemRequiredKeys() {
           return ['name', 'userId', 'createdAt', 'visibility'];
@@ -307,7 +307,7 @@ service cloud.firestore {
             );
         }
         function updateItemKeys() {
-          return ['name', 'updatedAt', 'description', 'visibility'];
+          return ['name', 'updatedAt', 'description', 'visibility', 'tags'];
         }
         function updateItemRequiredKeys() {
           return ['updatedAt'];
@@ -360,6 +360,82 @@ service cloud.firestore {
       }
 
 
+     match /public/users/{userId}/tags/{tagId} {
+        function isUserOwner() {
+          return isOwner({'userId': userId}, 'userId');
+        }
+        // ----------------------------------------------------------------
+        // Tags helpers -----------------------------------------------
+        function getLengthLimitTag(field) {
+          return (field == 'tag.name') ? 100 :
+                (field == 'tag.description') ? 1000 : 0;
+        }
+        function createTagKeys() {
+          return ['name', 'createdAt', 'updatedAt', 'description'];
+        }
+        function createTagRequiredKeys() {
+          return ['createdAt'];
+        }
+        function validTagCreate(data) {
+          return 
+            (
+              isAuthenticated() &&
+              hasOnlyValidKeys(data, createTagKeys()) &&
+              hasAllRequiredKeys(data, createTagRequiredKeys()) &&
+              isOwner(data, 'userId') &&
+              validTimestamp(data.createdAt) &&
+              hasValidOptionalString(data, 'name', getLengthLimitTag('tag.name')) &&
+              hasValidOptionalString(data, 'description', getLengthLimitTag('tag.description'))
+            );
+        }
+        function updateTagKeys() {
+          return ['name', 'updatedAt', 'description', 'visibility'];
+        }
+        function updateTagRequiredKeys() {
+          return ['updatedAt'];
+        }
+        function validTagUpdate(newData, existingData) {
+          return 
+            (
+              isAuthenticated() &&
+              existingData != null &&
+              hasOnlyAffectedKeys(newData, existingData, updateTagKeys()) &&
+              hasAllRequiredAffectedKeys(newData, existingData, updateTagRequiredKeys()) &&
+              isOwner(existingData, 'userId') &&
+              newData.createdAt == existingData.createdAt &&
+              validTimestamp(newData.updatedAt) &&
+              hasValidOptionalString(newData, 'name', getLengthLimitTag('tag.name')) &&
+              hasValidOptionalString(newData, 'description', getLengthLimitTag('tag.description'))
+            );
+        }
+
+        // Admin, owner, or public
+        allow get: if 
+          environmentAccessAllowed() 
+          && folderMatchesConfig();
+        
+        allow list: if 
+          environmentAccessAllowed() 
+          && folderMatchesConfig();
+        
+        allow create: if 
+          environmentAccessAllowed() 
+          && folderMatchesConfig() 
+          // && validTagCreate(request.resource.data)
+          && (isAdmin() || isUserOwner());
+        
+        allow update: if 
+          environmentAccessAllowed() 
+          && folderMatchesConfig() 
+          && validTagUpdate(request.resource.data, resource.data)
+          && (isAdmin() || isUserOwner());
+        
+        allow delete: if 
+          environmentAccessAllowed() 
+          && folderMatchesConfig()
+          && (isAdmin() || isUserOwner());
+
+      }
 
       // Nickname index: track nicknames and their owners - Tests 4.1.1-4.1.5
       // Authenticated users can read nickname docs, but can only write/delete if they contain their own userId
