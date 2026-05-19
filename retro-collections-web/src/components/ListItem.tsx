@@ -26,8 +26,8 @@ interface ListItemProps {
     itemId: string,
     currentVisibility: boolean
   ) => void;
-    handleDeleteItem: (itemId: string) => void;
-    showTags?: boolean;
+  handleDeleteItem: (itemId: string) => void;
+  showTags?: boolean;
 }
 
 function ListItem({

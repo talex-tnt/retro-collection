@@ -3,6 +3,7 @@ import {
   useGetPublicUserItemsQuery,
   useUpdatePublicUserItemMutation,
   useDeletePublicUserItemMutation,
+  useGetPublicUserTagsQuery,
 } from '../api/firestore/firestoreApi';
 
 import ItemActions from './ItemActions';
@@ -15,9 +16,13 @@ interface ItemsListProps {
 }
 
 function ItemsList({ user, itemFilter, onItemFilterChange }: ItemsListProps) {
+  // Tag filter state
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   // Local state for editing
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [editingField, setEditingField] = useState<'name' | 'description' | null>(null);
+  const [editingField, setEditingField] = useState<
+    'name' | 'description' | null
+  >(null);
   const [editValue, setEditValue] = useState('');
   const [showTags, setShowTags] = useState(true);
 
@@ -64,6 +69,15 @@ function ItemsList({ user, itemFilter, onItemFilterChange }: ItemsListProps) {
     isLoading: loadingItems,
     error: itemsError,
   } = useGetPublicUserItemsQuery(
+    {
+      userId: user?.uid || '',
+      tags: selectedTags.length > 0 ? selectedTags : undefined,
+    },
+    { skip: !user?.uid }
+  );
+
+  // Fetch all tags for the user
+  const { data: allTags = [] } = useGetPublicUserTagsQuery(
     { userId: user?.uid || '' },
     { skip: !user?.uid }
   );
@@ -131,6 +145,34 @@ function ItemsList({ user, itemFilter, onItemFilterChange }: ItemsListProps) {
           >
             {showTags ? 'Hide Tags' : 'Show Tags'}
           </button>
+        </div>
+
+        {/* Tag Filter UI */}
+        <div className="flex flex-wrap gap-2 mb-2">
+          {allTags.map((tag) => (
+            <button
+              key={tag.id}
+              className={`badge badge-lg cursor-pointer select-none ${selectedTags.includes(tag.id) ? 'badge-primary' : 'badge-outline'}`}
+              onClick={() => {
+                setSelectedTags((prev) =>
+                  prev.includes(tag.id)
+                    ? prev.filter((t) => t !== tag.id)
+                    : [...prev, tag.id]
+                );
+              }}
+            >
+              {tag.id}
+            </button>
+          ))}
+          {allTags.length > 0 && (
+            <button
+              className="btn btn-xs ml-2"
+              onClick={() => setSelectedTags([])}
+              disabled={selectedTags.length === 0}
+            >
+              Clear
+            </button>
+          )}
         </div>
 
         {/* Filter Input */}

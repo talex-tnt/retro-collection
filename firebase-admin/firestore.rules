@@ -382,7 +382,7 @@ service cloud.firestore {
               isAuthenticated() &&
               hasOnlyValidKeys(data, createTagKeys()) &&
               hasAllRequiredKeys(data, createTagRequiredKeys()) &&
-              isOwner(data, 'userId') &&
+              isOwner({ 'userId': userId }, 'userId') &&
               validTimestamp(data.createdAt) &&
               hasValidOptionalString(data, 'name', getLengthLimitTag('tag.name')) &&
               hasValidOptionalString(data, 'description', getLengthLimitTag('tag.description'))
@@ -421,7 +421,7 @@ service cloud.firestore {
         allow create: if 
           environmentAccessAllowed() 
           && folderMatchesConfig() 
-          // && validTagCreate(request.resource.data)
+          && validTagCreate(request.resource.data)
           && (isAdmin() || isUserOwner());
         
         allow update: if 
