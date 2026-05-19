@@ -8,6 +8,7 @@ import CollectorsPage from '../pages/CollectorsPage';
 import UsersPage from '../pages/UsersPage';
 import MyCollectionPage from './MyCollectionPage';
 import ProfilePage from '../pages/ProfilePage';
+import TagsPage from '../pages/TagsPage';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 import { auth } from '../lib/firebase';
@@ -15,6 +16,7 @@ import { useGetRuntimeConfigQuery } from '../api/firestore/firestoreApi';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
   const { isLoading: isRuntimeConfigLoading, isError: isRuntimeConfigError } =
     useGetRuntimeConfigQuery(undefined, {
       skip: !isAuthenticated,
@@ -23,8 +25,8 @@ function App() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setIsAuthenticated(Boolean(currentUser));
+      setUser(currentUser);
     });
-
     return unsubscribe;
   }, []);
 
@@ -75,6 +77,7 @@ function App() {
                 <Route path="/collectors" element={<CollectorsPage />} />
                 <Route path="/users" element={<UsersPage />} />
                 <Route path="/admin" element={<AdminPage />} />
+                <Route path="/tags" element={user ? <TagsPage user={user} /> : null} />
               </Routes>
             </div>
           </div>
