@@ -194,62 +194,67 @@ function ItemsList({ user, itemFilter, onItemFilterChange }: ItemsListProps) {
                     onDelete={handleDeleteItem}
                   />
                 </div>
-                <div className="space-y-1">
-                  {editingItemId === item.id &&
-                  editingField === 'description' ? (
-                    <textarea
-                      className="textarea textarea-bordered textarea-sm w-full"
-                      value={editValue}
-                      autoFocus
-                      rows={2}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      onBlur={() => saveEdit(item.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          saveEdit(item.id);
+                <div className="flex flex-row gap-4 justify-between items-start w-full">
+                  {/* Description (left) */}
+                  <div className="flex-1 min-w-0">
+                    {editingItemId === item.id && editingField === 'description' ? (
+                      <textarea
+                        className="textarea textarea-bordered textarea-sm w-full"
+                        value={editValue}
+                        autoFocus
+                        rows={2}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onBlur={() => saveEdit(item.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            saveEdit(item.id);
+                          }
+                          if (e.key === 'Escape') cancelEdit();
+                        }}
+                      />
+                    ) : item.description ? (
+                      <p
+                        className="text-sm text-base-content/80 whitespace-pre-wrap cursor-pointer hover:underline"
+                        onDoubleClick={() =>
+                          startEditing(item.id, 'description', item.description)
                         }
-                        if (e.key === 'Escape') cancelEdit();
-                      }}
-                    />
-                  ) : item.description ? (
-                    <p
-                      className="text-sm text-base-content/80 whitespace-pre-wrap cursor-pointer hover:underline"
-                      onDoubleClick={() =>
-                        startEditing(item.id, 'description', item.description)
-                      }
-                      title="Double-click to edit description"
-                    >
-                      {item.description}
+                        title="Double-click to edit description"
+                      >
+                        {item.description}
+                      </p>
+                    ) : (
+                      <p
+                        className="text-sm text-base-content/80 italic cursor-pointer hover:underline"
+                        onDoubleClick={() =>
+                          startEditing(item.id, 'description', '')
+                        }
+                        title="Double-click to add description"
+                      >
+                        Add description...
+                      </p>
+                    )}
+                  </div>
+                  {/* Meta info (right, below actions) */}
+                  <div className="flex flex-col items-end flex-shrink-0 text-right gap-1 min-w-[140px] ml-2">
+                    <p className="text-xs text-base-content/70">
+                      {item.createdAt
+                        ? `Added ${new Date(item.createdAt).toLocaleString()}`
+                        : 'No timestamp'}
                     </p>
-                  ) : (
                     <p
-                      className="text-sm text-base-content/80 italic cursor-pointer hover:underline"
+                      className="text-xs text-base-content/70 cursor-pointer hover:underline"
+                      title="Double-click to toggle visibility"
                       onDoubleClick={() =>
-                        startEditing(item.id, 'description', '')
+                        handleToggleItemVisibility(
+                          item.id,
+                          !!item.visibility?.public
+                        )
                       }
-                      title="Double-click to add description"
                     >
-                      Add description...
+                      Visibility: {item.visibility?.public ? 'Public' : 'Private'}
                     </p>
-                  )}
-                  <p className="text-sm text-base-content/70">
-                    {item.createdAt
-                      ? `Added ${new Date(item.createdAt).toLocaleString()}`
-                      : 'No timestamp'}
-                  </p>
-                  <p
-                    className="text-sm text-base-content/70 cursor-pointer hover:underline"
-                    title="Double-click to toggle visibility"
-                    onDoubleClick={() =>
-                      handleToggleItemVisibility(
-                        item.id,
-                        !!item.visibility?.public
-                      )
-                    }
-                  >
-                    Visibility: {item.visibility?.public ? 'Public' : 'Private'}
-                  </p>
+                  </div>
                 </div>
               </div>
             ))
