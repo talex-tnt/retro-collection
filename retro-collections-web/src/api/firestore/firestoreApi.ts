@@ -56,4 +56,5 @@ export const {
   useGetPublicUserTagsQuery,
   useCreatePublicUserTagMutation,
   useDeletePublicUserTagMutation,
+  useUpdatePublicUserTagMutation,
 } = firestoreApi;

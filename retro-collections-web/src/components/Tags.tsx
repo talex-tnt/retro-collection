@@ -76,25 +76,34 @@ export default function Tags({
     <div className="w-full">
       <div className="flex flex-row flex-wrap gap-2 items-center justify-start">
         {tags && tags.length > 0 ? (
-          tags.map((tag) => (
-            <span
-              key={tag}
-              className="badge badge-outline flex items-center gap-1"
-            >
-              {tag}
-              {!readOnly && (
-                <button
-                  type="button"
-                  className="ml-1 text-xs text-error hover:text-error-content"
-                  aria-label={`Remove tag ${tag}`}
-                  onClick={() => handleRemoveTag(tag)}
-                  tabIndex={0}
-                >
-                  ×
-                </button>
-              )}
-            </span>
-          ))
+          tags.map((tag) => {
+            // Try to find the tag style from userTags (which has style info)
+            const tagObj = userTags.find((t) => t.id === tag);
+            const style = tagObj?.style || {};
+            return (
+              <span
+                key={tag}
+                className="badge badge-outline flex items-center gap-1"
+                style={{
+                  backgroundColor: style.backgroundColor || undefined,
+                  color: style.foregroundColor || undefined,
+                }}
+              >
+                {tag}
+                {!readOnly && (
+                  <button
+                    type="button"
+                    className="ml-1 text-xs text-error hover:text-error-content"
+                    aria-label={`Remove tag ${tag}`}
+                    onClick={() => handleRemoveTag(tag)}
+                    tabIndex={0}
+                  >
+                    ×
+                  </button>
+                )}
+              </span>
+            );
+          })
         ) : (
           <span className="text-xs text-base-content/50 italic">No tags</span>
         )}

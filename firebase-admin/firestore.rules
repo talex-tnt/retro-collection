@@ -371,7 +371,7 @@ service cloud.firestore {
                 (field == 'tag.description') ? 1000 : 0;
         }
         function createTagKeys() {
-          return ['name', 'createdAt', 'updatedAt', 'description'];
+          return ['name', 'createdAt', 'updatedAt', 'description', 'style'];
         }
         function createTagRequiredKeys() {
           return ['createdAt'];
@@ -389,7 +389,7 @@ service cloud.firestore {
             );
         }
         function updateTagKeys() {
-          return ['name', 'updatedAt', 'description', 'visibility'];
+          return ['name', 'updatedAt', 'createdAt', 'description', 'style'];
         }
         function updateTagRequiredKeys() {
           return ['updatedAt'];
@@ -401,7 +401,7 @@ service cloud.firestore {
               existingData != null &&
               hasOnlyAffectedKeys(newData, existingData, updateTagKeys()) &&
               hasAllRequiredAffectedKeys(newData, existingData, updateTagRequiredKeys()) &&
-              isOwner(existingData, 'userId') &&
+              isOwner( { 'userId': userId }, 'userId') &&
               newData.createdAt == existingData.createdAt &&
               validTimestamp(newData.updatedAt) &&
               hasValidOptionalString(newData, 'name', getLengthLimitTag('tag.name')) &&

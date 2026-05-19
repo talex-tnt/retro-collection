@@ -7,6 +7,7 @@ import {
   setDoc,
   doc,
   deleteDoc,
+  updateDoc,
 } from 'firebase/firestore';
 import type { FirestoreBuilder } from '../../types/firestoreBuilder';
 import { db } from '../../../../lib/firebase';
@@ -16,6 +17,7 @@ import { createFirestoreApiError } from '../../errorLogger';
 export interface UserTag {
   id: string; // tag name
   userId: string;
+  style?: { backgroundColor: string; foregroundColor: string };
 }
 
 const getPublicUserTagsEndpoints = (builder: FirestoreBuilder) => ({
@@ -41,6 +43,7 @@ const getPublicUserTagsEndpoints = (builder: FirestoreBuilder) => ({
           data: snapshot.docs.map((doc) => ({
             id: doc.id,
             userId,
+            style: doc.data().style,
           })),
         };
       } catch (error) {
@@ -89,6 +92,42 @@ const getPublicUserTagsEndpoints = (builder: FirestoreBuilder) => ({
         // Use setDoc to create the tag doc with the tag name as the doc id
 
         await setDoc(doc(db, path, tag), context.requestPayload);
+        return { data: { id: tag, userId } };
+      } catch (error) {
+        return { error: createFirestoreApiError(context, error) };
+      }
+    },
+    invalidatesTags: (_r, _e, { userId }) => [
+      { type: 'PublicUserTags' as const, id: `${userId}_LIST` },
+    ],
+  }),
+
+  updatePublicUserTag: builder.mutation<
+    UserTag,
+    {
+      userId: string;
+      tag: string;
+      style: { backgroundColor: string; foregroundColor: string };
+    }
+  >({
+    async queryFn({ userId, tag, style }) {
+      const path = await getUserCollectionPath({
+        visibility: 'public',
+        resourceType: 'tags',
+        userId,
+      });
+      const context = {
+        apiEndpoint: 'updatePublicUserTag',
+        operation: 'UPDATE' as const,
+        firebaseFunc: 'setDoc',
+        path,
+        segmentPaths: [tag],
+        requestPayload: { style, updatedAt: serverTimestamp() },
+      };
+      try {
+        // Use setDoc to create the tag doc with the tag name as the doc id
+
+        await updateDoc(doc(db, path, tag), context.requestPayload);
         return { data: { id: tag, userId } };
       } catch (error) {
         return { error: createFirestoreApiError(context, error) };

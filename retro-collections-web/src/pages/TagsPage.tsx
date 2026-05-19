@@ -3,6 +3,7 @@ import {
   useGetPublicUserTagsQuery,
   useCreatePublicUserTagMutation,
   useDeletePublicUserTagMutation,
+  useUpdatePublicUserTagMutation,
 } from '../api/firestore/firestoreApi';
 
 interface TagsPageProps {
@@ -21,6 +22,33 @@ export default function TagsPage({ user }: TagsPageProps) {
   const [newTag, setNewTag] = useState('');
   const [addError, setAddError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [updateTagStyle] = useUpdatePublicUserTagMutation();
+  const [styleEdits, setStyleEdits] = useState<
+    Record<string, { backgroundColor: string; foregroundColor: string }>
+  >({});
+  const handleStyleChange = (
+    tagId: string,
+    field: 'backgroundColor' | 'foregroundColor',
+    value: string
+  ) => {
+    setStyleEdits((prev) => ({
+      ...prev,
+      [tagId]: {
+        ...prev[tagId],
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleSaveStyle = async (tagId: string) => {
+    const style = styleEdits[tagId];
+    if (!style) return;
+    try {
+      await updateTagStyle({ userId, tag: tagId, style }).unwrap();
+    } catch (err: any) {
+      // Optionally show error
+    }
+  };
 
   const handleAddTag = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,20 +100,70 @@ export default function TagsPage({ user }: TagsPageProps) {
         <div className="text-base-content/60 italic">No tags found.</div>
       ) : (
         <ul className="space-y-2">
-          {tags.map((tag) => (
-            <li
-              key={tag.id}
-              className="flex items-center justify-between bg-base-100 rounded px-3 py-2"
-            >
-              <span className="font-mono text-base-content/80">{tag.id}</span>
-              <button
-                className="btn btn-xs btn-error btn-outline"
-                onClick={() => handleDeleteTag(tag.id)}
+          {tags.map((tag) => {
+            const style = tag.style || {};
+            console.log('style for tag', tag.id, style);
+            const edit = styleEdits[tag.id] || {
+              backgroundColor: style.backgroundColor || '',
+              foregroundColor: style.foregroundColor || '',
+            };
+            return (
+              <li
+                key={tag.id}
+                className="flex flex-col gap-2 bg-base-100 rounded px-3 py-2"
               >
-                Delete
-              </button>
-            </li>
-          ))}
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    className="font-mono text-base-content/80 px-2 py-1 rounded"
+                    style={{
+                      backgroundColor: style.backgroundColor || undefined,
+                      color: style.foregroundColor || undefined,
+                    }}
+                  >
+                    {tag.id}
+                  </span>
+                  <button
+                    className="btn btn-xs btn-error btn-outline"
+                    onClick={() => handleDeleteTag(tag.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
+                <div className="flex flex-row gap-2 items-center">
+                  <label className="text-xs">BG</label>
+                  <input
+                    type="color"
+                    value={edit.backgroundColor || '#ffffff'}
+                    onChange={(e) =>
+                      handleStyleChange(
+                        tag.id,
+                        'backgroundColor',
+                        e.target.value
+                      )
+                    }
+                  />
+                  <label className="text-xs">FG</label>
+                  <input
+                    type="color"
+                    value={edit.foregroundColor || '#000000'}
+                    onChange={(e) =>
+                      handleStyleChange(
+                        tag.id,
+                        'foregroundColor',
+                        e.target.value
+                      )
+                    }
+                  />
+                  <button
+                    className="btn btn-xs btn-primary"
+                    onClick={() => handleSaveStyle(tag.id)}
+                  >
+                    Save Style
+                  </button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
       {deleteError && (
