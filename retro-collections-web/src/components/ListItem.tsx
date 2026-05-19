@@ -26,7 +26,8 @@ interface ListItemProps {
     itemId: string,
     currentVisibility: boolean
   ) => void;
-  handleDeleteItem: (itemId: string) => void;
+    handleDeleteItem: (itemId: string) => void;
+    showTags?: boolean;
 }
 
 function ListItem({
@@ -41,9 +42,8 @@ function ListItem({
   handleEditItem,
   handleToggleItemVisibility,
   handleDeleteItem,
+  showTags = true,
 }: ListItemProps) {
-  const [newTag, setNewTag] = useState('');
-  const [addTagError, setAddTagError] = useState<string | null>(null);
   const [showAddTag, setShowAddTag] = useState(false);
   const userId = item.userId;
   const { data: userTags = [] } = useGetPublicUserTagsQuery(
@@ -85,6 +85,10 @@ function ListItem({
       key={item.id}
       className="flex flex-col gap-2 rounded-lg border border-base-300 bg-base-200 p-4"
     >
+      {/* Tags at the top, toggleable */}
+      {showTags && (
+        <Tags userId={item.userId} itemId={item.id} tags={item.tags || []} />
+      )}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {editingItemId === item.id && editingField === 'name' ? (
@@ -108,8 +112,6 @@ function ListItem({
               {item.name}
             </p>
           )}
-          {/* Tags next to actions, to their left */}
-          <Tags userId={item.userId} itemId={item.id} tags={item.tags || []} />
         </div>
         <ItemActions
           itemId={item.id}

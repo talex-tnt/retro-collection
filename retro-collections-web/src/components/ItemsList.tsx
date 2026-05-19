@@ -17,10 +17,9 @@ interface ItemsListProps {
 function ItemsList({ user, itemFilter, onItemFilterChange }: ItemsListProps) {
   // Local state for editing
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [editingField, setEditingField] = useState<
-    'name' | 'description' | null
-  >(null);
+  const [editingField, setEditingField] = useState<'name' | 'description' | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [showTags, setShowTags] = useState(true);
 
   // Start editing handler
   const startEditing = (
@@ -124,8 +123,14 @@ function ItemsList({ user, itemFilter, onItemFilterChange }: ItemsListProps) {
     <div className="card bg-base-100 shadow-xl">
       <div className="card-body space-y-4">
         {/* Items Header */}
-        <div>
+        <div className="flex items-center justify-between">
           <h2 className="card-title">My Collectibles</h2>
+          <button
+            className="btn btn-sm btn-outline"
+            onClick={() => setShowTags((v) => !v)}
+          >
+            {showTags ? 'Hide Tags' : 'Show Tags'}
+          </button>
         </div>
 
         {/* Filter Input */}
@@ -172,6 +177,7 @@ function ItemsList({ user, itemFilter, onItemFilterChange }: ItemsListProps) {
                 handleEditItem={handleEditItem}
                 handleToggleItemVisibility={handleToggleItemVisibility}
                 handleDeleteItem={handleDeleteItem}
+                showTags={showTags}
               />
             ))
           )}
