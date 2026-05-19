@@ -3,6 +3,7 @@ import {
   useGetPublicUserItemsQuery,
   useGetUserByIdQuery,
 } from '../api/firestore/firestoreApi';
+import Tags from '../components/Tags';
 
 interface ItemRecord {
   id: string;
@@ -63,6 +64,15 @@ function CollectorPage() {
                     key={item.id}
                     className="rounded-lg border border-base-300 bg-base-200 p-4"
                   >
+                    {/* Render tags in read-only mode */}
+                        <div className="mt-2 mb-2">
+                      <Tags
+                        userId={userId}
+                        itemId={item.id}
+                        tags={item.tags || []}
+                        readOnly={true}
+                      />
+                    </div>
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-2">
                         <p className="font-medium">{item.name}</p>

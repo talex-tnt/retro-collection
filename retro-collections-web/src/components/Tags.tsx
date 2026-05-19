@@ -10,6 +10,7 @@ interface TagsProps {
   itemId: string;
   tags: string[];
   onTagsChange?: (tags: string[]) => void;
+  readOnly?: boolean;
 }
 
 export default function Tags({
@@ -17,6 +18,7 @@ export default function Tags({
   itemId,
   tags = [],
   onTagsChange,
+  readOnly = false,
 }: TagsProps) {
   const { data: userTags = [] } = useGetPublicUserTagsQuery(
     { userId },
@@ -80,21 +82,23 @@ export default function Tags({
               className="badge badge-outline flex items-center gap-1"
             >
               {tag}
-              <button
-                type="button"
-                className="ml-1 text-xs text-error hover:text-error-content"
-                aria-label={`Remove tag ${tag}`}
-                onClick={() => handleRemoveTag(tag)}
-                tabIndex={0}
-              >
-                ×
-              </button>
+              {!readOnly && (
+                <button
+                  type="button"
+                  className="ml-1 text-xs text-error hover:text-error-content"
+                  aria-label={`Remove tag ${tag}`}
+                  onClick={() => handleRemoveTag(tag)}
+                  tabIndex={0}
+                >
+                  ×
+                </button>
+              )}
             </span>
           ))
         ) : (
           <span className="text-xs text-base-content/50 italic">No tags</span>
         )}
-        {showAddTag ? (
+        {!readOnly && (showAddTag ? (
           <form
             className="flex gap-2 items-center"
             onSubmit={handleAddTag}
@@ -126,7 +130,7 @@ export default function Tags({
           >
             <span className="text-lg leading-none">+</span>
           </button>
-        )}
+        ))}
       </div>
       {addTagError && (
         <div className="text-xs text-error mt-1 w-full">{addTagError}</div>
