@@ -3,6 +3,7 @@ import {
   useGetPublicUserItemsQuery,
   useGetUserByIdQuery,
 } from '../api/firestore/firestoreApi';
+import Tags from '../components/Tags';
 
 interface ItemRecord {
   id: string;
@@ -22,7 +23,10 @@ function CollectorPage() {
   });
 
   const { data: items = [], isLoading: loadingItems } =
-    useGetPublicUserItemsQuery({ userId: userId || '' }, { skip: !userId });
+    useGetPublicUserItemsQuery(
+      { userId: userId || '', isPublic: true },
+      { skip: !userId }
+    );
 
   if (!userId) {
     return (
@@ -56,34 +60,39 @@ function CollectorPage() {
             <div className="alert alert-info">No public collectibles.</div>
           ) : (
             <div className="space-y-3">
-              {items
-                .filter((item: ItemRecord) => item.visibility?.public)
-                .map((item: ItemRecord) => (
-                  <div
-                    key={item.id}
-                    className="rounded-lg border border-base-300 bg-base-200 p-4"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-2">
-                        <p className="font-medium">{item.name}</p>
-                        {item.description && (
-                          <p className="text-sm text-base-content/80 whitespace-pre-wrap">
-                            {item.description}
-                          </p>
-                        )}
-                      </div>
-                      <span className="badge badge-sm badge-success">
-                        Public
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm text-base-content/70">
-                      Added{' '}
-                      {item.createdAt
-                        ? new Date(item.createdAt).toLocaleString()
-                        : 'No timestamp'}
-                    </p>
+              {items.map((item: ItemRecord) => (
+                <div
+                  key={item.id}
+                  className="rounded-lg border border-base-300 bg-base-200 p-4"
+                >
+                  {/* Render tags in read-only mode */}
+                  <div className="mt-2 mb-2">
+                    <Tags
+                      userId={userId}
+                      itemId={item.id}
+                      tags={item.tags || []}
+                      readOnly={true}
+                    />
                   </div>
-                ))}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-2">
+                      <p className="font-medium">{item.name}</p>
+                      {item.description && (
+                        <p className="text-sm text-base-content/80 whitespace-pre-wrap">
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+                    <span className="badge badge-sm badge-success">Public</span>
+                  </div>
+                  <p className="mt-2 text-sm text-base-content/70">
+                    Added{' '}
+                    {item.createdAt
+                      ? new Date(item.createdAt).toLocaleString()
+                      : 'No timestamp'}
+                  </p>
+                </div>
+              ))}
             </div>
           )}
         </div>

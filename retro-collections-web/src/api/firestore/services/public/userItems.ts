@@ -2,7 +2,7 @@ import {
   collection,
   getDocs,
   addDoc,
-  updateDoc,
+  setDoc,
   deleteDoc,
   doc,
   query,
@@ -31,10 +31,10 @@ export interface Item {
   visibility?: {
     public: boolean;
   };
+  tags?: string[];
 }
 
 type ItemInput = Omit<Item, 'id' | 'createdAt' | 'updatedAt'>;
-
 type ItemUpdate = Partial<Omit<Item, 'id' | 'createdAt'>>;
 
 interface FirestoreItemDoc {
@@ -46,6 +46,7 @@ interface FirestoreItemDoc {
   visibility?: {
     public: boolean;
   };
+  tags?: string[];
 }
 
 const mapItemDoc = (snapshot: QueryDocumentSnapshot<DocumentData>): Item => {
@@ -53,32 +54,46 @@ const mapItemDoc = (snapshot: QueryDocumentSnapshot<DocumentData>): Item => {
 
   return {
     id: snapshot.id,
-
     name: data.name,
     userId: data.userId,
     // collectionId removed
     description: data.description,
     visibility: data.visibility,
-
+    tags: data.tags || [],
     createdAt: data.createdAt?.toDate?.()?.toISOString(),
-
     updatedAt: data.updatedAt?.toDate?.()?.toISOString(),
   };
 };
 
 const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
-  getPublicUserItems: builder.query<Item[], { userId: string }>({
-    async queryFn({ userId }) {
+  getPublicUserItems: builder.query<
+    Item[],
+    { userId: string; tags?: string[]; name?: string; isPublic?: boolean }
+  >({
+    async queryFn({ userId, tags, name, isPublic }) {
       const path = await getUserCollectionPath({
         visibility,
         resourceType: 'items',
         userId,
       });
-      const q = query(
-        collection(db, path),
-        orderBy('createdAt', 'desc'),
-        orderBy('__name__', 'asc')
-      );
+      let q;
+      if (tags && tags.length > 0) {
+        q = query(
+          collection(db, path),
+          where('tags', 'array-contains-any', tags),
+          orderBy('createdAt', 'desc'),
+          orderBy('__name__', 'asc')
+        );
+      } else {
+        q = query(
+          collection(db, path),
+          orderBy('createdAt', 'desc'),
+          orderBy('__name__', 'asc')
+        );
+      }
+      if (isPublic === true || isPublic === false) {
+        q = query(q, where('visibility.public', '==', isPublic));
+      }
       const context = {
         apiEndpoint: 'getPublicUserItems',
         operation: 'QUERY' as const,
@@ -88,8 +103,16 @@ const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
       };
       try {
         const snapshot = await getDocs(q);
+        let items = snapshot.docs.map(mapItemDoc);
+        // If name filter is provided, filter client-side (Firestore does not support case-insensitive substring search)
+        if (name && name.trim()) {
+          const nameLower = name.trim().toLowerCase();
+          items = items.filter((item) =>
+            item.name?.toLowerCase().includes(nameLower)
+          );
+        }
         return {
-          data: snapshot.docs.map(mapItemDoc),
+          data: items,
         };
       } catch (error) {
         return { error: createFirestoreApiError(context, error) };
@@ -155,6 +178,7 @@ const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
       });
       const requestPayload = {
         ...itemData,
+        tags: itemData.tags || [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -205,13 +229,13 @@ const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
       const context = {
         apiEndpoint: 'updatePublicUserItem',
         operation: 'UPDATE' as const,
-        firebaseFunc: 'updateDoc',
+        firebaseFunc: 'setDoc',
         path,
         segmentPaths: [id],
         requestPayload,
       };
       try {
-        await updateDoc(doc(db, path, id), requestPayload);
+        await setDoc(doc(db, path, id), requestPayload, { merge: true });
         return { data: undefined };
       } catch (error) {
         return { error: createFirestoreApiError(context, error) };
