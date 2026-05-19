@@ -71,60 +71,65 @@ export default function Tags({
   };
 
   return (
-    <div className="flex flex-wrap gap-2 ml-2">
-      {tags && tags.length > 0 ? (
-        tags.map((tag) => (
-          <span
-            key={tag}
-            className="badge badge-outline flex items-center gap-1"
-          >
-            {tag}
-            <button
-              type="button"
-              className="ml-1 text-xs text-error hover:text-error-content"
-              aria-label={`Remove tag ${tag}`}
-              onClick={() => handleRemoveTag(tag)}
-              tabIndex={0}
+    <div className="relative w-full ml-2">
+      <div className="flex flex-wrap gap-2 pr-8 justify-end">
+        {tags && tags.length > 0 ? (
+          tags.map((tag) => (
+            <span
+              key={tag}
+              className="badge badge-outline flex items-center gap-1"
             >
-              ×
-            </button>
-          </span>
-        ))
-      ) : (
-        <span className="text-xs text-base-content/50 italic">No tags</span>
-      )}
-      {showAddTag ? (
-        <form className="flex gap-2 mt-1" onSubmit={handleAddTag} tabIndex={-1}>
-          <input
-            type="text"
-            className="input input-xs input-bordered"
-            placeholder="Add tag"
-            value={newTag}
-            autoFocus
-            onChange={(e) => setNewTag(e.target.value)}
-            onBlur={() => setTimeout(() => setShowAddTag(false), 100)}
-            list={`tag-suggestions-${itemId}`}
-          />
-          <datalist id={`tag-suggestions-${itemId}`}>
-            {userTags.map((t) => (
-              <option key={t.id} value={t.id} />
-            ))}
-          </datalist>
-          {/* <button type="submit" className="btn btn-xs btn-primary">
-            Add
-          </button> */}
-        </form>
-      ) : (
-        <button
-          type="button"
-          className="btn btn-xs btn-circle btn-outline flex items-center justify-center"
-          aria-label="Add tag"
-          onClick={() => setShowAddTag(true)}
-          tabIndex={0}
-        >
-          <span className="text-lg leading-none">+</span>
-        </button>
-      )}
+              {tag}
+              <button
+                type="button"
+                className="ml-1 text-xs text-error hover:text-error-content"
+                aria-label={`Remove tag ${tag}`}
+                onClick={() => handleRemoveTag(tag)}
+                tabIndex={0}
+              >
+                ×
+              </button>
+            </span>
+          ))
+        ) : (
+          <span className="text-xs text-base-content/50 italic">No tags</span>
+        )}
+      </div>
+      <div className="absolute top-0 right-0 flex items-center h-full">
+        {showAddTag ? (
+          <form
+            className="flex gap-2 items-center"
+            onSubmit={handleAddTag}
+            tabIndex={-1}
+          >
+            <input
+              type="text"
+              className="input input-xs input-bordered"
+              placeholder="Add tag"
+              value={newTag}
+              autoFocus
+              onChange={(e) => setNewTag(e.target.value)}
+              onBlur={() => setTimeout(() => setShowAddTag(false), 100)}
+              list={`tag-suggestions-${itemId}`}
+            />
+            <datalist id={`tag-suggestions-${itemId}`}>
+              {userTags.map((t) => (
+                <option key={t.id} value={t.id} />
+              ))}
+            </datalist>
+          </form>
+        ) : (
+          <button
+            type="button"
+            className="btn btn-xs btn-circle btn-outline flex items-center justify-center"
+            aria-label="Add tag"
+            onClick={() => setShowAddTag(true)}
+            tabIndex={0}
+          >
+            <span className="text-lg leading-none">+</span>
+          </button>
+        )}
+      </div>
       {addTagError && (
         <div className="text-xs text-error mt-1 w-full">{addTagError}</div>
       )}
