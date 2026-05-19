@@ -1,0 +1,20 @@
+/* Global focus style override for DaisyUI/Tailwind inputs, textareas, selects, buttons */
+
+input:focus,
+textarea:focus,
+select:focus,
+button:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.25), 0 4px 12px rgba(59,130,246,0.15) !important;
+  border-color: transparent !important;
+}
+
+/* Remove DaisyUI's default focus border for .input, .textarea, .select, .btn */
+.input:focus,
+.textarea:focus,
+.select:focus,
+.btn:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.25), 0 4px 12px rgba(59,130,246,0.15) !important;
+  border-color: transparent !important;
+}
