@@ -72,7 +72,7 @@ export default function ItemsFilters({
             className="input input-bordered w-full"
             value={itemFilter}
             onChange={(e) => onItemFilterChange(e.target.value)}
-            placeholder="Filter items by name..."
+            placeholder="Filter collectibles by name..."
           />
         </div>
       </div>
