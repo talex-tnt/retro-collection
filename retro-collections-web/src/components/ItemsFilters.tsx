@@ -28,21 +28,33 @@ export default function ItemsFilters({
         <h2 className="card-title mb-2">Filter Collectibles</h2>
         {/* Tag Filter UI */}
         <div className="flex flex-wrap gap-2 mb-2">
-          {allTags.map((tag) => (
-            <button
-              key={tag.id}
-              className={`badge badge-lg cursor-pointer select-none ${selectedTags.includes(tag.id) ? 'badge-primary' : 'badge-outline'}`}
-              onClick={() => {
-                setSelectedTags(
-                  selectedTags.includes(tag.id)
-                    ? selectedTags.filter((t) => t !== tag.id)
-                    : [...selectedTags, tag.id]
-                );
-              }}
-            >
-              {tag.id}
-            </button>
-          ))}
+          {allTags.map((tag) => {
+            const isSelected = selectedTags.includes(tag.id);
+            const style =
+              isSelected && tag.style
+                ? {
+                    backgroundColor: tag.style.backgroundColor || undefined,
+                    color: tag.style.foregroundColor || undefined,
+                    borderColor: tag.style.foregroundColor || undefined,
+                  }
+                : undefined;
+            return (
+              <button
+                key={tag.id}
+                className={`badge badge-lg cursor-pointer select-none transition-opacity ${isSelected ? 'opacity-100' : 'badge-outline opacity-50 hover:opacity-80'}`}
+                style={isSelected && style ? style : undefined}
+                onClick={() => {
+                  setSelectedTags(
+                    isSelected
+                      ? selectedTags.filter((t) => t !== tag.id)
+                      : [...selectedTags, tag.id]
+                  );
+                }}
+              >
+                {tag.id}
+              </button>
+            );
+          })}
           {allTags.length > 0 && (
             <button
               className="btn btn-xs ml-2"
