@@ -388,6 +388,14 @@ service cloud.firestore {
               hasValidOptionalString(data, 'description', getLengthLimitTag('tag.description'))
             );
         }
+        function validOptionalStyle(data) {
+          return !('style' in data) || data.style == null || (
+            data.style is map &&
+            data.style.keys().hasOnly(['backgroundColor', 'foregroundColor']) &&
+            (!('backgroundColor' in data.style) || data.style.backgroundColor == null || (data.style.backgroundColor is string && data.style.backgroundColor.size() > 0 && data.style.backgroundColor.size() <= 50)) &&
+            (!('foregroundColor' in data.style) || data.style.foregroundColor == null || (data.style.foregroundColor is string && data.style.foregroundColor.size() > 0 && data.style.foregroundColor.size() <= 50))
+          );
+        }
         function updateTagKeys() {
           return ['name', 'updatedAt', 'createdAt', 'description', 'style'];
         }
@@ -405,7 +413,8 @@ service cloud.firestore {
               newData.createdAt == existingData.createdAt &&
               validTimestamp(newData.updatedAt) &&
               hasValidOptionalString(newData, 'name', getLengthLimitTag('tag.name')) &&
-              hasValidOptionalString(newData, 'description', getLengthLimitTag('tag.description'))
+              hasValidOptionalString(newData, 'description', getLengthLimitTag('tag.description')) &&
+              validOptionalStyle(newData)
             );
         }
 
