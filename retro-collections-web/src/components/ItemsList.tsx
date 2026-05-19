@@ -1,9 +1,5 @@
 import { useState } from 'react';
-import {
-  useGetPublicUserItemsQuery,
-  useUpdatePublicUserItemMutation,
-  useDeletePublicUserItemMutation,
-} from '../api/firestore/firestoreApi';
+import { useGetPublicUserItemsQuery } from '../api/firestore/firestoreApi';
 
 import ListItem from './ListItem';
 
@@ -14,58 +10,8 @@ interface ItemsListProps {
   selectedTags: string[];
 }
 
-function ItemsList({
-  user,
-  itemFilter,
-  onItemFilterChange,
-  selectedTags,
-}: ItemsListProps) {
-  // Local state for editing
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [editingField, setEditingField] = useState<
-    'name' | 'description' | null
-  >(null);
-  const [editValue, setEditValue] = useState('');
+function ItemsList({ user, itemFilter, selectedTags }: ItemsListProps) {
   const [showTags, setShowTags] = useState(true);
-
-  // Start editing handler
-  const startEditing = (
-    itemId: string,
-    field: 'name' | 'description',
-    currentValue: string
-  ) => {
-    setEditingItemId(itemId);
-    setEditingField(field);
-    setEditValue(currentValue);
-  };
-
-  // Save edit handler
-  const saveEdit = async (itemId: string) => {
-    if (!user || !editingField) return;
-    const updates =
-      editingField === 'name'
-        ? { name: editValue.trim() }
-        : { description: editValue };
-    try {
-      await updateItem({
-        id: itemId,
-        userId: user.uid,
-        updates,
-      }).unwrap();
-    } catch (error) {
-      console.error('Error updating item:', error);
-    }
-    setEditingItemId(null);
-    setEditingField(null);
-    setEditValue('');
-  };
-
-  // Cancel edit
-  const cancelEdit = () => {
-    setEditingItemId(null);
-    setEditingField(null);
-    setEditValue('');
-  };
   const {
     data: items = [],
     isLoading: loadingItems,
@@ -77,52 +23,6 @@ function ItemsList({
     },
     { skip: !user?.uid }
   );
-
-  const [updateItem] = useUpdatePublicUserItemMutation();
-  const [deleteItem] = useDeletePublicUserItemMutation();
-
-  const handleEditItem = async (itemId: string, newName: string) => {
-    if (!user || !newName.trim()) return;
-
-    try {
-      await updateItem({
-        id: itemId,
-        userId: user.uid,
-        updates: { name: newName.trim() },
-      }).unwrap();
-    } catch (error) {
-      console.error('Error updating item:', error);
-    }
-  };
-
-  const handleDeleteItem = async (itemId: string) => {
-    if (!user) return;
-    try {
-      await deleteItem({
-        id: itemId,
-        userId: user.uid,
-      }).unwrap();
-    } catch (error) {
-      console.error('Error deleting item:', error);
-    }
-  };
-
-  const handleToggleItemVisibility = async (
-    itemId: string,
-    currentVisibility: boolean
-  ) => {
-    if (!user) return;
-
-    try {
-      await updateItem({
-        id: itemId,
-        userId: user.uid,
-        updates: { visibility: { public: !currentVisibility } },
-      }).unwrap();
-    } catch (error) {
-      console.error('Error toggling visibility:', error);
-    }
-  };
 
   // Filter items by name
   const filteredItems = items.filter((item) =>
@@ -165,17 +65,8 @@ function ItemsList({
               <ListItem
                 key={item.id}
                 item={item}
-                editingItemId={editingItemId}
-                editingField={editingField}
-                editValue={editValue}
-                startEditing={startEditing}
-                saveEdit={saveEdit}
-                cancelEdit={cancelEdit}
-                setEditValue={setEditValue}
-                handleEditItem={handleEditItem}
-                handleToggleItemVisibility={handleToggleItemVisibility}
-                handleDeleteItem={handleDeleteItem}
                 showTags={showTags}
+                userId={user?.uid || ''}
               />
             ))
           )}
