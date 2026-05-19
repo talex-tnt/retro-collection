@@ -3,10 +3,12 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import ItemsList from '../components/ItemsList';
 import NewItem from '../components/NewItem';
+import ItemsFilters from '../components/ItemsFilters';
 
 function MyCollectionPage() {
   const [user, setUser] = useState<User | null>(null);
   const [itemFilter, setItemFilter] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -31,7 +33,13 @@ function MyCollectionPage() {
       {/* Left column: NewItem and future filters */}
       <div className="md:col-span-2 space-y-6">
         <NewItem userId={user.uid} />
-        {/* Filters and other controls can be added here later */}
+        <ItemsFilters
+          userId={user.uid}
+          itemFilter={itemFilter}
+          onItemFilterChange={setItemFilter}
+          selectedTags={selectedTags}
+          setSelectedTags={setSelectedTags}
+        />
       </div>
       {/* Center column: ItemsList */}
       <div className="md:col-span-4">
@@ -39,6 +47,7 @@ function MyCollectionPage() {
           user={user}
           itemFilter={itemFilter}
           onItemFilterChange={setItemFilter}
+          selectedTags={selectedTags}
         />
       </div>
     </div>

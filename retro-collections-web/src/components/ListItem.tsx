@@ -44,42 +44,6 @@ function ListItem({
   handleDeleteItem,
   showTags = true,
 }: ListItemProps) {
-  const [showAddTag, setShowAddTag] = useState(false);
-  const userId = item.userId;
-  const { data: userTags = [] } = useGetPublicUserTagsQuery(
-    { userId },
-    { skip: !userId }
-  );
-  const [createTag] = useCreatePublicUserTagMutation();
-  const [updateItem] = useUpdatePublicUserItemMutation();
-
-  const handleAddTag = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setAddTagError(null);
-    const tag = newTag.trim();
-    if (!tag) return;
-    const tagExists = userTags.some(
-      (t) => t.id.toLowerCase() === tag.toLowerCase()
-    );
-    try {
-      if (!tagExists) {
-        await createTag({ userId, tag }).unwrap();
-      }
-      // Add tag to item if not already present
-      if (!item.tags?.includes(tag)) {
-        await updateItem({
-          id: item.id,
-          userId,
-          updates: { tags: [...(item.tags || []), tag] },
-        }).unwrap();
-      }
-      setNewTag('');
-      setShowAddTag(false);
-    } catch (err: any) {
-      setAddTagError(err?.message || 'Failed to add tag');
-    }
-  };
-
   return (
     <div
       key={item.id}

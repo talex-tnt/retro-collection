@@ -3,21 +3,23 @@ import {
   useGetPublicUserItemsQuery,
   useUpdatePublicUserItemMutation,
   useDeletePublicUserItemMutation,
-  useGetPublicUserTagsQuery,
 } from '../api/firestore/firestoreApi';
 
-import ItemActions from './ItemActions';
 import ListItem from './ListItem';
 
 interface ItemsListProps {
   user: { uid: string } | null;
   itemFilter: string;
   onItemFilterChange: (filter: string) => void;
+  selectedTags: string[];
 }
 
-function ItemsList({ user, itemFilter, onItemFilterChange }: ItemsListProps) {
-  // Tag filter state
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+function ItemsList({
+  user,
+  itemFilter,
+  onItemFilterChange,
+  selectedTags,
+}: ItemsListProps) {
   // Local state for editing
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<
@@ -73,12 +75,6 @@ function ItemsList({ user, itemFilter, onItemFilterChange }: ItemsListProps) {
       userId: user?.uid || '',
       tags: selectedTags.length > 0 ? selectedTags : undefined,
     },
-    { skip: !user?.uid }
-  );
-
-  // Fetch all tags for the user
-  const { data: allTags = [] } = useGetPublicUserTagsQuery(
-    { userId: user?.uid || '' },
     { skip: !user?.uid }
   );
 
@@ -147,45 +143,6 @@ function ItemsList({ user, itemFilter, onItemFilterChange }: ItemsListProps) {
           </button>
         </div>
 
-        {/* Tag Filter UI */}
-        <div className="flex flex-wrap gap-2 mb-2">
-          {allTags.map((tag) => (
-            <button
-              key={tag.id}
-              className={`badge badge-lg cursor-pointer select-none ${selectedTags.includes(tag.id) ? 'badge-primary' : 'badge-outline'}`}
-              onClick={() => {
-                setSelectedTags((prev) =>
-                  prev.includes(tag.id)
-                    ? prev.filter((t) => t !== tag.id)
-                    : [...prev, tag.id]
-                );
-              }}
-            >
-              {tag.id}
-            </button>
-          ))}
-          {allTags.length > 0 && (
-            <button
-              className="btn btn-xs ml-2"
-              onClick={() => setSelectedTags([])}
-              disabled={selectedTags.length === 0}
-            >
-              Clear
-            </button>
-          )}
-        </div>
-
-        {/* Filter Input */}
-        <div>
-          <input
-            type="text"
-            className="input input-bordered w-full"
-            value={itemFilter}
-            onChange={(e) => onItemFilterChange(e.target.value)}
-            placeholder="Filter items by name..."
-          />
-        </div>
-
         {/* Items List */}
         <div className="space-y-3">
           {itemsError ? (
@@ -208,7 +165,6 @@ function ItemsList({ user, itemFilter, onItemFilterChange }: ItemsListProps) {
               <ListItem
                 key={item.id}
                 item={item}
-                user={user}
                 editingItemId={editingItemId}
                 editingField={editingField}
                 editValue={editValue}
