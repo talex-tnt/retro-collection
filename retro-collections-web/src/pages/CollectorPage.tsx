@@ -65,7 +65,7 @@ function CollectorPage() {
                     className="rounded-lg border border-base-300 bg-base-200 p-4"
                   >
                     {/* Render tags in read-only mode */}
-                        <div className="mt-2 mb-2">
+                    <div className="mt-2 mb-2">
                       <Tags
                         userId={userId}
                         itemId={item.id}
