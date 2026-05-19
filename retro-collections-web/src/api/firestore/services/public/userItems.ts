@@ -66,7 +66,10 @@ const mapItemDoc = (snapshot: QueryDocumentSnapshot<DocumentData>): Item => {
 };
 
 const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
-  getPublicUserItems: builder.query<Item[], { userId: string; tags?: string[] }>({
+  getPublicUserItems: builder.query<
+    Item[],
+    { userId: string; tags?: string[] }
+  >({
     async queryFn({ userId, tags }) {
       const path = await getUserCollectionPath({
         visibility,
