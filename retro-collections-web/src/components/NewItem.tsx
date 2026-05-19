@@ -46,8 +46,8 @@ function NewItem({ userId }: NewItemProps) {
           <h2 className="card-title text-lg">New Collectible</h2>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="grid gap-3 sm:grid-cols-1">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             <label className="form-control w-full">
               <span className="label-text mb-1">Name</span>
               <input
@@ -59,22 +59,20 @@ function NewItem({ userId }: NewItemProps) {
                 disabled={isCreatingItem}
               />
             </label>
+            <label className="form-control w-full">
+              <span className="label-text mb-1">Description</span>
+              <textarea
+                className="textarea textarea-bordered min-h-24 w-full"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="Optional collectible description"
+                disabled={isCreatingItem}
+              />
+            </label>
           </div>
-
-          <label className="form-control w-full">
-            <span className="label-text mb-1">Description</span>
-            <textarea
-              className="textarea textarea-bordered min-h-24 w-full"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder="Optional collectible description"
-              disabled={isCreatingItem}
-            />
-          </label>
-
           <button
             type="submit"
-            className="btn btn-primary"
+            className="btn btn-primary mt-2"
             disabled={isCreatingItem || !name.trim()}
           >
             {isCreatingItem ? 'Adding...' : 'Add Collectible'}
