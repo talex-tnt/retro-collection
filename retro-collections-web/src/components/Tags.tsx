@@ -71,8 +71,8 @@ export default function Tags({
   };
 
   return (
-    <div className="relative w-full ml-2">
-      <div className="flex flex-wrap gap-2 pr-8 justify-end">
+    <div className="w-full">
+      <div className="flex flex-row flex-wrap gap-2 items-center justify-start">
         {tags && tags.length > 0 ? (
           tags.map((tag) => (
             <span
@@ -94,8 +94,6 @@ export default function Tags({
         ) : (
           <span className="text-xs text-base-content/50 italic">No tags</span>
         )}
-      </div>
-      <div className="absolute top-0 right-0 flex items-center h-full">
         {showAddTag ? (
           <form
             className="flex gap-2 items-center"
