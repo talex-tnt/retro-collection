@@ -111,12 +111,12 @@ function Header() {
                 Home
               </NavLink>
               <NavLink
-                to="/my-collection"
+                to="/my-collectibles"
                 className={({ isActive }) =>
                   isActive ? 'tab tab-active' : 'tab'
                 }
               >
-                My Collection
+                All My Collectibles
               </NavLink>
               <NavLink
                 to="/tags"

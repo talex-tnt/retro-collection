@@ -6,7 +6,7 @@ import AdminPage from '../pages/AdminPage';
 import CollectorPage from '../pages/CollectorPage';
 import CollectorsPage from '../pages/CollectorsPage';
 import UsersPage from '../pages/UsersPage';
-import MyCollectionPage from './MyCollectionPage';
+import AllMyItemsPage from './AllMyItemsPage';
 import ProfilePage from '../pages/ProfilePage';
 import TagsPage from '../pages/TagsPage';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -69,7 +69,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/my-collection" element={<MyCollectionPage />} />
+                <Route path="/my-collectibles/*" element={<AllMyItemsPage />} />
                 <Route
                   path="/collectors/:userId/collectibles"
                   element={<CollectorPage />}
