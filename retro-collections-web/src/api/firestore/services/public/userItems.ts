@@ -94,13 +94,13 @@ const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
       startAfter?: PaginationCursor | null;
     }
   >({
-    async queryFn({ userId, tags, name, isPublic, limit = 25, startAfter }) {
+    async queryFn({ userId, tags, name, isPublic, limit, startAfter }) {
       const path = await getUserCollectionPath({
         visibility,
         resourceType: 'items',
         userId,
       });
-
+      console.log('limit', limit);
       const baseConstraints: QueryConstraint[] = [];
 
       if (tags && tags.length > 0) {
@@ -124,11 +124,13 @@ const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
         );
       }
 
-      const pagedQuery = query(
-        collection(db, path),
-        ...baseConstraints,
-        fsLimit(limit + 1)
-      );
+      const pagedQuery = Number.isInteger(limit)
+        ? query(
+            collection(db, path),
+            ...baseConstraints,
+            fsLimit((limit ?? 0) + 1)
+          )
+        : query(collection(db, path), ...baseConstraints);
 
       const context = {
         apiEndpoint: 'getPublicUserItems',
@@ -150,9 +152,11 @@ const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
 
         const rawItems = snapshot.docs.map(mapItemDoc);
 
-        const hasNextPage = rawItems.length > limit;
+        const hasNextPage = rawItems.length > (limit ?? rawItems.length);
 
-        const pagedItems = hasNextPage ? rawItems.slice(0, limit) : rawItems;
+        const pagedItems = hasNextPage
+          ? rawItems.slice(0, limit ?? rawItems.length)
+          : rawItems;
 
         let filteredItems = pagedItems;
 
