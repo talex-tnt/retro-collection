@@ -19,7 +19,12 @@ interface ItemActionsProps {
     files,
   }: {
     folder: { id: string; name: string };
-    files: { id: string; name: string; mimeType?: string }[];
+    files: {
+      id: string;
+      name: string;
+      mimeType?: string;
+      thumbnailLink?: string;
+    }[];
   }) => void;
   imageFolder?: { id: string; name: string };
 }

@@ -99,14 +99,15 @@ function ListItem({
     setEditingField(null);
     setEditValue('');
   };
-  const imageFolder = item?.metadata?.imageFolder as
-    | { id: string; name: string }
-    | undefined;
+  const imageFolder =
+    item?.metadata?.imageFolder &&
+    (item.metadata.imageFolder.id ? item.metadata.imageFolder : undefined);
   const imagePreview = item?.metadata?.previewImage as
     | {
         id: string;
         name: string;
         mimeType?: string;
+        thumbnailLink?: string;
       }
     | undefined;
 
@@ -115,22 +116,29 @@ function ListItem({
     files,
   }: {
     folder: { id: string; name: string };
-    files: { id: string; name: string; mimeType?: string }[];
+    files: {
+      id: string;
+      name: string;
+      mimeType?: string;
+      thumbnailLink?: string;
+    }[];
   }) => {
     console.log('Set image folder:', folder);
     if (!userId) return;
     const previewImage = findPreviewImage(files);
-
+    const metadata = {
+      ...item.metadata,
+      imageFolder: folder,
+      ...(imageFolder ? { imageFolder: folder } : {}),
+      ...(previewImage ? { previewImage } : {}),
+    };
+    console.log();
     try {
       await updateItem({
         id: item.id,
         userId,
         updates: {
-          metadata: {
-            ...item.metadata,
-            imageFolder: folder,
-            ...(previewImage ? { previewImage } : {}),
-          },
+          metadata,
         },
       }).unwrap();
     } catch (error) {
@@ -173,8 +181,12 @@ function ListItem({
       <div className="flex flex-row gap-4 justify-between items-start w-full">
         {/* Description (left) */}
         <div className="flex flex-col gap-2">
-          {imagePreview && (
-            <DriveImage fileId={imagePreview.id} name={imagePreview.name} />
+          {imagePreview?.thumbnailLink && (
+            <img
+              src={imagePreview.thumbnailLink}
+              alt={imagePreview.name}
+              className="w-full h-auto rounded"
+            />
           )}
         </div>
         <div className="flex-1 min-w-0">

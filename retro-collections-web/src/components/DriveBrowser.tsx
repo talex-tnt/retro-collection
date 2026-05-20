@@ -20,7 +20,10 @@ const DriveBrowser = ({ onSelectFolder }: DriveBrowserProps) => {
   });
 
   const files = data?.files || [];
-
+  console.log('Google Drive files in current folder:', {
+    currentFolder,
+    files,
+  }); // Debug log for Google Drive files
   const folders = files.filter(
     (f: { mimeType: string }) =>
       f.mimeType === 'application/vnd.google-apps.folder'
@@ -128,6 +131,14 @@ const DriveBrowser = ({ onSelectFolder }: DriveBrowserProps) => {
           }
         >
           Select {currentFolder.name}
+        </button>
+        <button
+          className="btn btn-xs btn-outline"
+          onClick={() =>
+            onSelectFolder({ folder: { id: '', name: '' }, files: [] })
+          }
+        >
+          Unset
         </button>
       </div>
     </div>

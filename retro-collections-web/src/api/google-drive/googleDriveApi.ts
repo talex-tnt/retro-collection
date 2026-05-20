@@ -10,12 +10,14 @@ type ListFilesResponse = {
     id: string;
     name: string;
     mimeType: string;
+    thumbnailLink?: string;
   }>;
 };
 type GetFileResponse = {
   id: string;
   name: string;
   mimeType: string;
+  thumbnailLink?: string;
 };
 type GetFileDownloadResponse = Blob;
 
@@ -62,7 +64,7 @@ export const driveApi = createApi({
           q:
             query ??
             (folderId ? `'${folderId}' in parents` : "'root' in parents"),
-          fields: 'files(id,name,mimeType)',
+          fields: 'files(id,name,mimeType,thumbnailLink,webContentLink)',
         },
       }),
     }),
