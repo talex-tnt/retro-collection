@@ -1,5 +1,8 @@
 import { useRef, useState } from 'react';
-import { useCreatePublicUserItemMutation } from '../api/firestore/firestoreApi';
+import {
+  useCreatePublicUserItemMutation,
+  useGetPublicUserTagsQuery,
+} from '../api/firestore/firestoreApi';
 
 interface NewItemProps {
   userId: string;
@@ -8,6 +11,13 @@ interface NewItemProps {
 function NewItem({ userId }: NewItemProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  // Fetch all tags for the user
+  const { data: allTags = [] } = useGetPublicUserTagsQuery(
+    { userId },
+    { skip: !userId }
+  );
 
   const nameInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -28,6 +38,10 @@ function NewItem({ userId }: NewItemProps) {
 
       if (description.trim()) {
         itemData.description = description.trim();
+      }
+
+      if (selectedTags.length > 0) {
+        itemData.tags = selectedTags;
       }
 
       await createItem(itemData as Parameters<typeof createItem>[0]).unwrap();
@@ -53,6 +67,54 @@ function NewItem({ userId }: NewItemProps) {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-3">
+            {/* TAG SELECTION */}
+            <label className="form-control w-full">
+              <span className="label-text mb-1">Tags</span>
+              <div className="flex flex-wrap gap-2 items-center">
+                {allTags.length === 0 && (
+                  <span className="text-xs opacity-60">No tags available</span>
+                )}
+                {allTags.map((tag) => {
+                  const isSelected = selectedTags.includes(tag.id);
+                  const style =
+                    isSelected && tag.style
+                      ? {
+                          backgroundColor:
+                            tag.style.backgroundColor || undefined,
+                          color: tag.style.foregroundColor || undefined,
+                          borderColor: tag.style.foregroundColor || undefined,
+                        }
+                      : undefined;
+                  return (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      className={`badge badge-lg cursor-pointer select-none transition-opacity ${isSelected ? 'opacity-100' : 'badge-outline opacity-50 hover:opacity-80'}`}
+                      style={isSelected && style ? style : undefined}
+                      onClick={() => {
+                        setSelectedTags(
+                          isSelected
+                            ? selectedTags.filter((t) => t !== tag.id)
+                            : [...selectedTags, tag.id]
+                        );
+                      }}
+                    >
+                      {tag.id}
+                    </button>
+                  );
+                })}
+                {allTags.length > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-xs ml-2"
+                    onClick={() => setSelectedTags([])}
+                    disabled={selectedTags.length === 0}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </label>
             <label className="form-control w-full">
               <span className="label-text mb-1">Name</span>
               <input
