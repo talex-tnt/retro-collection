@@ -14,6 +14,8 @@ import {
 
 const TAG_COLOR_PAIRS = [
   { name: 'Default', backgroundColor: null, foregroundColor: null },
+
+  // Base colors
   { name: 'Red', backgroundColor: '#f87171', foregroundColor: '#fff' },
   { name: 'Amber', backgroundColor: '#fbbf24', foregroundColor: '#222' },
   { name: 'Green', backgroundColor: '#34d399', foregroundColor: '#222' },
@@ -25,6 +27,57 @@ const TAG_COLOR_PAIRS = [
   { name: 'Black', backgroundColor: '#000000', foregroundColor: '#fff' },
   { name: 'White', backgroundColor: '#ffffff', foregroundColor: '#222' },
   { name: 'Dark Blue', backgroundColor: '#1e293b', foregroundColor: '#fff' },
+
+  // 🎮 Console / gaming brand colors
+
+  // Nintendo (red + white signature)
+  {
+    name: 'Nintendo',
+    backgroundColor: '#e60012',
+    foregroundColor: '#ffffff',
+  },
+
+  // Sony PlayStation (dark + blue accent feel)
+  {
+    name: 'PlayStation',
+    backgroundColor: '#003791',
+    foregroundColor: '#ffffff',
+  },
+
+  // Xbox (green signature)
+  {
+    name: 'Xbox',
+    backgroundColor: '#107C10',
+    foregroundColor: '#ffffff',
+  },
+
+  // Sega (blue + white retro branding)
+  {
+    name: 'Sega',
+    backgroundColor: '#006db6',
+    foregroundColor: '#ffffff',
+  },
+
+  // Steam (dark industrial blue/gray)
+  {
+    name: 'Steam',
+    backgroundColor: '#1b2838',
+    foregroundColor: '#c7d5e0',
+  },
+
+  // Epic Games (dark minimal)
+  {
+    name: 'Epic Games',
+    backgroundColor: '#111111',
+    foregroundColor: '#ffffff',
+  },
+
+  // Atari (retro black + neon vibe)
+  {
+    name: 'Atari',
+    backgroundColor: '#000000',
+    foregroundColor: '#ff4f00',
+  },
 ] as TagColorPair[];
 interface TagsPageProps {
   user: { uid: string };
