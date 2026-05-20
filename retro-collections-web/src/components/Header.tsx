@@ -110,7 +110,7 @@ function Header() {
       console.error('Logout error:', logoutError);
     }
   };
-  console.log('Current user in Header:', user);
+  // console.log('Current user in Header:', user);
 
   return (
     <div className="space-y-4">
