@@ -8,6 +8,10 @@ interface ItemsFiltersProps {
   setSelectedTags: (tags: string[]) => void;
   visibilityFilter?: 'public' | 'private' | '';
   onVisibilityFilterChange?: (v: 'public' | 'private' | '') => void;
+  startWithNameFilter: string;
+  onStartWithNameFilterChange: (filter: string) => void;
+  nameContainsTokens: string;
+  onNameContainsTokensChange: (filter: string) => void;
 }
 
 export default function ItemsFilters({
@@ -18,6 +22,10 @@ export default function ItemsFilters({
   setSelectedTags,
   visibilityFilter = '',
   onVisibilityFilterChange,
+  startWithNameFilter,
+  onStartWithNameFilterChange,
+  nameContainsTokens,
+  onNameContainsTokensChange,
 }: ItemsFiltersProps) {
   // Fetch all tags for the user
   const { data: allTags = [] } = useGetPublicUserTagsQuery(
@@ -88,6 +96,29 @@ export default function ItemsFilters({
               <option value="private">Private</option>
             </select>
           </div>
+          {/* --- SERVER NAME FILTERS --- */}
+          <div className="flex flex-col gap-2 mt-4">
+            <label className="text-xs opacity-70 font-medium">
+              Name starts with
+            </label>
+            <input
+              type="text"
+              className="input input-bordered input-xs w-full"
+              value={startWithNameFilter}
+              onChange={(e) => onStartWithNameFilterChange(e.target.value)}
+              placeholder="Start of name (server)"
+            />
+            <label className="text-xs opacity-70 font-medium">
+              Name contains tokens
+            </label>
+            <input
+              type="text"
+              className="input input-bordered input-xs w-full"
+              value={nameContainsTokens}
+              onChange={(e) => onNameContainsTokensChange(e.target.value)}
+              placeholder="Tokens (space separated, server)"
+            />
+          </div>
         </div>
         {/* --- CLIENT FILTERS --- */}
         <div>
@@ -99,7 +130,7 @@ export default function ItemsFilters({
             className="input input-bordered w-full"
             value={itemNameClientFilter}
             onChange={(e) => onItemNameClientFilterChange(e.target.value)}
-            placeholder="Filter collectibles by name..."
+            placeholder="Filter collectibles by name (client only)..."
           />
         </div>
       </div>

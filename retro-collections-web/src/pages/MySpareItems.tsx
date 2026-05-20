@@ -10,6 +10,8 @@ function MySpareItems({ user }: { user: User }) {
   const [visibilityFilter, setVisibilityFilter] = useState<
     'public' | 'private' | ''
   >('');
+  const [startWithNameFilter, setStartWithNameFilter] = useState('');
+  const [nameContainsTokens, setNameContainsTokens] = useState('');
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
@@ -24,6 +26,10 @@ function MySpareItems({ user }: { user: User }) {
           setSelectedTags={setSelectedTags}
           visibilityFilter={visibilityFilter}
           onVisibilityFilterChange={setVisibilityFilter}
+          startWithNameFilter={startWithNameFilter}
+          onStartWithNameFilterChange={setStartWithNameFilter}
+          nameContainsTokens={nameContainsTokens}
+          onNameContainsTokensChange={setNameContainsTokens}
         />
       </div>
       {/* Center column: ItemsList */}
@@ -39,6 +45,8 @@ function MySpareItems({ user }: { user: User }) {
                 ? false
                 : undefined
           }
+          startWithNameFilter={startWithNameFilter}
+          nameContainsTokens={nameContainsTokens}
         />
       </div>
     </div>

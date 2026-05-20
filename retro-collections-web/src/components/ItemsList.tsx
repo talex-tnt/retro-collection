@@ -16,6 +16,8 @@ interface ItemsListProps {
   itemNameClientFilter: string;
   selectedTags: string[];
   isPublic?: boolean;
+  startWithNameFilter: string;
+  nameContainsTokens: string;
 }
 
 function ItemsList({
@@ -23,6 +25,8 @@ function ItemsList({
   itemNameClientFilter,
   selectedTags,
   isPublic,
+  startWithNameFilter,
+  nameContainsTokens,
 }: ItemsListProps) {
   const [showTags, setShowTags] = useState(true);
 
@@ -53,6 +57,8 @@ function ItemsList({
       isPublic,
       limit: isAll ? undefined : pageSize,
       startAfter: currentCursor,
+      startWithNameFilter: startWithNameFilter || undefined,
+      nameContainsTokens: nameContainsTokens || undefined,
     },
     { skip: !user?.uid }
   );
