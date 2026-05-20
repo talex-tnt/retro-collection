@@ -1,17 +1,13 @@
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import ItemsList from '../components/ItemsList';
-import NewItem from '../components/NewItem';
-import ItemsFilters from '../components/ItemsFilters';
+
+import MySpareItems from './MySpareItems';
+import WIPTab from './WIPTab';
 
 function MyCollectionPage() {
   const [user, setUser] = useState<User | null>(null);
-  const [itemFilter, setItemFilter] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [visibilityFilter, setVisibilityFilter] = useState<
-    'public' | 'private' | ''
-  >('');
+  const [activeTab, setActiveTab] = useState<'spare' | 'wip'>('spare');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -32,35 +28,24 @@ function MyCollectionPage() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
-      {/* Left column: NewItem and future filters */}
-      <div className="md:col-span-2 space-y-6">
-        <NewItem userId={user.uid} />
-        <ItemsFilters
-          userId={user.uid}
-          itemFilter={itemFilter}
-          onItemFilterChange={setItemFilter}
-          selectedTags={selectedTags}
-          setSelectedTags={setSelectedTags}
-          visibilityFilter={visibilityFilter}
-          onVisibilityFilterChange={setVisibilityFilter}
-        />
+    <div>
+      <div className="tabs tabs-boxed mb-4">
+        <button
+          className={`tab${activeTab === 'spare' ? ' tab-active' : ''}`}
+          onClick={() => setActiveTab('spare')}
+        >
+          Spare Collectibles
+        </button>
+        <button
+          className={`tab${activeTab === 'wip' ? ' tab-active' : ''}`}
+          onClick={() => setActiveTab('wip')}
+        >
+          Collections
+        </button>
       </div>
-      {/* Center column: ItemsList */}
-      <div className="md:col-span-4">
-        <ItemsList
-          user={user}
-          itemFilter={itemFilter}
-          onItemFilterChange={setItemFilter}
-          selectedTags={selectedTags}
-          isPublic={
-            visibilityFilter === 'public'
-              ? true
-              : visibilityFilter === 'private'
-                ? false
-                : undefined
-          }
-        />
+      <div>
+        {activeTab === 'spare' && <MySpareItems user={user} />}
+        {activeTab === 'wip' && <WIPTab />}
       </div>
     </div>
   );
