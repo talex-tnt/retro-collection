@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useCreatePublicUserItemMutation } from '../api/firestore/firestoreApi';
 
 interface NewItemProps {
@@ -9,15 +9,15 @@ function NewItem({ userId }: NewItemProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
+
   const [createItem, { isLoading: isCreatingItem }] =
     useCreatePublicUserItemMutation();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!name.trim()) {
-      return;
-    }
+    if (!name.trim()) return;
 
     try {
       const itemData: Record<string, unknown> = {
@@ -34,6 +34,11 @@ function NewItem({ userId }: NewItemProps) {
 
       setName('');
       setDescription('');
+
+      // ✅ restore focus AFTER submit
+      requestAnimationFrame(() => {
+        nameInputRef.current?.focus();
+      });
     } catch (error) {
       console.error('Error adding item:', error);
     }
@@ -51,25 +56,28 @@ function NewItem({ userId }: NewItemProps) {
             <label className="form-control w-full">
               <span className="label-text mb-1">Name</span>
               <input
+                ref={nameInputRef}
                 type="text"
                 className="input input-bordered w-full"
                 value={name}
-                onChange={(event) => setName(event.target.value)}
+                onChange={(e) => setName(e.target.value)}
                 placeholder="New collectible name"
                 disabled={isCreatingItem}
               />
             </label>
+
             <label className="form-control w-full">
               <span className="label-text mb-1">Description</span>
               <textarea
                 className="textarea textarea-bordered min-h-24 w-full"
                 value={description}
-                onChange={(event) => setDescription(event.target.value)}
+                onChange={(e) => setDescription(e.target.value)}
                 placeholder="Optional collectible description"
                 disabled={isCreatingItem}
               />
             </label>
           </div>
+
           <button
             type="submit"
             className="btn btn-primary mt-2"
