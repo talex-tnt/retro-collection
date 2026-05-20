@@ -13,6 +13,7 @@ interface ItemRecord {
   visibility?: {
     public: boolean;
   };
+  tags?: string[];
 }
 
 function CollectorPage() {

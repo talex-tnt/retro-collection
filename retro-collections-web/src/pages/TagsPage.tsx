@@ -1,4 +1,17 @@
 // Predefined color pairs for tag styles
+
+import { useState } from 'react';
+import {
+  TagColorPicker,
+  type TagColorPair,
+} from '../components/TagColorPicker';
+import {
+  useGetPublicUserTagsQuery,
+  useCreatePublicUserTagMutation,
+  useDeletePublicUserTagMutation,
+  useUpdatePublicUserTagMutation,
+} from '../api/firestore/firestoreApi';
+
 const TAG_COLOR_PAIRS = [
   { name: 'Default', backgroundColor: null, foregroundColor: null },
   { name: 'Red', backgroundColor: '#f87171', foregroundColor: '#fff' },
@@ -12,16 +25,7 @@ const TAG_COLOR_PAIRS = [
   { name: 'Black', backgroundColor: '#000000', foregroundColor: '#fff' },
   { name: 'White', backgroundColor: '#ffffff', foregroundColor: '#222' },
   { name: 'Dark Blue', backgroundColor: '#1e293b', foregroundColor: '#fff' },
-];
-import { useState } from 'react';
-import { TagColorPicker } from '../components/TagColorPicker';
-import {
-  useGetPublicUserTagsQuery,
-  useCreatePublicUserTagMutation,
-  useDeletePublicUserTagMutation,
-  useUpdatePublicUserTagMutation,
-} from '../api/firestore/firestoreApi';
-
+] as TagColorPair[];
 interface TagsPageProps {
   user: { uid: string };
 }

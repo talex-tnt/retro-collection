@@ -9,14 +9,14 @@ import UsersPage from '../pages/UsersPage';
 import MyCollectionPage from './MyCollectionPage';
 import ProfilePage from '../pages/ProfilePage';
 import TagsPage from '../pages/TagsPage';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 import { auth } from '../lib/firebase';
 import { useGetRuntimeConfigQuery } from '../api/firestore/firestoreApi';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const { isLoading: isRuntimeConfigLoading, isError: isRuntimeConfigError } =
     useGetRuntimeConfigQuery(undefined, {
       skip: !isAuthenticated,

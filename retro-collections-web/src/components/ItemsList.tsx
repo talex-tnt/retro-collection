@@ -72,6 +72,9 @@ function ItemsList({
                 item={item}
                 showTags={showTags}
                 userId={user?.uid || ''}
+                // Handlers are required by ListItem but not used here
+                handleToggleItemVisibility={() => {}}
+                handleDeleteItem={() => {}}
               />
             ))
           )}

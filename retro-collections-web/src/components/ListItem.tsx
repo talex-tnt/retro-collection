@@ -18,7 +18,13 @@ interface ListItemProps {
   showTags?: boolean;
 }
 
-function ListItem({ item, userId, showTags = true }: ListItemProps) {
+function ListItem({
+  item,
+  userId,
+  showTags = true,
+  handleToggleItemVisibility,
+  handleDeleteItem,
+}: ListItemProps) {
   const [editingField, setEditingField] = useState<
     'name' | 'description' | null
   >(null);
@@ -27,7 +33,7 @@ function ListItem({ item, userId, showTags = true }: ListItemProps) {
   const [updateItem] = useUpdatePublicUserItemMutation();
   const [deleteItem] = useDeletePublicUserItemMutation();
 
-  const handleDeleteItem = async (itemId: string) => {
+  const internalDeleteItem = async (itemId: string) => {
     if (!userId) return;
     try {
       await deleteItem({
@@ -37,9 +43,10 @@ function ListItem({ item, userId, showTags = true }: ListItemProps) {
     } catch (error) {
       console.error('Error deleting item:', error);
     }
+    if (handleDeleteItem) handleDeleteItem(itemId);
   };
 
-  const handleToggleItemVisibility = async (
+  const internalToggleItemVisibility = async (
     itemId: string,
     currentVisibility: boolean
   ) => {
@@ -53,6 +60,7 @@ function ListItem({ item, userId, showTags = true }: ListItemProps) {
     } catch (error) {
       console.error('Error toggling visibility:', error);
     }
+    if (handleToggleItemVisibility) handleToggleItemVisibility(itemId, currentVisibility);
   };
 
   const startEditing = (
@@ -187,11 +195,10 @@ function ListItem({ item, userId, showTags = true }: ListItemProps) {
         <div className="flex flex-row items-center">
           <ItemActions
             itemId={item.id}
-            itemName={item.name}
             isPublic={!!item.visibility?.public}
             onEdit={() => startEditing('name', item.name)}
-            onToggleVisibility={handleToggleItemVisibility}
-            onDelete={handleDeleteItem}
+            onToggleVisibility={internalToggleItemVisibility}
+            onDelete={internalDeleteItem}
           />
         </div>
       </div>

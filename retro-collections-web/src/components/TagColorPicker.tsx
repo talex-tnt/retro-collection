@@ -2,8 +2,8 @@ import { useState, useRef } from 'react';
 
 export interface TagColorPair {
   name: string;
-  backgroundColor: string;
-  foregroundColor: string;
+  backgroundColor: string | null;
+  foregroundColor: string | null;
 }
 
 interface TagColorPickerProps {

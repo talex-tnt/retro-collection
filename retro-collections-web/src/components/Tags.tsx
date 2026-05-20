@@ -4,6 +4,7 @@ import {
   useCreatePublicUserTagMutation,
   useUpdatePublicUserItemMutation,
 } from '../api/firestore/firestoreApi';
+import type { UserTag } from '../api/firestore/services/public/userTags';
 
 interface TagsProps {
   userId: string;
@@ -77,19 +78,26 @@ export default function Tags({
   };
 
   // Build a map for fast style lookup
-  const styleMap = userTags.reduce<
-    Record<string, { backgroundColor?: string; foregroundColor?: string }>
-  >((acc, t) => {
-    acc[t.id] = t.style || {};
-    return acc;
-  }, {});
+  const styleMap = userTags.reduce<Record<string, UserTag['style']>>(
+    (acc, t) => {
+      acc[t.id] = t.style || {
+        backgroundColor: null,
+        foregroundColor: null,
+      };
+      return acc;
+    },
+    {}
+  );
 
   return (
     <div className="w-full">
       <div className="flex flex-row flex-wrap gap-2 items-center justify-start">
         {tags && tags.length > 0 ? (
           tags.map((tag) => {
-            const style = styleMap[tag] || {};
+            const style = styleMap[tag] || {
+              backgroundColor: null,
+              foregroundColor: null,
+            };
             return (
               <span
                 key={tag}

@@ -2,34 +2,25 @@ import { FiEdit2, FiEye, FiEyeOff, FiTrash2 } from 'react-icons/fi';
 
 interface ItemActionsProps {
   itemId: string;
-  itemName: string;
   isPublic: boolean;
-  onEdit: (itemId: string, newName: string) => void;
+  onEdit: () => void;
   onToggleVisibility: (itemId: string, currentVisibility: boolean) => void;
   onDelete: (itemId: string) => void;
 }
 
 function ItemActions({
   itemId,
-  itemName,
   isPublic,
   onEdit,
   onToggleVisibility,
   onDelete,
 }: ItemActionsProps) {
-  const handleEdit = () => {
-    const newName = prompt('New collectible name:', itemName);
-    if (newName) {
-      onEdit(itemId, newName);
-    }
-  };
-
   return (
     <div className="flex gap-2">
       <button
         className="btn btn-sm btn-ghost tooltip"
         data-tip="Edit collectible"
-        onClick={handleEdit}
+        onClick={onEdit}
         title="Edit collectible"
       >
         <FiEdit2 size={18} />
