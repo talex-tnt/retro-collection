@@ -105,7 +105,10 @@ export default function ItemsFilters({
               type="text"
               className="input input-bordered input-xs w-full"
               value={startWithNameFilter}
-              onChange={(e) => onStartWithNameFilterChange(e.target.value)}
+              onChange={(e) => {
+                onNameContainsTokensChange('');
+                onStartWithNameFilterChange(e.target.value);
+              }}
               placeholder="Start of name (server)"
             />
             <label className="text-xs opacity-70 font-medium">
@@ -115,7 +118,10 @@ export default function ItemsFilters({
               type="text"
               className="input input-bordered input-xs w-full"
               value={nameContainsTokens}
-              onChange={(e) => onNameContainsTokensChange(e.target.value)}
+              onChange={(e) => {
+                onStartWithNameFilterChange('');
+                onNameContainsTokensChange(e.target.value);
+              }}
               placeholder="Tokens (space separated, server)"
             />
           </div>
