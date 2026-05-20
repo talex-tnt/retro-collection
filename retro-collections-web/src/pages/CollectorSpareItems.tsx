@@ -51,6 +51,7 @@ function CollectorSpareItems({ userId }: { userId: string }) {
   useEffect(() => {
     if (!pageInfo?.endCursor) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCursors((prev) => {
       const next = [...prev];
       if (pageInfo.endCursor) {

@@ -7,7 +7,6 @@ import {
 } from '../api/firestore/firestoreApi';
 import Tags from './Tags';
 import { findPreviewImage } from '../utils/findPreviewImage';
-import DriveImage from './DriveImage';
 interface ListItemProps {
   item: Item;
   userId: string;
