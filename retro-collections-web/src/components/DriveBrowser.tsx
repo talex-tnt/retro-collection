@@ -1,36 +1,9 @@
-import { useState, useMemo } from 'react';
-import {
-  useListFilesQuery,
-  useGetFileDownloadQuery,
-} from '../api/google-drive/googleDriveApi';
+import { useState } from 'react';
+import { useListFilesQuery } from '../api/google-drive/googleDriveApi';
+import DriveImage from './DriveImage';
 
 type DriveBrowserProps = {
   onSelectFolder: (folder: { id: string; name: string }) => void;
-};
-
-// 🖼️ helper component for full image loading (Drive API)
-const DriveImage = ({ fileId, name }: { fileId: string; name: string }) => {
-  const { data: blob } = useGetFileDownloadQuery(fileId);
-
-  const url = useMemo(() => {
-    if (!blob) return null;
-    return URL.createObjectURL(blob);
-  }, [blob]);
-
-  if (!url) return null;
-
-  return (
-    <img
-      src={url}
-      alt={name}
-      style={{
-        width: '100%',
-        height: 120,
-        objectFit: 'cover',
-        borderRadius: 8,
-      }}
-    />
-  );
 };
 
 const DriveBrowser = ({ onSelectFolder }: DriveBrowserProps) => {

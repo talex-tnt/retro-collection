@@ -307,7 +307,7 @@ service cloud.firestore {
             );
         }
         function updateItemKeys() {
-          return ['name', 'nameLowercase', 'nameTokens', 'updatedAt', 'description', 'visibility', 'tags'];
+          return ['name', 'nameLowercase', 'nameTokens', 'updatedAt', 'description', 'visibility', 'tags', 'metadata'];
         }
         function updateItemRequiredKeys() {
           return ['updatedAt'];

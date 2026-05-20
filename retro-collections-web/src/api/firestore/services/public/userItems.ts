@@ -36,6 +36,12 @@ export interface Item {
     public: boolean;
   };
   tags?: string[];
+  metadata?: {
+    imageFolder?: {
+      id: string;
+      name: string;
+    };
+  };
 }
 
 type ItemInput = Omit<Item, 'id' | 'createdAt' | 'updatedAt'>;
@@ -53,6 +59,12 @@ interface FirestoreItemDoc {
     public: boolean;
   };
   tags?: string[];
+  metadata?: {
+    imageFolder?: {
+      id: string;
+      name: string;
+    };
+  };
 }
 
 interface PaginationCursor {
@@ -76,6 +88,7 @@ const mapItemDoc = (snapshot: QueryDocumentSnapshot<DocumentData>): Item => {
     tags: data.tags || [],
     createdAt: data.createdAt?.toDate?.()?.toISOString?.() ?? '',
     updatedAt: data.updatedAt?.toDate?.()?.toISOString?.(),
+    metadata: data.metadata,
   };
 };
 

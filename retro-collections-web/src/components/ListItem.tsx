@@ -98,6 +98,25 @@ function ListItem({
     setEditingField(null);
     setEditValue('');
   };
+  const imageFolder = item?.metadata?.imageFolder as
+    | { id: string; name: string }
+    | undefined;
+
+  const setImageFolder = async (
+    folder: { id: string; name: string } | undefined
+  ) => {
+    console.log('Set image folder:', folder);
+    if (!userId) return;
+    try {
+      await updateItem({
+        id: item.id,
+        userId,
+        updates: { metadata: { ...item.metadata, imageFolder: folder } },
+      }).unwrap();
+    } catch (error) {
+      console.error('Error updating image folder:', error);
+    }
+  };
   return (
     <div
       key={item.id}
@@ -200,6 +219,8 @@ function ListItem({
             onEdit={() => startEditing('name', item.name)}
             onToggleVisibility={internalToggleItemVisibility}
             onDelete={internalDeleteItem}
+            onImageFolderSelect={setImageFolder}
+            imageFolder={imageFolder}
           />
         </div>
       </div>
