@@ -41,6 +41,11 @@ export interface Item {
       id: string;
       name: string;
     };
+    previewImage?: {
+      id: string;
+      name: string;
+      mimeType?: string;
+    };
   };
 }
 
@@ -63,6 +68,11 @@ interface FirestoreItemDoc {
     imageFolder?: {
       id: string;
       name: string;
+    };
+    previewImage?: {
+      id: string;
+      name: string;
+      mimeType?: string;
     };
   };
 }

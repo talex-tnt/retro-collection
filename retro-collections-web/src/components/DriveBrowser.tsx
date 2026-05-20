@@ -3,7 +3,10 @@ import { useListFilesQuery } from '../api/google-drive/googleDriveApi';
 import DriveImage from './DriveImage';
 
 type DriveBrowserProps = {
-  onSelectFolder: (folder: { id: string; name: string }) => void;
+  onSelectFolder: (data: {
+    folder: { id: string; name: string };
+    files: { id: string; name: string; mimeType?: string }[];
+  }) => void;
 };
 
 const DriveBrowser = ({ onSelectFolder }: DriveBrowserProps) => {
@@ -116,8 +119,11 @@ const DriveBrowser = ({ onSelectFolder }: DriveBrowserProps) => {
           className="btn btn-outline btn-xs"
           onClick={() =>
             onSelectFolder({
-              id: currentFolder.id,
-              name: currentFolder.name,
+              folder: {
+                id: currentFolder.id,
+                name: currentFolder.name,
+              },
+              files,
             })
           }
         >

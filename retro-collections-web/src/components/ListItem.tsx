@@ -6,7 +6,8 @@ import {
   useDeletePublicUserItemMutation,
 } from '../api/firestore/firestoreApi';
 import Tags from './Tags';
-
+import { findPreviewImage } from '../utils/findPreviewImage';
+import DriveImage from './DriveImage';
 interface ListItemProps {
   item: Item;
   userId: string;
@@ -101,17 +102,32 @@ function ListItem({
   const imageFolder = item?.metadata?.imageFolder as
     | { id: string; name: string }
     | undefined;
+  const imagePreview = item?.metadata?.previewImage as
+    | {
+        id: string;
+        name: string;
+        mimeType?: string;
+      }
+    | undefined;
 
-  const setImageFolder = async (
-    folder: { id: string; name: string } | undefined
-  ) => {
+  const setImageFolder = async ({
+    folder,
+    files,
+  }: {
+    folder: { id: string; name: string };
+    files: { id: string; name: string; mimeType?: string }[];
+  }) => {
     console.log('Set image folder:', folder);
     if (!userId) return;
+    const previewImage = findPreviewImage(files);
+
     try {
       await updateItem({
         id: item.id,
         userId,
-        updates: { metadata: { ...item.metadata, imageFolder: folder } },
+        updates: {
+          metadata: { ...item.metadata, imageFolder: folder, previewImage },
+        },
       }).unwrap();
     } catch (error) {
       console.error('Error updating image folder:', error);
@@ -152,6 +168,11 @@ function ListItem({
 
       <div className="flex flex-row gap-4 justify-between items-start w-full">
         {/* Description (left) */}
+        <div className="flex flex-col gap-2">
+          {imagePreview && (
+            <DriveImage fileId={imagePreview.id} name={imagePreview.name} />
+          )}
+        </div>
         <div className="flex-1 min-w-0">
           {editing && editingField === 'description' ? (
             <textarea

@@ -14,9 +14,13 @@ interface ItemActionsProps {
   onEdit: () => void;
   onToggleVisibility: (itemId: string, currentVisibility: boolean) => void;
   onDelete: (itemId: string) => void;
-  onImageFolderSelect: (
-    folder: { id: string; name: string } | undefined
-  ) => void;
+  onImageFolderSelect: ({
+    folder,
+    files,
+  }: {
+    folder: { id: string; name: string };
+    files: { id: string; name: string; mimeType?: string }[];
+  }) => void;
   imageFolder?: { id: string; name: string };
 }
 
@@ -34,8 +38,14 @@ function ItemActions({
   const selectedDriveFolder = imageFolder;
   const setSelectedDriveFolder = onImageFolderSelect;
 
-  const handleDriveFolderSelect = (folder: { id: string; name: string }) => {
-    setSelectedDriveFolder(folder);
+  const handleDriveFolderSelect = ({
+    folder,
+    files,
+  }: {
+    folder: { id: string; name: string };
+    files: { id: string; name: string; mimeType?: string }[];
+  }) => {
+    setSelectedDriveFolder({ folder, files });
     setShowDrivePopup(false);
   };
   return (
