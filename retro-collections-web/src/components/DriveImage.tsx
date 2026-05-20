@@ -8,7 +8,7 @@ type Props = {
 
 const DriveImage = ({ fileId, name }: Props) => {
   const [url, setUrl] = useState<string | null>(null);
-
+  console.log('DriveImage component rendered with fileId:', fileId); // Debugging log for fileId
   useEffect(() => {
     let objectUrl: string;
 

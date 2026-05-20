@@ -126,7 +126,11 @@ function ListItem({
         id: item.id,
         userId,
         updates: {
-          metadata: { ...item.metadata, imageFolder: folder, previewImage },
+          metadata: {
+            ...item.metadata,
+            imageFolder: folder,
+            ...(previewImage ? { previewImage } : {}),
+          },
         },
       }).unwrap();
     } catch (error) {
