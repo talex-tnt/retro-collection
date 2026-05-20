@@ -1,12 +1,19 @@
-import { useState } from 'react';
-import { useGetPublicUserItemsQuery } from '../api/firestore/firestoreApi';
+import { useState, useEffect } from 'react';
+import {
+  useGetPublicUserItemsQuery,
+  useGetPublicUserItemsCountQuery,
+} from '../api/firestore/firestoreApi';
 
 import ListItem from './ListItem';
+
+interface Cursor {
+  createdAt: string;
+  id: string;
+}
 
 interface ItemsListProps {
   user: { uid: string } | null;
   itemFilter: string;
-  onItemFilterChange: (filter: string) => void;
   selectedTags: string[];
   isPublic?: boolean;
 }
@@ -18,28 +25,61 @@ function ItemsList({
   isPublic,
 }: ItemsListProps) {
   const [showTags, setShowTags] = useState(true);
+
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState<number | 'all'>(25);
+
+  const [cursors, setCursors] = useState<(Cursor | null)[]>([null]);
+
+  const currentCursor = cursors[pageIndex];
+  const isAll = pageSize === 'all';
+
+  // Total count (optional UI use)
+  const { data: totalCount = 0 } = useGetPublicUserItemsCountQuery(
+    user?.uid || '',
+    {
+      skip: !user?.uid,
+    }
+  );
+
   const {
-    data: allItems = [],
-    isLoading: loadingItems,
-    error: itemsError,
+    data: itemsData,
+    isLoading,
+    error,
   } = useGetPublicUserItemsQuery(
     {
       userId: user?.uid || '',
-      tags: selectedTags.length > 0 ? selectedTags : undefined,
+      tags: selectedTags.length ? selectedTags : undefined,
       name: itemFilter.trim() ? itemFilter : undefined,
       isPublic,
+      limit: isAll ? undefined : pageSize,
+      startAfter: currentCursor,
     },
     { skip: !user?.uid }
   );
 
-  const items = allItems;
+  const items = itemsData?.items || [];
+  const pageInfo = itemsData?.pageInfo;
+
+  // Store cursor for next page
+  useEffect(() => {
+    if (!pageInfo?.endCursor) return;
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCursors((prev) => {
+      const next = [...prev];
+      next[pageIndex + 1] = pageInfo.endCursor;
+      return next;
+    });
+  }, [pageInfo?.endCursor, pageIndex]);
 
   return (
     <div className="card bg-base-100 shadow-xl">
       <div className="card-body space-y-4">
-        {/* Items Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="card-title">My Collectibles</h2>
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row md:justify-between gap-2">
+          <h2 className="card-title">My Collectibles ({totalCount})</h2>
+
           <button
             className="btn btn-sm btn-outline"
             onClick={() => setShowTags((v) => !v)}
@@ -48,23 +88,14 @@ function ItemsList({
           </button>
         </div>
 
-        {/* Items List */}
-        <div className="space-y-3">
-          {itemsError ? (
-            <div className="alert alert-error">
-              <span>
-                Error loading collectibles:{' '}
-                {(itemsError as Error).message || 'Unknown error'}
-              </span>
-            </div>
-          ) : loadingItems ? (
-            <div className="alert alert-info">Loading collectibles...</div>
+        {/* LIST */}
+        <div className="space-y-2">
+          {error ? (
+            <div className="alert alert-error">Error loading items</div>
+          ) : isLoading ? (
+            <div className="alert alert-info">Loading...</div>
           ) : items.length === 0 ? (
-            <div className="alert alert-info">
-              {itemFilter
-                ? 'No collectibles match your filter.'
-                : 'No collectibles yet.'}
-            </div>
+            <div className="alert alert-info">No items found</div>
           ) : (
             items.map((item) => (
               <ListItem
@@ -72,12 +103,59 @@ function ItemsList({
                 item={item}
                 showTags={showTags}
                 userId={user?.uid || ''}
-                // Handlers are required by ListItem but not used here
                 handleToggleItemVisibility={() => {}}
                 handleDeleteItem={() => {}}
               />
             ))
           )}
+        </div>
+
+        {/* PAGINATION */}
+        <div className="flex flex-col gap-3 pt-2">
+          {/* NAVIGATION */}
+          <div className="flex justify-end gap-2 items-center">
+            {/* PAGE SIZE SELECT */}
+            <label className="text-xs opacity-70">Items per page:</label>
+            <select
+              className="select select-xs select-bordered w-20"
+              value={pageSize}
+              onChange={(e) => {
+                const val =
+                  e.target.value === 'all' ? 'all' : Number(e.target.value);
+
+                setPageSize(val as number | 'all');
+                setPageIndex(0);
+                setCursors([null]);
+              }}
+            >
+              {[1, 2, 3, 5, 10, 25].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+              <option value="all">All</option>
+            </select>
+
+            <button
+              className="btn btn-xs"
+              onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+              disabled={pageIndex === 0 || isAll}
+            >
+              Prev
+            </button>
+            <span className="text-xs">Page {pageIndex + 1}</span>
+            <button
+              className="btn btn-xs"
+              onClick={() => {
+                if (isAll) return;
+                if (!pageInfo?.hasNextPage) return;
+                setPageIndex((p) => p + 1);
+              }}
+              disabled={isAll || !pageInfo?.hasNextPage}
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
     </div>

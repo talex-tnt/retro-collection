@@ -31,7 +31,6 @@ function MySpareItems({ user }: { user: User }) {
         <ItemsList
           user={user}
           itemFilter={itemFilter}
-          onItemFilterChange={setItemFilter}
           selectedTags={selectedTags}
           isPublic={
             visibilityFilter === 'public'

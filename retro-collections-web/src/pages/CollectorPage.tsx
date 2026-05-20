@@ -1,33 +1,23 @@
-import { useParams } from 'react-router-dom';
 import {
-  useGetPublicUserItemsQuery,
-  useGetUserByIdQuery,
-} from '../api/firestore/firestoreApi';
-import Tags from '../components/Tags';
-
-interface ItemRecord {
-  id: string;
-  name: string;
-  createdAt: string;
-  description?: string;
-  visibility?: {
-    public: boolean;
-  };
-  tags?: string[];
-}
+  useParams,
+  useNavigate,
+  useLocation,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom';
+import { useGetUserByIdQuery } from '../api/firestore/firestoreApi';
+import CollectorSpareItems from './CollectorSpareItems';
+import CollectorCollections from './CollectorCollections';
 
 function CollectorPage() {
   const { userId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const { data: user } = useGetUserByIdQuery(userId || '', {
     skip: !userId,
   });
-
-  const { data: items = [], isLoading: loadingItems } =
-    useGetPublicUserItemsQuery(
-      { userId: userId || '', isPublic: true },
-      { skip: !userId }
-    );
 
   if (!userId) {
     return (
@@ -40,63 +30,54 @@ function CollectorPage() {
     );
   }
 
+  // 🔥 determine active tab from URL
+  const tab = location.pathname.endsWith('/collections')
+    ? 'collections'
+    : 'spare';
+
   return (
     <div className="card bg-base-100 shadow-xl">
       <div className="card-body space-y-4">
+        {/* HEADER */}
         <div>
           <h2 className="card-title text-lg">Collector</h2>
           <p className="text-sm text-base-content/70">
             {user?.nickname ? `@${user.nickname}` : user?.name || userId}
           </p>
-          {user?.name && user?.nickname && (
-            <p className="text-xs text-base-content/50 mt-1">{user.name}</p>
-          )}
         </div>
 
-        <div>
-          <h3 className="text-md font-semibold mb-2">Public Collectibles</h3>
-          {loadingItems ? (
-            <div className="alert alert-info">Loading collectibles...</div>
-          ) : items.length === 0 ? (
-            <div className="alert alert-info">No public collectibles.</div>
-          ) : (
-            <div className="space-y-3">
-              {items.map((item: ItemRecord) => (
-                <div
-                  key={item.id}
-                  className="rounded-lg border border-base-300 bg-base-200 p-4"
-                >
-                  {/* Render tags in read-only mode */}
-                  <div className="mt-2 mb-2">
-                    <Tags
-                      userId={userId}
-                      itemId={item.id}
-                      tags={item.tags || []}
-                      readOnly={true}
-                    />
-                  </div>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-2">
-                      <p className="font-medium">{item.name}</p>
-                      {item.description && (
-                        <p className="text-sm text-base-content/80 whitespace-pre-wrap">
-                          {item.description}
-                        </p>
-                      )}
-                    </div>
-                    <span className="badge badge-sm badge-success">Public</span>
-                  </div>
-                  <p className="mt-2 text-sm text-base-content/70">
-                    Added{' '}
-                    {item.createdAt
-                      ? new Date(item.createdAt).toLocaleString()
-                      : 'No timestamp'}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* TABS */}
+        <div className="tabs tabs-boxed">
+          <button
+            className={`tab ${tab === 'spare' ? 'tab-active' : ''}`}
+            onClick={() => navigate(`/collectors/${userId}/spare`)}
+          >
+            Spare Items
+          </button>
+
+          <button
+            className={`tab ${tab === 'collections' ? 'tab-active' : ''}`}
+            onClick={() => navigate(`/collectors/${userId}/collections`)}
+          >
+            Collections
+          </button>
         </div>
+
+        <Routes>
+          <Route
+            path="/spare"
+            element={<CollectorSpareItems userId={userId} />}
+          />
+
+          <Route
+            path="/collections"
+            element={<CollectorCollections userId={userId} />}
+          />
+          <Route
+            path="*"
+            element={<Navigate to={`/collectors/${userId}/spare`} replace />}
+          />
+        </Routes>
       </div>
     </div>
   );

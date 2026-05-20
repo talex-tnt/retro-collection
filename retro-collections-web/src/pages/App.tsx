@@ -71,7 +71,7 @@ function App() {
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/my-collectibles/*" element={<AllMyItemsPage />} />
                 <Route
-                  path="/collectors/:userId/collectibles"
+                  path="/collectors/:userId/*"
                   element={<CollectorPage />}
                 />
                 <Route path="/collectors" element={<CollectorsPage />} />
