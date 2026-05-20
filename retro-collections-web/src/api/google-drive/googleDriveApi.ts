@@ -5,6 +5,19 @@ type ListFilesArgs = {
   folderId?: string;
   query?: string;
 };
+type ListFilesResponse = {
+  files: Array<{
+    id: string;
+    name: string;
+    mimeType: string;
+  }>;
+};
+type GetFileResponse = {
+  id: string;
+  name: string;
+  mimeType: string;
+};
+type GetFileDownloadResponse = Blob;
 
 export const driveApi = createApi({
   reducerPath: 'driveApi',
@@ -42,7 +55,7 @@ export const driveApi = createApi({
     return result;
   },
   endpoints: (builder) => ({
-    listFiles: builder.query<any, ListFilesArgs>({
+    listFiles: builder.query<ListFilesResponse, ListFilesArgs>({
       query: ({ folderId, query }) => ({
         url: '/files',
         params: {
@@ -67,17 +80,17 @@ export const driveApi = createApi({
     //   }),
     // }),
 
-    getFile: builder.query<any, string>({
+    getFile: builder.query<GetFileResponse, string>({
       query: (fileId) => `/files/${fileId}`,
     }),
 
-    getFileDownload: builder.query<any, string>({
+    getFileDownload: builder.query<GetFileDownloadResponse, string>({
       query: (fileId) => ({
         url: `/files/${fileId}`,
         params: {
           alt: 'media',
         },
-        responseHandler: async (response) => response.blob(),
+        responseHandler: async (response: Response) => response.blob(),
       }),
     }),
   }),

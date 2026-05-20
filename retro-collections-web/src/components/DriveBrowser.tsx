@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   useListFilesQuery,
   useGetFileDownloadQuery,
@@ -80,7 +80,7 @@ const DriveBrowser = ({ onSelectFolder }: DriveBrowserProps) => {
         )}
 
         <ul className="space-y-2 mb-4">
-          {folders.map((folder: any) => (
+          {folders.map((folder: { id: string; name: string }) => (
             <li key={folder.id} className="flex items-center gap-2">
               <button
                 className="btn btn-ghost btn-sm flex items-center gap-1"
