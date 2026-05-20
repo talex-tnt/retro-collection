@@ -94,9 +94,13 @@ function Header() {
         <div className="navbar gap-4 px-4">
           <div className="flex-1 flex-col items-start gap-3 lg:flex-row lg:items-center">
             <div>
-              <h1 className="text-2xl font-bold">Retro Collections</h1>
-              <p className="text-sm text-base-content/70">
-                Manage admin, users, and collections with Firebase + DaisyUI.
+              <h1 className="text-2xl font-bold mb-2 ml-2 mt-2">
+                Retro Collections
+              </h1>
+              <p className="text-sm text-base-content/70 mb-2 ml-2">
+                Organize, tag, and share your retro collections. Manage
+                collectibles, track items, customize tags, and control
+                visibility.
               </p>
             </div>
 
