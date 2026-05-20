@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   useGetUserByIdQuery,
   useCreateOrUpdateUserMutation,
@@ -11,9 +11,6 @@ interface UserProfileProps {
 
 function UserProfile({ user }: UserProfileProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState('');
-  const [nickname, setNickname] = useState('');
-  const [isPublic, setIsPublic] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -24,13 +21,9 @@ function UserProfile({ user }: UserProfileProps) {
 
   const [updateUser] = useCreateOrUpdateUserMutation();
 
-  useEffect(() => {
-    if (userProfile) {
-      setName(userProfile.name || '');
-      setNickname(userProfile.nickname || '');
-      setIsPublic(userProfile.visibility?.public || false);
-    }
-  }, [userProfile]);
+  const name = userProfile?.name || '';
+  const nickname = userProfile?.nickname || '';
+  const isPublic = userProfile?.visibility?.public || false;
 
   const handleSave = async () => {
     setError('');
