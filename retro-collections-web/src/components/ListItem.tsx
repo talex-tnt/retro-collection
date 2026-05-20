@@ -6,6 +6,7 @@ import {
   useDeletePublicUserItemMutation,
 } from '../api/firestore/firestoreApi';
 import Tags from './Tags';
+import DriveBrowser from './DriveBrowser';
 
 interface ListItemProps {
   item: Item;
@@ -98,11 +99,55 @@ function ListItem({
     setEditingField(null);
     setEditValue('');
   };
+
+  const [showDrivePopup, setShowDrivePopup] = useState(false);
+  const [selectedDriveFolder, setSelectedDriveFolder] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const handleDriveFolderSelect = (folder: { id: string; name: string }) => {
+    setSelectedDriveFolder(folder);
+    setShowDrivePopup(false);
+  };
   return (
     <div
       key={item.id}
       className="flex flex-col gap-2 rounded-lg border border-base-300 bg-base-200 p-4"
     >
+      {/* Google Drive Folder Picker */}
+      <div className="flex flex-col gap-2">
+        <button
+          type="button"
+          className="btn btn-outline btn-sm w-fit"
+          onClick={() => setShowDrivePopup(true)}
+        >
+          {selectedDriveFolder
+            ? 'Change Google Drive Folder'
+            : 'Select Google Drive Folder'}
+        </button>
+        {selectedDriveFolder && (
+          <span className="text-xs opacity-80">
+            Selected: {selectedDriveFolder.name}
+          </span>
+        )}
+      </div>
+
+      {/* DriveBrowser Popup */}
+      {showDrivePopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-base-100 rounded-lg shadow-lg p-6 relative min-w-[320px] max-w-[90vw] max-h-[80vh] overflow-auto">
+            <button
+              className="absolute top-2 right-2 btn btn-xs btn-circle"
+              onClick={() => setShowDrivePopup(false)}
+              aria-label="Close"
+            >
+              ✕
+            </button>
+            <DriveBrowser onSelectFolder={handleDriveFolderSelect} />
+          </div>
+        </div>
+      )}
+
       {/* Tags at the top, toggleable */}
       {showTags && (
         <Tags userId={item.userId} itemId={item.id} tags={item.tags || []} />

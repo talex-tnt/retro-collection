@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react';
+
 import {
   useCreatePublicUserItemMutation,
   useGetPublicUserTagsQuery,
 } from '../api/firestore/firestoreApi';
+// import { useListFilesQuery } from '../api/google-drive/googleDriveApi';
 
 interface NewItemProps {
   userId: string;
@@ -12,6 +14,9 @@ function NewItem({ userId }: NewItemProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  // const { data: files = [] } = useListFilesQuery({});
+  // console.log('Google Drive files:', files); // Debugging log for Google Drive files
 
   // Fetch all tags for the user
   const { data: allTags = [] } = useGetPublicUserTagsQuery(

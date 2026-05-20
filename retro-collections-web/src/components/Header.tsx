@@ -17,12 +17,17 @@ import {
 } from '../api/firestore/firestoreApi';
 import { useIsAdmin } from '../hooks';
 
+import { useDispatch } from 'react-redux';
+import { clearAuth, setAccessToken } from '../store/authSlice';
+
 function Header() {
+  const dispatch = useDispatch();
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState('');
   const isAdmin = useIsAdmin(user);
 
   const provider = new GoogleAuthProvider();
+  provider.addScope('https://www.googleapis.com/auth/drive.readonly');
   const [checkAuthorizedUser] = useLazyIsUserAuthorizedQuery();
   const [createOrUpdateUser] = useCreateOrUpdateUserMutation();
   const [createOrUpdatePrivateUser] = useCreateOrUpdatePrivateUserMutation();
@@ -42,6 +47,10 @@ function Header() {
       await setPersistence(auth, browserLocalPersistence);
 
       const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        dispatch(setAccessToken(credential.accessToken));
+      }
       const currentUser = result.user;
       const email = currentUser.email || '';
 
@@ -73,6 +82,19 @@ function Header() {
         email: currentUser.email || '',
         lastLogin: new Date().toISOString(),
       });
+
+      // if (credential) {
+      //   const accessToken = credential.accessToken;
+      //   const res = await fetch(`https://www.googleapis.com/drive/v3/files`, {
+      //     headers: {
+      //       Authorization: `Bearer ${accessToken}`,
+      //     },
+      //   });
+      //   console.log('Google Drive API response:', res);
+      // } else {
+      //   setError('Failed to obtain authentication credential.');
+      //   return;
+      // }
     } catch (loginError) {
       console.error('Login error:', loginError);
       setError('Login failed. Please try again.');
@@ -82,6 +104,7 @@ function Header() {
   const logout = async () => {
     try {
       await signOut(auth);
+      dispatch(clearAuth());
       setError('');
     } catch (logoutError) {
       console.error('Logout error:', logoutError);
