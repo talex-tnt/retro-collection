@@ -1,6 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-
-const BASE_URL = 'https://www.googleapis.com/drive/v3';
+import { getDriveToken, requestDriveToken } from './googleDriveAuth';
 
 type ListFilesArgs = {
   folderId?: string;
@@ -9,19 +8,39 @@ type ListFilesArgs = {
 
 export const driveApi = createApi({
   reducerPath: 'driveApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: BASE_URL,
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as any).auth?.accessToken;
 
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`);
-      }
+  baseQuery: async (args, api, extraOptions) => {
+    let token = getDriveToken();
 
-      return headers;
-    },
-  }),
+    if (!token) {
+      token = await requestDriveToken();
+    }
 
+    const base = fetchBaseQuery({
+      baseUrl: 'https://www.googleapis.com/drive/v3',
+      prepareHeaders: (headers) => {
+        headers.set('Authorization', `Bearer ${token}`);
+        return headers;
+      },
+    });
+
+    const result = await base(args, api, extraOptions);
+
+    // 🔄 auto retry on expired token
+    if (result.error?.status === 401) {
+      const newToken = await requestDriveToken();
+
+      return fetchBaseQuery({
+        baseUrl: 'https://www.googleapis.com/drive/v3',
+        prepareHeaders: (headers) => {
+          headers.set('Authorization', `Bearer ${newToken}`);
+          return headers;
+        },
+      })(args, api, extraOptions);
+    }
+
+    return result;
+  },
   endpoints: (builder) => ({
     listFiles: builder.query<any, ListFilesArgs>({
       query: ({ folderId, query }) => ({

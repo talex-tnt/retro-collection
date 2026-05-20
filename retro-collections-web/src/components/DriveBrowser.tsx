@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { useListFilesQuery } from '../api/google-drive/googleDriveApi';
 
-const DriveBrowser = ({ onSelectFolder }: any) => {
+type DriveBrowserProps = {
+  onSelectFolder: (folder: { id: string; name: string }) => void;
+};
+
+const DriveBrowser = ({ onSelectFolder }: DriveBrowserProps) => {
   const [currentFolder, setCurrentFolder] = useState('root');
 
   const { data, isLoading } = useListFilesQuery({
@@ -10,7 +14,8 @@ const DriveBrowser = ({ onSelectFolder }: any) => {
 
   const folders =
     data?.files?.filter(
-      (f: any) => f.mimeType === 'application/vnd.google-apps.folder'
+      (f: { mimeType: string }) =>
+        f.mimeType === 'application/vnd.google-apps.folder'
     ) || [];
 
   return (
@@ -20,7 +25,7 @@ const DriveBrowser = ({ onSelectFolder }: any) => {
       {isLoading && <p>Loading...</p>}
 
       <ul>
-        {folders.map((folder: any) => (
+        {folders.map((folder: { id: string; name: string }) => (
           <li key={folder.id}>
             <button onClick={() => setCurrentFolder(folder.id)}>
               📁 {folder.name}

@@ -13,6 +13,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 import { auth } from '../lib/firebase';
 import { useGetRuntimeConfigQuery } from '../api/firestore/firestoreApi';
+import { initGoogleDriveAuth } from '../api/google-drive/googleDriveAuth';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -21,6 +22,10 @@ function App() {
     useGetRuntimeConfigQuery(undefined, {
       skip: !isAuthenticated,
     });
+
+  useEffect(() => {
+    initGoogleDriveAuth(import.meta.env.VITE_GOOGLE_CLIENT_ID);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
