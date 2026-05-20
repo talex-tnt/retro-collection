@@ -17,7 +17,7 @@ import { createFirestoreApiError } from '../../errorLogger';
 export interface UserTag {
   id: string; // tag name
   userId: string;
-  style?: { backgroundColor: string; foregroundColor: string };
+  style?: { backgroundColor: string | null; foregroundColor: string | null };
 }
 
 const getPublicUserTagsEndpoints = (builder: FirestoreBuilder) => ({
@@ -107,7 +107,7 @@ const getPublicUserTagsEndpoints = (builder: FirestoreBuilder) => ({
     {
       userId: string;
       tag: string;
-      style: { backgroundColor: string; foregroundColor: string };
+      style: UserTag['style'];
     }
   >({
     async queryFn({ userId, tag, style }) {

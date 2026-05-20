@@ -210,7 +210,11 @@ test(`[4.1.6] non-owner cannot create duplicate nickname entry on ${RULES_TARGET
     // user-bob tries to create an entry for the same nickname as user-alice
     // This should fail because the document already exists and user-bob doesn't own it
     await expectPermissionDenied(
-      setDoc(doc(otherUser.db, OWN_NICKNAME_PATH), { userId: 'user-bob' }, { merge: true })
+      setDoc(
+        doc(otherUser.db, OWN_NICKNAME_PATH),
+        { userId: 'user-bob' },
+        { merge: true }
+      )
     );
   } finally {
     await otherUser.cleanup();
@@ -242,7 +246,9 @@ test(`[4.1.7] owner cannot transfer nickname ownership on ${RULES_TARGET}`, asyn
 
 test(`[4.1.8] user cannot modify another user's nickname entry on ${RULES_TARGET}`, async () => {
   // Setup: admin creates a nickname entry for user-alice
-  await getAdminDb().doc(OWN_NICKNAME_PATH).set({ userId: 'user-alice', createdAt: new Date() });
+  await getAdminDb()
+    .doc(OWN_NICKNAME_PATH)
+    .set({ userId: 'user-alice', createdAt: new Date() });
 
   const otherUser = await buildClientContext({
     uid: 'user-bob',

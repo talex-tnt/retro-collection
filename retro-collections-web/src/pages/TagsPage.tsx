@@ -39,7 +39,8 @@ export default function TagsPage({ user }: TagsPageProps) {
   const [addError, setAddError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [updateTagStyle] = useUpdatePublicUserTagMutation();
-  const [styleEdits, setStyleEdits] = useState<
+  const [styleEdits] = useState<
+    // legacy stuff.. refactor it
     Record<string, { backgroundColor: string; foregroundColor: string }>
   >({});
 
@@ -58,42 +59,7 @@ export default function TagsPage({ user }: TagsPageProps) {
       foregroundColor: pair.foregroundColor,
     };
     updateTagStyle({ userId, tag: tagId, style }).unwrap();
-    // setStyleEdits((prev) => ({
-    //   ...prev,
-    //   [tagId]: {
-    //     backgroundColor: pair.backgroundColor,
-    //     foregroundColor: pair.foregroundColor,
-    //   },
-    // }));
   };
-
-  // Invert bg/fg for the current edit
-  // const handleInvertStyle = (tagId: string) => {
-  //   setStyleEdits((prev) => {
-  //     const current = prev[tagId] || {
-  //       backgroundColor: '',
-  //       foregroundColor: '',
-  //     };
-  //     return {
-  //       ...prev,
-  //       [tagId]: {
-  //         backgroundColor: current.foregroundColor,
-  //         foregroundColor: current.backgroundColor,
-  //       },
-  //     };
-  //   });
-  // };
-
-  // const handleSaveStyle = async (tagId: string) => {
-  //   const style = styleEdits[tagId];
-  //   console.log('Saving style for', tagId, style);
-  //   if (!style) return;
-  //   try {
-  //     await updateTagStyle({ userId, tag: tagId, style }).unwrap();
-  //   } catch (err: any) {
-  //     // Optionally show error
-  //   }
-  // };
 
   const handleAddTag = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,8 +73,10 @@ export default function TagsPage({ user }: TagsPageProps) {
     try {
       await createTag({ userId, tag }).unwrap();
       setNewTag('');
-    } catch (err: any) {
-      setAddError(err?.message || 'Failed to add tag');
+    } catch (err: unknown) {
+      setAddError(
+        (err as { message?: string })?.message || 'Failed to add tag'
+      );
     }
   };
 
@@ -116,8 +84,10 @@ export default function TagsPage({ user }: TagsPageProps) {
     setDeleteError(null);
     try {
       await deleteTag({ userId, tag: tagId }).unwrap();
-    } catch (err: any) {
-      setDeleteError(err?.message || 'Failed to delete tag');
+    } catch (err: unknown) {
+      setDeleteError(
+        (err as { message?: string })?.message || 'Failed to delete tag'
+      );
     }
   };
 
@@ -146,10 +116,13 @@ export default function TagsPage({ user }: TagsPageProps) {
       ) : (
         <ul className="space-y-2">
           {tags.map((tag) => {
-            const style = tag.style || {};
+            const style = tag.style || {
+              backgroundColor: null,
+              foregroundColor: null,
+            };
             const edit = styleEdits[tag.id] || {
-              backgroundColor: style.backgroundColor || '',
-              foregroundColor: style.foregroundColor || '',
+              backgroundColor: style?.backgroundColor || null,
+              foregroundColor: style?.foregroundColor || null,
             };
             return (
               <li

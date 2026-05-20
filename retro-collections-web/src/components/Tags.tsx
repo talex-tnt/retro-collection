@@ -53,8 +53,10 @@ export default function Tags({
       }
       setNewTag('');
       setShowAddTag(false);
-    } catch (err: any) {
-      setAddTagError(err?.message || 'Failed to add tag');
+    } catch (err: unknown) {
+      setAddTagError(
+        (err as { message?: string })?.message || 'Failed to add tag'
+      );
     }
   };
 
@@ -67,8 +69,10 @@ export default function Tags({
         updates: { tags: updatedTags },
       }).unwrap();
       onTagsChange?.(updatedTags);
-    } catch (err: any) {
-      setAddTagError(err?.message || 'Failed to remove tag');
+    } catch (err: unknown) {
+      setAddTagError(
+        (err as { message?: string })?.message || 'Failed to remove tag'
+      );
     }
   };
 
