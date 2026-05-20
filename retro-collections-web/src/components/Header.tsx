@@ -110,6 +110,7 @@ function Header() {
       console.error('Logout error:', logoutError);
     }
   };
+  console.log('Current user in Header:', user);
 
   return (
     <div className="space-y-4">
@@ -195,14 +196,24 @@ function Header() {
                   {user ? 'Signed in' : 'Not signed in'}
                 </p>
               </div>
-              <div className="avatar placeholder">
-                <div className="w-10 rounded-full bg-primary text-primary-content">
-                  <span className="text-sm font-semibold">
-                    {(user?.displayName || user?.email || 'G')
-                      .charAt(0)
-                      .toUpperCase()}
-                  </span>
-                </div>
+              <div className="avatar">
+                {user?.photoURL ? (
+                  <div className="w-10 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2 overflow-hidden">
+                    <img
+                      src={user.photoURL}
+                      alt="avatar"
+                      className="w-10 h-10 object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-10 rounded-full bg-primary text-primary-content flex items-center justify-center">
+                    <span className="text-sm font-semibold">
+                      {(user?.displayName || user?.email || 'G')
+                        .charAt(0)
+                        .toUpperCase()}
+                    </span>
+                  </div>
+                )}
               </div>
             </button>
 
