@@ -39,10 +39,13 @@ export interface Item {
 }
 
 type ItemInput = Omit<Item, 'id' | 'createdAt' | 'updatedAt'>;
+
 type ItemUpdate = Partial<Omit<Item, 'id' | 'createdAt'>>;
 
 interface FirestoreItemDoc {
   name: string;
+  nameLowercase: string;
+  nameTokens: string[];
   userId: string;
   createdAt: Timestamp;
   updatedAt?: Timestamp;
@@ -54,9 +57,16 @@ interface FirestoreItemDoc {
 }
 
 interface PaginationCursor {
-  createdAt: string;
   id: string;
+  createdAt?: string;
+  nameLowercase?: string;
 }
+
+const tokenizeName = (name: string): string[] => {
+  return Array.from(
+    new Set(name.trim().toLowerCase().split(/\s+/).filter(Boolean))
+  );
+};
 
 const mapItemDoc = (snapshot: QueryDocumentSnapshot<DocumentData>): Item => {
   const data = snapshot.data() as FirestoreItemDoc;
@@ -88,19 +98,30 @@ const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
     {
       userId: string;
       tags?: string[];
-      name?: string;
+      // name?: string;
+      startWithNameFilter?: string;
+      nameContainsTokens?: string;
       isPublic?: boolean;
       limit?: number;
       startAfter?: PaginationCursor | null;
     }
   >({
-    async queryFn({ userId, tags, name, isPublic, limit, startAfter }) {
+    async queryFn({
+      userId,
+      tags,
+      // name,
+      startWithNameFilter,
+      nameContainsTokens,
+      isPublic,
+      limit,
+      startAfter,
+    }) {
       const path = await getUserCollectionPath({
         visibility,
         resourceType: 'items',
         userId,
       });
-      console.log('limit', limit);
+
       const baseConstraints: QueryConstraint[] = [];
 
       if (tags && tags.length > 0) {
@@ -111,17 +132,57 @@ const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
         baseConstraints.push(where('visibility.public', '==', isPublic));
       }
 
-      baseConstraints.push(orderBy('createdAt', 'desc'));
+      const startWithFilter = startWithNameFilter?.trim().toLowerCase();
+
+      /**
+       * Search
+       */
+      if (nameContainsTokens && nameContainsTokens.length > 0) {
+        const searchTokens = tokenizeName(nameContainsTokens);
+
+        /**
+         * Firestore token pre-filter
+         *
+         * Firestore only supports ONE array-contains.
+         */
+        if (searchTokens.length > 0) {
+          baseConstraints.push(
+            where('nameTokens', 'array-contains', searchTokens[0])
+          );
+        }
+
+        /**
+         * Prefix search on lowercase name
+         */
+        baseConstraints.push(where('nameLowercase', '>=', startWithFilter));
+
+        baseConstraints.push(
+          where('nameLowercase', '<=', `${startWithFilter}\uf8ff`)
+        );
+
+        baseConstraints.push(orderBy('nameLowercase'));
+      } else {
+        baseConstraints.push(orderBy('createdAt', 'desc'));
+      }
 
       baseConstraints.push(orderBy('__name__', 'asc'));
 
+      /**
+       * Cursor pagination
+       */
       if (startAfter) {
-        baseConstraints.push(
-          fsStartAfter(
-            Timestamp.fromDate(new Date(startAfter.createdAt)),
-            startAfter.id
-          )
-        );
+        if (startWithFilter) {
+          baseConstraints.push(
+            fsStartAfter(startAfter.nameLowercase, startAfter.id)
+          );
+        } else {
+          baseConstraints.push(
+            fsStartAfter(
+              Timestamp.fromDate(new Date(startAfter.createdAt!)),
+              startAfter.id
+            )
+          );
+        }
       }
 
       const pagedQuery = Number.isInteger(limit)
@@ -150,7 +211,20 @@ const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
       try {
         const snapshot = await getDocs(pagedQuery);
 
-        const rawItems = snapshot.docs.map(mapItemDoc);
+        let rawItems = snapshot.docs.map(mapItemDoc);
+
+        /**
+         * Client-side refinement for multi-token contains
+         */
+        if (startWithFilter) {
+          const searchTokens = tokenizeName(startWithFilter);
+
+          rawItems = rawItems.filter((item) => {
+            const itemTokens = tokenizeName(item.name);
+
+            return searchTokens.every((token) => itemTokens.includes(token));
+          });
+        }
 
         const hasNextPage = rawItems.length > (limit ?? rawItems.length);
 
@@ -158,32 +232,22 @@ const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
           ? rawItems.slice(0, limit ?? rawItems.length)
           : rawItems;
 
-        let filteredItems = pagedItems;
-
-        /**
-         * Client-side name filtering.
-         * Firestore does not support
-         * case-insensitive substring search.
-         */
-        if (name?.trim()) {
-          const nameLower = name.trim().toLowerCase();
-
-          filteredItems = pagedItems.filter((item) =>
-            item.name?.toLowerCase().includes(nameLower)
-          );
-        }
-
         const lastItem = pagedItems[pagedItems.length - 1];
 
         return {
           data: {
-            items: filteredItems,
+            items: pagedItems,
             pageInfo: {
               endCursor: lastItem
-                ? {
-                    createdAt: lastItem.createdAt,
-                    id: lastItem.id,
-                  }
+                ? startWithFilter
+                  ? {
+                      id: lastItem.id,
+                      nameLowercase: lastItem.name.toLowerCase(),
+                    }
+                  : {
+                      id: lastItem.id,
+                      createdAt: lastItem.createdAt,
+                    }
                 : null,
               hasNextPage,
             },
@@ -266,8 +330,12 @@ const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
         userId: itemData.userId,
       });
 
+      const normalizedName = itemData.name.trim().toLowerCase();
+
       const requestPayload = {
         ...itemData,
+        nameLowercase: normalizedName,
+        nameTokens: tokenizeName(itemData.name),
         tags: itemData.tags || [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -324,6 +392,15 @@ const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
 
       const requestPayload = {
         ...updates,
+
+        ...(updates.name
+          ? {
+              nameLowercase: updates.name.trim().toLowerCase(),
+
+              nameTokens: tokenizeName(updates.name),
+            }
+          : {}),
+
         updatedAt: serverTimestamp(),
       };
 
@@ -337,7 +414,9 @@ const getPublicUserItemsEndpoints = (builder: FirestoreBuilder) => ({
       };
 
       try {
-        await setDoc(doc(db, path, id), requestPayload, { merge: true });
+        await setDoc(doc(db, path, id), requestPayload, {
+          merge: true,
+        });
 
         return {
           data: undefined,

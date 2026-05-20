@@ -5,7 +5,7 @@ import ItemsFilters from '../components/ItemsFilters';
 import type { User } from 'firebase/auth/web-extension';
 
 function MySpareItems({ user }: { user: User }) {
-  const [itemFilter, setItemFilter] = useState('');
+  const [itemNameClientFilter, setItemNameClientFilter] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [visibilityFilter, setVisibilityFilter] = useState<
     'public' | 'private' | ''
@@ -18,8 +18,8 @@ function MySpareItems({ user }: { user: User }) {
         <NewItem userId={user.uid} />
         <ItemsFilters
           userId={user.uid}
-          itemFilter={itemFilter}
-          onItemFilterChange={setItemFilter}
+          itemNameClientFilter={itemNameClientFilter}
+          onItemNameClientFilterChange={setItemNameClientFilter}
           selectedTags={selectedTags}
           setSelectedTags={setSelectedTags}
           visibilityFilter={visibilityFilter}
@@ -30,7 +30,7 @@ function MySpareItems({ user }: { user: User }) {
       <div className="md:col-span-4">
         <ItemsList
           user={user}
-          itemFilter={itemFilter}
+          itemNameClientFilter={itemNameClientFilter}
           selectedTags={selectedTags}
           isPublic={
             visibilityFilter === 'public'

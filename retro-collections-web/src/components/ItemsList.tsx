@@ -13,14 +13,14 @@ interface Cursor {
 
 interface ItemsListProps {
   user: { uid: string } | null;
-  itemFilter: string;
+  itemNameClientFilter: string;
   selectedTags: string[];
   isPublic?: boolean;
 }
 
 function ItemsList({
   user,
-  itemFilter,
+  itemNameClientFilter,
   selectedTags,
   isPublic,
 }: ItemsListProps) {
@@ -50,7 +50,6 @@ function ItemsList({
     {
       userId: user?.uid || '',
       tags: selectedTags.length ? selectedTags : undefined,
-      name: itemFilter.trim() ? itemFilter : undefined,
       isPublic,
       limit: isAll ? undefined : pageSize,
       startAfter: currentCursor,
@@ -58,7 +57,9 @@ function ItemsList({
     { skip: !user?.uid }
   );
 
-  const items = itemsData?.items || [];
+  const items = (itemsData?.items || []).filter((item) =>
+    item.name.toLowerCase().includes(itemNameClientFilter.toLowerCase())
+  );
   const pageInfo = itemsData?.pageInfo;
 
   // Store cursor for next page
@@ -68,7 +69,9 @@ function ItemsList({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCursors((prev) => {
       const next = [...prev];
-      next[pageIndex + 1] = pageInfo.endCursor;
+      if (Number.isInteger(pageIndex) && pageInfo.endCursor) {
+        next[pageIndex + 1] = pageInfo.endCursor as Cursor;
+      }
       return next;
     });
   }, [pageInfo?.endCursor, pageIndex]);

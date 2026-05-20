@@ -48,7 +48,9 @@ function CollectorSpareItems({ userId }: { userId: string }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCursors((prev) => {
       const next = [...prev];
-      next[pageIndex + 1] = pageInfo.endCursor;
+      if (Number.isInteger(pageIndex) && pageInfo.endCursor) {
+        next[pageIndex + 1] = pageInfo.endCursor as Cursor;
+      }
       return next;
     });
   }, [pageInfo?.endCursor, pageIndex]);
