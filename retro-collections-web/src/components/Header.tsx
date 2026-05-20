@@ -198,16 +198,16 @@ function Header() {
               </div>
               <div className="avatar">
                 {user?.photoURL ? (
-                  <div className="w-10 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2 overflow-hidden">
+                  <div className="w-8 h-8 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2 overflow-hidden">
                     <img
                       src={user.photoURL}
                       alt="avatar"
-                      className="w-10 h-10 object-cover"
+                      className="w-8 h-8 object-cover"
                     />
                   </div>
                 ) : (
-                  <div className="w-10 rounded-full bg-primary text-primary-content flex items-center justify-center">
-                    <span className="text-sm font-semibold">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center">
+                    <span className="text-xs font-semibold">
                       {(user?.displayName || user?.email || 'G')
                         .charAt(0)
                         .toUpperCase()}

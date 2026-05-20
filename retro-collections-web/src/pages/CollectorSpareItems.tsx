@@ -11,6 +11,14 @@ interface ItemRecord {
     public: boolean;
   };
   tags?: string[];
+  metadata?: {
+    previewImage?: {
+      id: string;
+      name: string;
+      mimeType?: string;
+      thumbnailLink?: string;
+    };
+  };
 }
 
 interface Cursor {
@@ -19,7 +27,6 @@ interface Cursor {
 }
 
 function CollectorSpareItems({ userId }: { userId: string }) {
-  // 🔥 pagination state
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState<number | 'all'>(5);
   const [cursors, setCursors] = useState<(Cursor | null)[]>([null]);
@@ -38,17 +45,15 @@ function CollectorSpareItems({ userId }: { userId: string }) {
       { skip: !userId }
     );
 
-  const items = itemsData?.items || [];
+  const items = itemsData?.items || ([] as ItemRecord[]);
   const pageInfo = itemsData?.pageInfo;
 
-  // 🔥 store next page cursor
   useEffect(() => {
     if (!pageInfo?.endCursor) return;
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCursors((prev) => {
       const next = [...prev];
-      if (Number.isInteger(pageIndex) && pageInfo.endCursor) {
+      if (pageInfo.endCursor) {
         next[pageIndex + 1] = pageInfo.endCursor as Cursor;
       }
       return next;
@@ -72,7 +77,8 @@ function CollectorSpareItems({ userId }: { userId: string }) {
                 key={item.id}
                 className="rounded-lg border border-base-300 bg-base-200 p-4"
               >
-                <div className="mt-2 mb-2">
+                {/* TAGS */}
+                <div className="mb-2">
                   <Tags
                     userId={userId}
                     itemId={item.id}
@@ -81,9 +87,26 @@ function CollectorSpareItems({ userId }: { userId: string }) {
                   />
                 </div>
 
-                <div className="flex items-start justify-between gap-2">
-                  <div className="space-y-2">
-                    <p className="font-medium">{item.name}</p>
+                {/* MAIN ROW */}
+                <div className="flex items-start gap-4">
+                  {/* IMAGE LEFT */}
+                  {item?.metadata?.previewImage?.thumbnailLink && (
+                    <img
+                      src={item.metadata.previewImage.thumbnailLink}
+                      alt={item.metadata.previewImage.name}
+                      className="h-12 object-cover rounded flex-shrink-0"
+                    />
+                  )}
+
+                  {/* TEXT RIGHT */}
+                  <div className="flex flex-col flex-1 min-w-0 gap-1">
+                    <div className="flex items-start justify-between">
+                      <p className="font-medium truncate">{item.name}</p>
+
+                      <span className="badge badge-sm badge-success ml-2">
+                        Public
+                      </span>
+                    </div>
 
                     {item.description && (
                       <p className="text-sm text-base-content/80 whitespace-pre-wrap">
@@ -91,10 +114,9 @@ function CollectorSpareItems({ userId }: { userId: string }) {
                       </p>
                     )}
                   </div>
-
-                  <span className="badge badge-sm badge-success">Public</span>
                 </div>
 
+                {/* DATE */}
                 <p className="mt-2 text-sm text-base-content/70">
                   Added{' '}
                   {item.createdAt
@@ -106,11 +128,10 @@ function CollectorSpareItems({ userId }: { userId: string }) {
           </div>
         )}
       </div>
+
       {/* PAGINATION */}
       <div className="flex flex-col gap-3 pt-4">
-        {/* NAV */}
         <div className="flex justify-end gap-2 items-center">
-          {/* PAGE SIZE */}
           <label className="text-xs opacity-70">Items per page:</label>
 
           <select
@@ -132,6 +153,7 @@ function CollectorSpareItems({ userId }: { userId: string }) {
             ))}
             <option value="all">All</option>
           </select>
+
           <button
             className="btn btn-xs"
             onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
@@ -155,7 +177,6 @@ function CollectorSpareItems({ userId }: { userId: string }) {
           </button>
         </div>
       </div>
-      =
     </>
   );
 }
