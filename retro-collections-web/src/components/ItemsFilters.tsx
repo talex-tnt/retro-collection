@@ -56,7 +56,7 @@ export default function ItemsFilters({
               return (
                 <button
                   key={tag.id}
-                  className={`badge badge-lg cursor-pointer select-none transition-opacity ${isSelected ? 'opacity-100' : 'badge-outline opacity-50 hover:opacity-80'}`}
+                  className={`badge badge-lg cursor-pointer select-none transition-opacity h-5 ${isSelected ? 'opacity-100' : 'badge-outline opacity-50 hover:opacity-80'}`}
                   style={isSelected && style ? style : undefined}
                   onClick={() => {
                     setSelectedTags(

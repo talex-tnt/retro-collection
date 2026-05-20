@@ -69,8 +69,8 @@ function NewItem({ userId }: NewItemProps) {
           <div className="flex flex-col gap-3">
             {/* TAG SELECTION */}
             <label className="form-control w-full">
-              <span className="label-text mb-1">Tags</span>
-              <div className="flex flex-wrap gap-2 items-center">
+              <span className="label-text">Tags</span>
+              <div className="flex flex-wrap gap-2 mt-1 items-center">
                 {allTags.length === 0 && (
                   <span className="text-xs opacity-60">No tags available</span>
                 )}
@@ -89,7 +89,7 @@ function NewItem({ userId }: NewItemProps) {
                     <button
                       key={tag.id}
                       type="button"
-                      className={`badge badge-lg cursor-pointer select-none transition-opacity ${isSelected ? 'opacity-100' : 'badge-outline opacity-50 hover:opacity-80'}`}
+                      className={`badge badge-lg cursor-pointer select-none transition-opacity h-5 ${isSelected ? 'opacity-100' : 'badge-outline opacity-50 hover:opacity-80'}`}
                       style={isSelected && style ? style : undefined}
                       onClick={() => {
                         setSelectedTags(
