@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   useGetPublicUserItemsQuery,
   useGetPublicUserItemsCountQuery,
@@ -6,10 +6,14 @@ import {
 
 import ListItem from './ListItem';
 
+interface Cursor {
+  createdAt: string;
+  id: string;
+}
+
 interface ItemsListProps {
   user: { uid: string } | null;
   itemFilter: string;
-  onItemFilterChange: (filter: string) => void;
   selectedTags: string[];
   isPublic?: boolean;
 }
@@ -17,16 +21,20 @@ interface ItemsListProps {
 function ItemsList({
   user,
   itemFilter,
-  onItemFilterChange,
   selectedTags,
   isPublic,
 }: ItemsListProps) {
   const [showTags, setShowTags] = useState(true);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
-  const pageSizeOptions = [1, 2, 3, 4, 5, 10, 25, 50, 100, 'all'] as const;
 
-  // Fetch total count for pagination
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState<number | 'all'>(25);
+
+  const [cursors, setCursors] = useState<(Cursor | null)[]>([null]);
+
+  const currentCursor = cursors[pageIndex];
+  const isAll = pageSize === 'all';
+
+  // Total count (optional UI use)
   const { data: totalCount = 0 } = useGetPublicUserItemsCountQuery(
     user?.uid || '',
     {
@@ -34,86 +42,60 @@ function ItemsList({
     }
   );
 
-  // Pagination logic
-  const skip = pageSize === 'all' ? 0 : (page - 1) * pageSize;
-  const limit = pageSize === 'all' ? undefined : pageSize;
-
-  // NOTE: The backend currently does not support skip/limit, so this is a UI placeholder.
-  // You must update the backend to support skip/limit for true server-side pagination.
-
   const {
     data: itemsData,
-    isLoading: loadingItems,
-    error: itemsError,
+    isLoading,
+    error,
   } = useGetPublicUserItemsQuery(
     {
       userId: user?.uid || '',
-      tags: selectedTags.length > 0 ? selectedTags : undefined,
+      tags: selectedTags.length ? selectedTags : undefined,
       name: itemFilter.trim() ? itemFilter : undefined,
       isPublic,
-      limit: pageSize === 'all' ? 1000 : pageSize, // Arbitrary high limit for 'all'
-      // TODO: Add startAfter for real pagination
+      limit: isAll ? undefined : pageSize,
+      startAfter: currentCursor,
     },
     { skip: !user?.uid }
   );
 
   const items = itemsData?.items || [];
   const pageInfo = itemsData?.pageInfo;
-  const totalPages =
-    pageSize === 'all' ? 1 : Math.ceil(totalCount / (pageSize as number));
+
+  // Store cursor for next page
+  useEffect(() => {
+    if (!pageInfo?.endCursor) return;
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCursors((prev) => {
+      const next = [...prev];
+      next[pageIndex + 1] = pageInfo.endCursor;
+      return next;
+    });
+  }, [pageInfo?.endCursor, pageIndex]);
 
   return (
     <div className="card bg-base-100 shadow-xl">
       <div className="card-body space-y-4">
-        {/* Items Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <h2 className="card-title">My Collectibles</h2>
-            <button
-              className="btn btn-sm btn-outline"
-              onClick={() => setShowTags((v) => !v)}
-            >
-              {showTags ? 'Hide Tags' : 'Show Tags'}
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="label text-xs">Rows per page:</label>
-            <select
-              className="select select-bordered select-xs"
-              value={pageSize}
-              onChange={(e) => {
-                const val =
-                  e.target.value === 'all' ? 'all' : Number(e.target.value);
-                setPageSize(val as typeof pageSize);
-                setPage(1);
-              }}
-            >
-              {pageSizeOptions.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt === 'all' ? 'All' : opt}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row md:justify-between gap-2">
+          <h2 className="card-title">My Collectibles ({totalCount})</h2>
+
+          <button
+            className="btn btn-sm btn-outline"
+            onClick={() => setShowTags((v) => !v)}
+          >
+            {showTags ? 'Hide Tags' : 'Show Tags'}
+          </button>
         </div>
 
-        {/* Items List */}
-        <div className="space-y-3">
-          {itemsError ? (
-            <div className="alert alert-error">
-              <span>
-                Error loading collectibles:{' '}
-                {(itemsError as Error).message || 'Unknown error'}
-              </span>
-            </div>
-          ) : loadingItems ? (
-            <div className="alert alert-info">Loading collectibles...</div>
+        {/* LIST */}
+        <div className="space-y-2">
+          {error ? (
+            <div className="alert alert-error">Error loading items</div>
+          ) : isLoading ? (
+            <div className="alert alert-info">Loading...</div>
           ) : items.length === 0 ? (
-            <div className="alert alert-info">
-              {itemFilter
-                ? 'No collectibles match your filter.'
-                : 'No collectibles yet.'}
-            </div>
+            <div className="alert alert-info">No items found</div>
           ) : (
             items.map((item) => (
               <ListItem
@@ -121,7 +103,6 @@ function ItemsList({
                 item={item}
                 showTags={showTags}
                 userId={user?.uid || ''}
-                // Handlers are required by ListItem but not used here
                 handleToggleItemVisibility={() => {}}
                 handleDeleteItem={() => {}}
               />
@@ -129,28 +110,53 @@ function ItemsList({
           )}
         </div>
 
-        {/* Pagination Controls */}
-        {pageSize !== 'all' && totalPages > 1 && (
-          <div className="flex items-center justify-end gap-2 pt-2">
+        {/* PAGINATION */}
+        <div className="flex flex-col gap-3 pt-2">
+          {/* NAVIGATION */}
+          <div className="flex justify-end gap-2 items-center">
+            {/* PAGE SIZE SELECT */}
+            <label className="text-xs opacity-70">Items per page:</label>
+            <select
+              className="select select-xs select-bordered w-20"
+              value={pageSize}
+              onChange={(e) => {
+                const val =
+                  e.target.value === 'all' ? 'all' : Number(e.target.value);
+
+                setPageSize(val as number | 'all');
+                setPageIndex(0);
+                setCursors([null]);
+              }}
+            >
+              {[1, 2, 3, 5, 10, 25].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+              <option value="all">All</option>
+            </select>
+
             <button
               className="btn btn-xs"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
+              onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+              disabled={pageIndex === 0 || isAll}
             >
               Prev
             </button>
-            <span className="text-xs">
-              Page {page} of {totalPages}
-            </span>
+            <span className="text-xs">Page {pageIndex + 1}</span>
             <button
               className="btn btn-xs"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
+              onClick={() => {
+                if (isAll) return;
+                if (!pageInfo?.hasNextPage) return;
+                setPageIndex((p) => p + 1);
+              }}
+              disabled={isAll || !pageInfo?.hasNextPage}
             >
               Next
             </button>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
