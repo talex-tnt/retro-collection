@@ -122,7 +122,7 @@ function ListItem({
           />
         ) : (
           <p
-            className="font-medium cursor-pointer hover:underline"
+            className="font-bold text-lg cursor-pointer hover:underline "
             onDoubleClick={() => startEditing('name', item.name)}
             title="Double-click to edit name"
           >
