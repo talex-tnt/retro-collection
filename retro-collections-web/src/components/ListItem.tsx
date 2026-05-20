@@ -60,7 +60,8 @@ function ListItem({
     } catch (error) {
       console.error('Error toggling visibility:', error);
     }
-    if (handleToggleItemVisibility) handleToggleItemVisibility(itemId, currentVisibility);
+    if (handleToggleItemVisibility)
+      handleToggleItemVisibility(itemId, currentVisibility);
   };
 
   const startEditing = (
