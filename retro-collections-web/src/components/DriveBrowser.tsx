@@ -34,10 +34,13 @@ const DriveImage = ({ fileId, name }: { fileId: string; name: string }) => {
 };
 
 const DriveBrowser = ({ onSelectFolder }: DriveBrowserProps) => {
-  const [currentFolder, setCurrentFolder] = useState('root');
+  const [currentFolder, setCurrentFolder] = useState({
+    id: 'root',
+    name: 'Root',
+  });
 
   const { data, isLoading } = useListFilesQuery({
-    folderId: currentFolder,
+    folderId: currentFolder.id,
   });
 
   const files = data?.files || [];
@@ -52,16 +55,16 @@ const DriveBrowser = ({ onSelectFolder }: DriveBrowserProps) => {
   );
 
   return (
-    <div className="card bg-base-100 w-full max-w-md mx-auto">
-      <div className="card-body p-4">
+    <div className="card bg-transparent w-full max-w-md mx-auto">
+      <div className="card-body p-6">
         <div className="flex items-center justify-between mb-2">
           <h3 className="card-title text-base-content text-lg font-semibold">
             Google Drive Folder Browser
           </h3>
-          {currentFolder !== 'root' && (
+          {currentFolder.id !== 'root' && (
             <button
-              className="btn btn-xs btn-outline"
-              onClick={() => setCurrentFolder('root')}
+              className="btn btn-xs btn-outline ml-4"
+              onClick={() => setCurrentFolder({ id: 'root', name: 'Root' })}
             >
               ⬅ Root
             </button>
@@ -69,7 +72,7 @@ const DriveBrowser = ({ onSelectFolder }: DriveBrowserProps) => {
         </div>
         <div className="mb-2">
           <span className="text-xs opacity-70">Current folder:</span>
-          <span className="ml-2 font-mono text-sm">{currentFolder}</span>
+          <span className="ml-2 font-mono text-sm">{currentFolder.name}</span>
         </div>
 
         {isLoading && (
@@ -84,7 +87,7 @@ const DriveBrowser = ({ onSelectFolder }: DriveBrowserProps) => {
             <li key={folder.id} className="flex items-center gap-2">
               <button
                 className="btn btn-ghost btn-sm flex items-center gap-1"
-                onClick={() => setCurrentFolder(folder.id)}
+                onClick={() => setCurrentFolder(folder)}
                 title={`Open ${folder.name}`}
               >
                 <span className="text-xl">📁</span>
@@ -92,7 +95,7 @@ const DriveBrowser = ({ onSelectFolder }: DriveBrowserProps) => {
                   {folder.name}
                 </span>
               </button>
-              <button
+              {/* <button
                 className="btn btn-outline btn-xs"
                 onClick={() =>
                   onSelectFolder({
@@ -102,7 +105,7 @@ const DriveBrowser = ({ onSelectFolder }: DriveBrowserProps) => {
                 }
               >
                 Select
-              </button>
+              </button> */}
             </li>
           ))}
         </ul>
@@ -135,6 +138,18 @@ const DriveBrowser = ({ onSelectFolder }: DriveBrowserProps) => {
             ))}
           </div>
         </div>
+
+        <button
+          className="btn btn-outline btn-xs"
+          onClick={() =>
+            onSelectFolder({
+              id: currentFolder.id,
+              name: currentFolder.name,
+            })
+          }
+        >
+          Select {currentFolder.name}
+        </button>
       </div>
     </div>
   );
