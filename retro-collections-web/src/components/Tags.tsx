@@ -151,12 +151,12 @@ export default function Tags({
           ) : (
             <button
               type="button"
-              className="btn btn-xs btn-circle btn-outline flex items-center justify-center"
+              className="btn btn-xs btn-circle btn-outline flex items-center justify-center "
               aria-label="Add tag"
               onClick={() => setShowAddTag(true)}
               tabIndex={0}
             >
-              <span className="text-lg leading-none">+</span>
+              <span className="text-lg leading-none h-5">+</span>
             </button>
           ))}
       </div>
