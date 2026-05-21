@@ -90,8 +90,8 @@ function CollectorSpareItems({ userId }: { userId: string }) {
                     <img
                       loading="lazy"
                       // src={item.metadata.previewImage.thumbnailLink}
-                      src={`https://drive.google.com/thumbnail?id=${item.metadata.previewImage.id}&sz=w100`}
-                      alt={item.metadata.previewImage.name}
+                      src={`https://drive.google.com/thumbnail?id=${item?.metadata?.previewImage?.id}&sz=w100`}
+                      alt={item?.metadata?.previewImage?.name}
                       className="h-12 object-cover rounded flex-shrink-0"
                     />
                   )}
