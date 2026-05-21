@@ -27,9 +27,11 @@ jobs:
           if [ "${GITHUB_REF_NAME}" = "main" ]; then
             echo "VITE_ENV=prod" >> $GITHUB_ENV
             echo "basename=retro-collections" >> $GITHUB_ENV
+            echo "VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID_PROD }}" >> $GITHUB_ENV
           else
             echo "VITE_ENV=dev" >> $GITHUB_ENV
             echo "basename=retro-collections-develop" >> $GITHUB_ENV
+            echo "VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID_DEV }}" >> $GITHUB_ENV
           fi
 
       - name: Install frontend dependencies
