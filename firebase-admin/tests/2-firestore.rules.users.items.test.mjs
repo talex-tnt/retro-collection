@@ -76,6 +76,8 @@ const getItemsPath = (userId) =>
 
 const validItem = {
   name: 'Test Item',
+  nameLowercase: 'test item',
+  nameTokens: ['test', 'item'],
   createdAt: admin.firestore.Timestamp.now(),
   visibility: { public: false },
 };
