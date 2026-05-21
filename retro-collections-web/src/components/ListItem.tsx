@@ -182,7 +182,8 @@ function ListItem({ item, userId, showTags = true, onExpand }: ListItemProps) {
           {imagePreview?.thumbnailLink && (
             <img
               loading="lazy"
-              src={imagePreview.thumbnailLink}
+              // src={imagePreview.thumbnailLink}
+              src={`https://drive.google.com/thumbnail?id=${item.metadata.previewImage.id}&sz=w200`}
               // src={'https://drive.google.com/thumbnail?authuser=0&sz=w320&id=YOUR_FILE_ID'.replace(
               //   'YOUR_FILE_ID',
               //   imagePreview.id
