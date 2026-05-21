@@ -8,6 +8,7 @@ import {
 import Tags from './Tags';
 import { findPreviewImage } from '../utils/findPreviewImage';
 import type { FolderType, FileType } from '../api/firestore/types/shared';
+import ItemImages from './ItemImages';
 
 interface ListItemProps {
   item: Item;
@@ -214,6 +215,8 @@ function ExpandedItem({ item, userId, showTags = true }: ListItemProps) {
         </div>
         {/* End Description */}
       </div>
+
+      <ItemImages folder={imageFolder} />
 
       {/* Visibility, dates, and actions row */}
       <div className="flex flex-row gap-4 items-center text-xs text-base-content/60 justify-between w-full mt-1">
