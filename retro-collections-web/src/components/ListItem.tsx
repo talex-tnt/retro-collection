@@ -9,7 +9,7 @@ import {
 import Tags from './Tags';
 import { findPreviewImage } from '../utils/findPreviewImage';
 import type { FolderType, FileType } from '../api/firestore/types/shared';
-
+import { FiMaximize2 as Maximaze } from 'react-icons/fi';
 interface ListItemProps {
   item: Item;
   userId: string;
@@ -149,7 +149,7 @@ function ListItem({ item, userId, showTags = true, onExpand }: ListItemProps) {
           <Tags userId={item.userId} itemId={item.id} tags={item.tags || []} />
         )}
         <button className="btn btn-ghost btn-xs" onClick={onExpand}>
-          ⬆
+          <Maximaze />
         </button>
       </div>
       <div className="flex items-center gap-2">
