@@ -23,6 +23,10 @@ type GetFileDownloadResponse = Blob;
 
 export const driveApi = createApi({
   reducerPath: 'driveApi',
+  keepUnusedDataFor: 60 * 60, // 1h cache
+
+  refetchOnFocus: false,
+  refetchOnReconnect: false,
 
   baseQuery: async (args, api, extraOptions) => {
     let token = getDriveToken();

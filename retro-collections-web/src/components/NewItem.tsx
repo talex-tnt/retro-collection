@@ -7,23 +7,43 @@ import {
 import { useSearchQuery } from '../api/wikipedia/wikipediaApi';
 import AutocompleteInput from './AutocompleteInput';
 // import { useListFilesQuery } from '../api/google-drive/googleDriveApi';
-
+import { useSearchGamesQuery } from '../api/games/rawgApi';
 interface NewItemProps {
   userId: string;
 }
+
+type Suggestion = {
+  name: string;
+};
 
 function NewItem({ userId }: NewItemProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  const { data: wikiResults, isLoading: isLoadingSuggestions } = useSearchQuery(
-    name,
-    {
-      skip: name.length < 2,
-    }
-  );
-  const suggestions = wikiResults?.results || [];
+  const isGame = selectedTags.map((tag) => tag.toLowerCase()).includes('game');
+
+  const { data: wikiResults, isLoading: isLoadingWikiSuggestions } =
+    useSearchQuery(name, {
+      skip: name.length < 3 || isGame,
+    });
+  const { data: rawgResults, isLoading: isLoadingGameSuggestions } =
+    useSearchGamesQuery(name, {
+      skip: name.length < 3 || !isGame,
+    });
+  const gameSuggestions =
+    rawgResults?.results?.map((g) => ({ name: g.name })) ||
+    ([] as Suggestion[]);
+
+  const isLoadingSuggestions =
+    isLoadingWikiSuggestions || isLoadingGameSuggestions;
+
+  const wikiSuggestions = wikiResults?.results || ([] as Suggestion[]);
+
+  // console.log('Wiki suggestions:', wikiSuggestions); // Debugging log for Wikipedia suggestions
+  // console.log('Game suggestions:', gameSuggestions); // Debugging log for RAWG suggestions
+
+  const suggestions = isGame ? gameSuggestions : wikiSuggestions;
 
   // const { data: files = [] } = useListFilesQuery({});
   // console.log('Google Drive files:', files); // Debugging log for Google Drive files

@@ -41,7 +41,7 @@ jobs:
         env:
           VITE_GIT_HASH: ${{ github.sha }}
           VITE_GOOGLE_CLIENT_ID: ${{ github.ref_name == 'main' && secrets.VITE_GOOGLE_CLIENT_ID_PROD || secrets.VITE_GOOGLE_CLIENT_ID_DEV }}
-
+          VITE_RAWG_API_KEY: ${{ secrets.VITE_RAWG_API_KEY }}
         run: |
           BASE_PATH="/${{ env.basename }}/" npm run build
 

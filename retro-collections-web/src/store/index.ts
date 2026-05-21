@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { firestoreApi } from '../api/firestore/firestoreApi';
 import { driveApi } from '../api/google-drive/googleDriveApi';
 import { wikipediaApi } from '../api/wikipedia/wikipediaApi';
+import { rawgApi } from '../api/games/rawgApi';
 import authReducer from './authSlice';
 
 export const store = configureStore({
@@ -9,6 +10,7 @@ export const store = configureStore({
     [firestoreApi.reducerPath]: firestoreApi.reducer,
     [driveApi.reducerPath]: driveApi.reducer,
     [wikipediaApi.reducerPath]: wikipediaApi.reducer,
+    [rawgApi.reducerPath]: rawgApi.reducer,
     auth: authReducer,
   },
   middleware: (getDefaultMiddleware) =>
@@ -20,7 +22,8 @@ export const store = configureStore({
     })
       .concat(firestoreApi.middleware)
       .concat(driveApi.middleware)
-      .concat(wikipediaApi.middleware),
+      .concat(wikipediaApi.middleware)
+      .concat(rawgApi.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;
