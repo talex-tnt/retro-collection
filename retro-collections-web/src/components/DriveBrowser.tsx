@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useListFilesQuery } from '../api/google-drive/googleDriveApi';
 import DriveImage from './DriveImage';
 
@@ -7,13 +7,26 @@ type DriveBrowserProps = {
     folder: { id: string; name: string };
     files: { id: string; name: string; mimeType?: string }[];
   }) => void;
+  selectedFolder?: { id: string; name: string };
 };
 
-const DriveBrowser = ({ onSelectFolder }: DriveBrowserProps) => {
-  const [currentFolder, setCurrentFolder] = useState({
-    id: 'root',
-    name: 'Root',
-  });
+const DriveBrowser = ({
+  onSelectFolder,
+  selectedFolder,
+}: DriveBrowserProps) => {
+  const [currentFolder, setCurrentFolder] = useState(
+    selectedFolder || {
+      id: 'root',
+      name: 'Root',
+    }
+  );
+  console.log('currentFolder state:', currentFolder); // Debug log for current folder state
+  useEffect(() => {
+    if (selectedFolder) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCurrentFolder(selectedFolder);
+    }
+  }, [selectedFolder]);
 
   const { data, isLoading } = useListFilesQuery({
     folderId: currentFolder.id,

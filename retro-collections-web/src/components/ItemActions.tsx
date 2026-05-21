@@ -66,7 +66,10 @@ function ItemActions({
             >
               ✕
             </button>
-            <DriveBrowser onSelectFolder={handleDriveFolderSelect} />
+            <DriveBrowser
+              onSelectFolder={handleDriveFolderSelect}
+              selectedFolder={imageFolder}
+            />
           </div>
         </div>
       )}
