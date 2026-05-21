@@ -184,6 +184,11 @@ function ListItem({
             <img
               loading="lazy"
               src={imagePreview.thumbnailLink}
+              // src={'https://drive.google.com/thumbnail?authuser=0&sz=w320&id=YOUR_FILE_ID'.replace(
+              //   'YOUR_FILE_ID',
+              //   imagePreview.id
+              // )}
+              referrerPolicy={'no-referrer'}
               alt={imagePreview.name}
               className="w-full h-auto rounded"
             />
