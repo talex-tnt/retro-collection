@@ -181,7 +181,7 @@ function ListItem({ item, userId, showTags = true, onExpand }: ListItemProps) {
       <div className="flex flex-row gap-4 justify-between items-start w-full">
         {/* Description (left) */}
         <div className="flex flex-col gap-2">
-          {imagePreview?.thumbnailLink && (
+          {imagePreview?.id && (
             <img
               loading="lazy"
               // src={imagePreview.thumbnailLink}

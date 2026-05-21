@@ -86,7 +86,7 @@ function CollectorSpareItems({ userId }: { userId: string }) {
                 {/* MAIN ROW */}
                 <div className="flex items-start gap-4">
                   {/* IMAGE LEFT */}
-                  {item?.metadata?.previewImage?.thumbnailLink && (
+                  {item?.metadata?.previewImage?.id && (
                     <img
                       loading="lazy"
                       // src={item.metadata.previewImage.thumbnailLink}
