@@ -4,6 +4,8 @@ import {
   useCreatePublicUserItemMutation,
   useGetPublicUserTagsQuery,
 } from '../api/firestore/firestoreApi';
+import { useSearchQuery } from '../api/wikipedia/wikipediaApi';
+import AutocompleteInput from './AutocompleteInput';
 // import { useListFilesQuery } from '../api/google-drive/googleDriveApi';
 
 interface NewItemProps {
@@ -14,6 +16,14 @@ function NewItem({ userId }: NewItemProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  const { data: wikiResults, isLoading: isLoadingSuggestions } = useSearchQuery(
+    name,
+    {
+      skip: name.length < 2,
+    }
+  );
+  const suggestions = wikiResults?.results || [];
 
   // const { data: files = [] } = useListFilesQuery({});
   // console.log('Google Drive files:', files); // Debugging log for Google Drive files
@@ -122,7 +132,7 @@ function NewItem({ userId }: NewItemProps) {
             </label>
             <label className="form-control w-full">
               <span className="label-text mb-1">Name</span>
-              <input
+              {/* <input
                 ref={nameInputRef}
                 type="text"
                 className="input input-bordered w-full"
@@ -130,6 +140,15 @@ function NewItem({ userId }: NewItemProps) {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="New collectible name"
                 disabled={isCreatingItem}
+              /> */}
+              <AutocompleteInput
+                value={name}
+                onChange={setName}
+                suggestions={suggestions}
+                isLoading={isLoadingSuggestions}
+                placeholder={'New collectible name'}
+                getLabel={(g) => g.name}
+                getKey={(g) => g.name}
               />
             </label>
 
