@@ -123,7 +123,7 @@ function ListItem({
     const previewImage = findPreviewImage(files);
     const metadata = {
       ...item.metadata,
-      imageFolder: imageFolder?.id ? imageFolder : {},
+      imageFolder: folder?.id ? folder : {},
       previewImage: previewImage?.thumbnailLink ? previewImage : {},
     };
     try {
