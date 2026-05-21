@@ -13,9 +13,10 @@ import {
 type Props = {
   fileId: string;
   name: string;
+  style?: React.CSSProperties;
 };
 
-const DriveImage = ({ fileId, name }: Props) => {
+const DriveImage = ({ fileId, name, style }: Props) => {
   const [url, setUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -80,6 +81,7 @@ const DriveImage = ({ fileId, name }: Props) => {
         height: 120,
         objectFit: 'cover',
         borderRadius: 8,
+        ...style,
       }}
     />
   );
