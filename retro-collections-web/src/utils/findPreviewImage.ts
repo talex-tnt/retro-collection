@@ -17,6 +17,12 @@ export const findPreviewImage = (
     'cover.png',
     'cover.jpg',
     'cover.jpeg',
+    'Preview.png',
+    'Preview.jpg',
+    'Preview.jpeg',
+    'Cover.png',
+    'Cover.jpg',
+    'Cover.jpeg',
   ];
 
   const found = files.find(
