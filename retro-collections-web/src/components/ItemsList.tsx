@@ -5,6 +5,8 @@ import {
 } from '../api/firestore/firestoreApi';
 
 import ListItem from './ListItem';
+import { ExpandableMotion } from './ExpandableMotion';
+import ExpandedItem from './ExpandedItem';
 
 interface Cursor {
   createdAt: string;
@@ -68,6 +70,14 @@ function ItemsList({
   );
   const pageInfo = itemsData?.pageInfo;
 
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  useEffect(() => {
+    document.body.style.overflow = expandedItemId ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [expandedItemId]);
+
   // Store cursor for next page
   useEffect(() => {
     if (!pageInfo?.endCursor) return;
@@ -107,14 +117,19 @@ function ItemsList({
             <div className="alert alert-info">No items found</div>
           ) : (
             items.map((item) => (
-              <ListItem
+              <ExpandableMotion
                 key={item.id}
-                item={item}
-                showTags={showTags}
-                userId={user?.uid || ''}
-                handleToggleItemVisibility={() => {}}
-                handleDeleteItem={() => {}}
-              />
+                renderExpanded={(props) => (
+                  <ExpandedItem {...props} key={`expanded-${item.id}`} />
+                )}
+              >
+                <ListItem
+                  key={item.id}
+                  item={item}
+                  userId={user?.uid || ''}
+                  showTags={true}
+                />
+              </ExpandableMotion>
             ))
           )}
         </div>

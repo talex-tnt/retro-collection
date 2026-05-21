@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import type { Item } from '../api/firestore/services/public/userItems';
 import ItemActions from './ItemActions';
 import { useState } from 'react';
@@ -17,7 +16,7 @@ interface ListItemProps {
   onExpand?: () => void;
 }
 
-function ListItem({ item, userId, showTags = true, onExpand }: ListItemProps) {
+function ExpandedItem({ item, userId, showTags = true }: ListItemProps) {
   const [editingField, setEditingField] = useState<
     'name' | 'description' | null
   >(null);
@@ -128,29 +127,12 @@ function ListItem({ item, userId, showTags = true, onExpand }: ListItemProps) {
     }
   };
   return (
-    <motion.div
-      layoutId={`expandable-${item.id}`}
-      className="flex flex-col gap-2 rounded-lg border border-base-300 bg-base-200 p-4"
-      // onClick={(e) => {
-      //   const target = e.target as HTMLElement;
-
-      //   // prevent interfering with inputs/buttons
-      //   if (target.closest('input, textarea, button, select')) return;
-
-      //   // prevent double-click breaking expand
-      //   if (e.detail > 1) return;
-
-      //   onExpand?.();
-      // }}
-    >
+    <div className="flex flex-col gap-2 bg-base-200 p-4">
       {/* Tags at the top, toggleable */}
       <div className="flex items-center gap-2">
         {showTags && (
           <Tags userId={item.userId} itemId={item.id} tags={item.tags || []} />
         )}
-        <button className="btn btn-ghost btn-xs" onClick={onExpand}>
-          ⬆
-        </button>
       </div>
       <div className="flex items-center gap-2">
         {editing && editingField === 'name' ? (
@@ -265,8 +247,8 @@ function ListItem({ item, userId, showTags = true, onExpand }: ListItemProps) {
           />
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
-export default ListItem;
+export default ExpandedItem;
