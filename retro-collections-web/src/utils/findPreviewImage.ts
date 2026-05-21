@@ -1,6 +1,6 @@
 type DriveFile = {
-  id: string;
-  name: string;
+  id?: string;
+  name?: string;
   mimeType?: string;
   thumbnailLink?: string;
 };
@@ -8,7 +8,7 @@ type DriveFile = {
 export const findPreviewImage = (
   files: DriveFile[]
 ):
-  | { id: string; name: string; mimeType?: string; thumbnailLink?: string }
+  | { id?: string; name?: string; mimeType?: string; thumbnailLink?: string }
   | undefined => {
   const previewNames = [
     'preview.png',
@@ -19,8 +19,8 @@ export const findPreviewImage = (
     'cover.jpeg',
   ];
 
-  const found = files.find((file) =>
-    previewNames.includes(file.name.toLowerCase())
+  const found = files.find(
+    (file) => file.name && previewNames.includes(file.name.toLowerCase())
   );
 
   if (!found) return undefined;

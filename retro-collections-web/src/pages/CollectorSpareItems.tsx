@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useGetPublicUserItemsQuery } from '../api/firestore/firestoreApi';
 import Tags from '../components/Tags';
-
+import { type ImagePreview } from '../api/firestore/types/shared';
 interface ItemRecord {
   id: string;
   name: string;
@@ -12,12 +12,7 @@ interface ItemRecord {
   };
   tags?: string[];
   metadata?: {
-    previewImage?: {
-      id: string;
-      name: string;
-      mimeType?: string;
-      thumbnailLink?: string;
-    };
+    previewImage?: ImagePreview;
   };
 }
 

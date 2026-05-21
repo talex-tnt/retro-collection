@@ -7,6 +7,7 @@ import {
 } from '../api/firestore/firestoreApi';
 import Tags from './Tags';
 import { findPreviewImage } from '../utils/findPreviewImage';
+import type { FolderType, FileType } from '../api/firestore/types/shared';
 interface ListItemProps {
   item: Item;
   userId: string;
@@ -114,22 +115,16 @@ function ListItem({
     folder,
     files,
   }: {
-    folder: { id: string; name: string };
-    files: {
-      id: string;
-      name: string;
-      mimeType?: string;
-      thumbnailLink?: string;
-    }[];
+    folder: FolderType;
+    files: FileType[];
   }) => {
     console.log('Set image folder:', folder);
     if (!userId) return;
     const previewImage = findPreviewImage(files);
     const metadata = {
       ...item.metadata,
-      imageFolder: folder,
-      ...(imageFolder ? { imageFolder: folder } : {}),
-      ...(previewImage ? { previewImage } : {}),
+      imageFolder: imageFolder?.id ? imageFolder : {},
+      previewImage: previewImage?.thumbnailLink ? previewImage : {},
     };
     try {
       await updateItem({
@@ -143,7 +138,6 @@ function ListItem({
       console.error('Error updating image folder:', error);
     }
   };
-  console.log('Rendering ListItem with imagePreview:', imagePreview); // Debug log for image preview data
   return (
     <div
       key={item.id}

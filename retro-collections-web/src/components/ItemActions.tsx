@@ -7,6 +7,7 @@ import {
   FiFolderPlus,
 } from 'react-icons/fi';
 import DriveBrowser from './DriveBrowser';
+import type { FileType, ImageFolder } from '../api/firestore/types/shared';
 
 interface ItemActionsProps {
   itemId: string;
@@ -18,15 +19,10 @@ interface ItemActionsProps {
     folder,
     files,
   }: {
-    folder: { id: string; name: string };
-    files: {
-      id: string;
-      name: string;
-      mimeType?: string;
-      thumbnailLink?: string;
-    }[];
+    folder: ImageFolder;
+    files: FileType[];
   }) => void;
-  imageFolder?: { id: string; name: string };
+  imageFolder?: ImageFolder;
 }
 
 function ItemActions({
@@ -47,8 +43,8 @@ function ItemActions({
     folder,
     files,
   }: {
-    folder: { id: string; name: string };
-    files: { id: string; name: string; mimeType?: string }[];
+    folder: ImageFolder;
+    files: FileType[];
   }) => {
     setSelectedDriveFolder({ folder, files });
     setShowDrivePopup(false);

@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useListFilesQuery } from '../api/google-drive/googleDriveApi';
 import DriveImage from './DriveImage';
+import type { FileType, FolderType } from '../api/firestore/types/shared';
 
 type DriveBrowserProps = {
-  onSelectFolder: (data: {
-    folder: { id: string; name: string };
-    files: { id: string; name: string; mimeType?: string }[];
-  }) => void;
-  selectedFolder?: { id: string; name: string };
+  onSelectFolder: (data: { folder: FolderType; files: FileType[] }) => void;
+  selectedFolder?: FolderType;
 };
 
 const DriveBrowser = ({
@@ -74,7 +72,7 @@ const DriveBrowser = ({
         )}
 
         <ul className="space-y-2 mb-4">
-          {folders.map((folder: { id: string; name: string }) => (
+          {folders.map((folder: FolderType) => (
             <li key={folder.id} className="flex items-center gap-2">
               <button
                 className="btn btn-ghost btn-sm flex items-center gap-1"

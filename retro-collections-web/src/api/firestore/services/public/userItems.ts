@@ -22,6 +22,7 @@ import type { FirestoreBuilder } from '../../types/firestoreBuilder';
 import { createFirestoreApiError } from '../../errorLogger';
 import { db } from '../../../../lib/firebase';
 import { getUserCollectionPath } from '../../runtimeConfig';
+import type { ImageFolder, ImagePreview } from '../../types/shared';
 
 const visibility = 'public' as const;
 
@@ -37,16 +38,8 @@ export interface Item {
   };
   tags?: string[];
   metadata?: {
-    imageFolder?: {
-      id: string;
-      name: string;
-    };
-    previewImage?: {
-      id: string;
-      name: string;
-      mimeType?: string;
-      thumbnailLink?: string;
-    };
+    imageFolder?: ImageFolder;
+    previewImage?: ImagePreview;
   };
 }
 
@@ -66,16 +59,8 @@ interface FirestoreItemDoc {
   };
   tags?: string[];
   metadata?: {
-    imageFolder?: {
-      id: string;
-      name: string;
-    };
-    previewImage?: {
-      id: string;
-      name: string;
-      mimeType?: string;
-      thumbnailLink?: string;
-    };
+    imageFolder?: ImageFolder;
+    previewImage?: ImagePreview;
   };
 }
 
