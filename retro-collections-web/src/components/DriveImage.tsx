@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
 import { downloadDriveFile } from '../api/google-drive/downloadDriveFile';
 
+import {
+  getMemoryBlob,
+  setMemoryBlob,
+  getMemoryUrl,
+  setMemoryUrl,
+  getDiskBlob,
+  setDiskBlob,
+} from '../utils/driveImageCache';
+
 type Props = {
   fileId: string;
   name: string;
@@ -8,16 +17,42 @@ type Props = {
 
 const DriveImage = ({ fileId, name }: Props) => {
   const [url, setUrl] = useState<string | null>(null);
-  console.log('DriveImage component rendered with fileId:', fileId); // Debugging log for fileId
+
   useEffect(() => {
-    let objectUrl: string;
+    let objectUrl: string | undefined;
 
     const load = async () => {
       try {
-        const blob = await downloadDriveFile(fileId);
+        /* ---------------- 1. MEMORY URL ---------------- */
+        const memoryUrl = getMemoryUrl(fileId);
+        if (memoryUrl) {
+          setUrl(memoryUrl);
+          return;
+        }
 
+        /* ---------------- 2. MEMORY BLOB ---------------- */
+        let blob = getMemoryBlob(fileId);
+
+        if (!blob) {
+          /* ---------------- 3. DISK CACHE ---------------- */
+          blob = await getDiskBlob(fileId);
+
+          /* ---------------- 4. NETWORK FALLBACK ---------------- */
+          if (!blob) {
+            blob = await downloadDriveFile(fileId);
+
+            // save to disk cache
+            await setDiskBlob(fileId, blob);
+          }
+
+          // save to memory cache
+          setMemoryBlob(fileId, blob);
+        }
+
+        /* ---------------- CREATE OBJECT URL ---------------- */
         objectUrl = URL.createObjectURL(blob);
 
+        setMemoryUrl(fileId, objectUrl);
         setUrl(objectUrl);
       } catch (err) {
         console.error(err);
@@ -27,9 +62,8 @@ const DriveImage = ({ fileId, name }: Props) => {
     load();
 
     return () => {
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
+      // IMPORTANT: DO NOT revoke here
+      // (we reuse URLs from memory cache)
     };
   }, [fileId]);
 
