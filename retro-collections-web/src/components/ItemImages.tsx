@@ -45,16 +45,16 @@ const ItemImages = ({ folder }: ItemImagesProps) => {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {images.map((img) => (
-          <div key={img.id} className="flex flex-col items-center">
+          <div key={img?.id} className="flex flex-col items-center">
             <div className="w-full h-[120px] bg-base-200 rounded overflow-hidden flex items-center justify-center">
-              <DriveImage fileId={img.id} name={img.name} />
+              <DriveImage fileId={img?.id ?? ''} name={img?.name ?? ''} />
             </div>
 
             <span
               className="text-xs mt-1 truncate max-w-[100px]"
-              title={img.name}
+              title={img?.name}
             >
-              {img.name}
+              {img?.name}
             </span>
           </div>
         ))}

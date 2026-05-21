@@ -21,6 +21,7 @@ const DriveBrowser = ({
 
   useEffect(() => {
     if (selectedFolder) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFolderStack([selectedFolder]);
     }
   }, [selectedFolder]);

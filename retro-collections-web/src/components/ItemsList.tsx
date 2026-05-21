@@ -70,14 +70,6 @@ function ItemsList({
   );
   const pageInfo = itemsData?.pageInfo;
 
-  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
-  useEffect(() => {
-    document.body.style.overflow = expandedItemId ? 'hidden' : '';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [expandedItemId]);
-
   // Store cursor for next page
   useEffect(() => {
     if (!pageInfo?.endCursor) return;

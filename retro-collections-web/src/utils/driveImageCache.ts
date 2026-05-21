@@ -1,4 +1,4 @@
-import { LRUCache } from './lruCache';
+import { LRUCache } from './LRUCache';
 import { openDB } from 'idb';
 
 /* ---------------- LRU MEMORY CACHE ---------------- */

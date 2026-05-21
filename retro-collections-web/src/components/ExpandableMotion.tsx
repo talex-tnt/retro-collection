@@ -1,7 +1,7 @@
-import { type ReactElement, useState } from 'react';
+import { type ReactElement, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
-type ExpandableMotionProps<P = any> = {
+type ExpandableMotionProps<P = unknown> = {
   children: ReactElement<P>;
   renderExpanded?: (props: P & { onClose: () => void }) => ReactElement;
 };
@@ -16,6 +16,13 @@ export function ExpandableMotion<P>({
 
   const open = () => setExpanded(true);
   const close = () => setExpanded(false);
+
+  useEffect(() => {
+    document.body.style.overflow = expanded ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [expanded]);
 
   // Inject ONLY expansion behavior, nothing else
   const normal = {
@@ -47,7 +54,7 @@ export function ExpandableMotion<P>({
             onClick={close}
           >
             <motion.div
-              layoutId={`expandable-${(childProps as any).item?.id}`}
+              layoutId={`expandable-${(childProps as { item?: { id: string } }).item?.id}`}
               className="w-full max-w-5xl max-h-[90vh] overflow-auto rounded-xl bg-base-200 p-6 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >

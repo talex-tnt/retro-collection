@@ -9,5 +9,5 @@ export type ImagePreview = {
   thumbnailLink?: string;
 };
 
-export type FileType = ImageFolder | ImagePreview;
-export type FolderType = ImageFolder | ImagePreview;
+export type FileType = ImageFolder & ImagePreview;
+export type FolderType = ImageFolder & Partial<ImagePreview>;
