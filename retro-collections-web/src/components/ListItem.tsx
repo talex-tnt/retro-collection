@@ -113,7 +113,9 @@ function ListItem({ item, userId, showTags = true, onExpand }: ListItemProps) {
     const metadata = {
       ...item.metadata,
       imageFolder: folder?.id ? folder : {},
-      previewImage: previewImage?.thumbnailLink ? previewImage : {},
+      previewImage: previewImage?.id
+        ? { id: previewImage.id, name: previewImage.name }
+        : {},
     };
     try {
       await updateItem({
