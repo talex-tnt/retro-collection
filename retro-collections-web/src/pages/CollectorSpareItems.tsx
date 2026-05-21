@@ -93,6 +93,7 @@ function CollectorSpareItems({ userId }: { userId: string }) {
                   {/* IMAGE LEFT */}
                   {item?.metadata?.previewImage?.thumbnailLink && (
                     <img
+                      loading="lazy"
                       src={item.metadata.previewImage.thumbnailLink}
                       alt={item.metadata.previewImage.name}
                       className="h-12 object-cover rounded flex-shrink-0"

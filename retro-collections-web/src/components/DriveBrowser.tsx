@@ -20,7 +20,6 @@ const DriveBrowser = ({
       name: 'Root',
     }
   );
-  console.log('currentFolder state:', currentFolder); // Debug log for current folder state
   useEffect(() => {
     if (selectedFolder) {
       // eslint-disable-next-line react-hooks/set-state-in-effect

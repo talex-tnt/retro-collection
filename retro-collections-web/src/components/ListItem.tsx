@@ -131,7 +131,6 @@ function ListItem({
       ...(imageFolder ? { imageFolder: folder } : {}),
       ...(previewImage ? { previewImage } : {}),
     };
-    console.log();
     try {
       await updateItem({
         id: item.id,
@@ -144,6 +143,7 @@ function ListItem({
       console.error('Error updating image folder:', error);
     }
   };
+  console.log('Rendering ListItem with imagePreview:', imagePreview); // Debug log for image preview data
   return (
     <div
       key={item.id}
@@ -182,6 +182,7 @@ function ListItem({
         <div className="flex flex-col gap-2">
           {imagePreview?.thumbnailLink && (
             <img
+              loading="lazy"
               src={imagePreview.thumbnailLink}
               alt={imagePreview.name}
               className="w-full h-auto rounded"
